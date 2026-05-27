@@ -14,10 +14,19 @@ struct cp_block_config {
 	size_t channels;
 	cp_sample_t dc_coefficient;
 	cp_sample_t target_rms;
+	cp_sample_t min_gain;
 	cp_sample_t max_gain;
 	cp_sample_t attack_coeff;
 	cp_sample_t release_coeff;
 	cp_sample_t smooth_coeff;
+	cp_sample_t attack_ms;
+	cp_sample_t release_ms;
+	cp_sample_t fast_attack_ms;
+	cp_sample_t hold_ms;
+	cp_sample_t gate_threshold_db;
+	cp_sample_t silence_threshold_db;
+	cp_sample_t max_gain_step_db;
+	cp_sample_t sample_rate;
 	cp_sample_t limiter_ceiling;
 };
 

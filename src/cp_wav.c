@@ -69,6 +69,7 @@ cp_wav_process_file(const char *input_path, const char *output_path,
 	}
 
 	cp_block_default_config(&config, channels);
+	config.sample_rate = (cp_sample_t)input_info.samplerate;
 	status = cp_block_init(&processor, &config);
 	if (status != CP_OK) {
 		free(input);

@@ -362,9 +362,11 @@ run_self_test(void)
 	printf("CarrierPress self-test\n");
 	printf("input_peak=%0.6f input_rms=%0.6f\n",
 	    processor.input_meter.peak[0], processor.input_meter.rms[0]);
-	printf("output_peak=%0.6f output_rms=%0.6f gain=%0.6f\n",
+	printf("output_peak=%0.6f output_rms=%0.6f gain=%0.6f "
+	    "gain_db=%0.2f agc_state=%s\n",
 	    processor.output_meter.peak[0], processor.output_meter.rms[0],
-	    processor.agc.gain);
+	    processor.agc.gain, processor.agc.gain_db,
+	    cp_agc_state_string(processor.agc.gate_state));
 
 	return 0;
 }

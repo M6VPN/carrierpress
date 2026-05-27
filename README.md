@@ -1,6 +1,6 @@
 # CarrierPress
 
-CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.1 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a slow AGC, and a safe peak limiter.
+CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.1 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, and a safe peak limiter.
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
@@ -76,7 +76,7 @@ Run the built-in synthetic tone through the v0.1 chain:
 ./carrierpress --self-test
 ```
 
-The command prints input and output meter values plus the current AGC gain.
+The command prints input and output meter values plus AGC gain, gain dB, and gate state.
 
 Process a mono or stereo WAV file through the current chain:
 
@@ -153,6 +153,33 @@ Check that meter lines update while audio is present. Stop with `Ctrl-C`.
 ## Development
 
 The core library has no optional audio backend dependency. WAV support lives in `cp_wav.c`, and PortAudio support lives in `cp_portaudio.c`. Both are compiled only when requested. Process functions use caller-owned buffers and explicit state structs so real-time callbacks can remain malloc-free and deterministic.
+
+## AGC Controls
+
+The M3 AGC is a single linked gain rider for mono or stereo blocks. It measures RMS, applies one shared gain value across channels, uses fast attack for sudden loud input, waits through hold time before release, and freezes gain during gated or silent input so silence does not push gain to max.
+
+| Control              | Purpose                                      |
+| -------------------- | -------------------------------------------- |
+| `target_rms`         | Desired working RMS level                    |
+| `min_gain`           | Lowest allowed linear gain                   |
+| `max_gain`           | Highest allowed linear gain                  |
+| `attack_ms`          | Normal gain reduction timing                 |
+| `release_ms`         | Gain recovery timing                         |
+| `fast_attack_ms`     | Faster reduction for sudden loud input       |
+| `hold_ms`            | Delay before release after gain reduction    |
+| `gate_threshold_db`  | Below this, gain movement is held            |
+| `silence_threshold_db` | Below this, input is treated as silence     |
+| `max_gain_step_db`   | Largest gain change per processed block      |
+| `sample_rate`        | Timing reference for millisecond controls    |
+
+Practical starting points for later tuning:
+
+| Preset               | target_rms | min_gain | max_gain | attack_ms | release_ms | fast_attack_ms | hold_ms | gate_db | silence_db | max_step_db |
+| -------------------- | ---------- | -------- | -------- | --------- | ---------- | -------------- | ------- | ------- | ---------- | ----------- |
+| AM music             | 0.20       | 0.125    | 6.0      | 80        | 1800       | 8              | 250     | -45     | -70        | 4           |
+| AM speech            | 0.18       | 0.125    | 8.0      | 40        | 1200       | 5              | 200     | -50     | -75        | 5           |
+| SSB speech           | 0.16       | 0.125    | 10.0     | 30        | 900        | 4              | 150     | -55     | -78        | 6           |
+| Gentle file levelling | 0.18      | 0.25     | 4.0      | 120       | 2500       | 20             | 300     | -50     | -75        | 2           |
 
 | Area       | v0.1 status                          |
 | ---------- | ------------------------------------ |

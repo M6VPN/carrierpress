@@ -14,7 +14,7 @@ Implemented as an optional PortAudio foundation. It supports device listing, cal
 
 ## M3 AGC improvements
 
-Improve detector behavior, gain law, channel linking, and transition handling while keeping explicit state structs.
+Implemented as a gated single-band input gain rider. It supports target RMS, min/max gain, attack/release timing, fast attack, hold, gate and silence thresholds, max gain step, sample-rate-aware timing, linked stereo gain, and AGC metering. It is not a complete broadcast processor.
 
 ## M4 dehummer
 

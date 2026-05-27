@@ -258,6 +258,7 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	atomic_init(&runtime->dsp_status, CP_OK);
 
 	cp_block_default_config(&block_config, config->channels);
+	block_config.sample_rate = (cp_sample_t)config->sample_rate;
 	status = cp_block_init(&runtime->processor, &block_config);
 	if (status != CP_OK) {
 		free(runtime->scratch);

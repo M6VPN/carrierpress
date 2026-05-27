@@ -16,10 +16,19 @@ cp_block_default_config(struct cp_block_config *config, size_t channels)
 	config->channels        = channels;
 	config->dc_coefficient  = CP_DEFAULT_DC_R;
 	config->target_rms      = CP_DEFAULT_TARGET_RMS;
+	config->min_gain        = CP_AGC_DEFAULT_MIN_GAIN;
 	config->max_gain        = CP_DEFAULT_MAX_GAIN;
 	config->attack_coeff    = CP_DEFAULT_ATTACK;
 	config->release_coeff   = CP_DEFAULT_RELEASE;
 	config->smooth_coeff    = CP_DEFAULT_SMOOTH;
+	config->attack_ms       = CP_AGC_DEFAULT_ATTACK_MS;
+	config->release_ms      = CP_AGC_DEFAULT_RELEASE_MS;
+	config->fast_attack_ms  = CP_AGC_DEFAULT_FAST_ATTACK_MS;
+	config->hold_ms         = CP_AGC_DEFAULT_HOLD_MS;
+	config->gate_threshold_db = CP_AGC_DEFAULT_GATE_DB;
+	config->silence_threshold_db = CP_AGC_DEFAULT_SILENCE_DB;
+	config->max_gain_step_db = CP_AGC_DEFAULT_MAX_STEP_DB;
+	config->sample_rate     = CP_AGC_DEFAULT_SAMPLE_RATE;
 	config->limiter_ceiling = CP_DEFAULT_CEILING;
 }
 
@@ -27,6 +36,7 @@ int
 cp_block_init(struct cp_block_processor *processor,
 	const struct cp_block_config *config)
 {
+	struct cp_agc_config agc_config;
 	int status;
 
 	if (processor == NULL || config == NULL)
@@ -42,9 +52,20 @@ cp_block_init(struct cp_block_processor *processor,
 	if (status != CP_OK)
 		return status;
 
-	status = cp_agc_init(&processor->agc, config->channels,
-	    config->target_rms, config->max_gain, config->attack_coeff,
-	    config->release_coeff, config->smooth_coeff);
+	agc_config.target_rms           = config->target_rms;
+	agc_config.min_gain             = config->min_gain;
+	agc_config.max_gain             = config->max_gain;
+	agc_config.attack_ms            = config->attack_ms;
+	agc_config.release_ms           = config->release_ms;
+	agc_config.fast_attack_ms       = config->fast_attack_ms;
+	agc_config.hold_ms              = config->hold_ms;
+	agc_config.gate_threshold_db    = config->gate_threshold_db;
+	agc_config.silence_threshold_db = config->silence_threshold_db;
+	agc_config.max_gain_step_db     = config->max_gain_step_db;
+	agc_config.sample_rate          = config->sample_rate;
+
+	status = cp_agc_init_config(&processor->agc, config->channels,
+	    &agc_config);
 	if (status != CP_OK)
 		return status;
 
