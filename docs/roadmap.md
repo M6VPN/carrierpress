@@ -10,7 +10,7 @@ Partially implemented. Optional libsndfile support can process mono and stereo W
 
 ## M2 live PortAudio backend
 
-Add optional PortAudio live USB sound-card processing for Linux and FreeBSD. The audio callback must avoid allocation and blocking work.
+Implemented as an optional PortAudio foundation. It supports device listing, callback-mode live processing, configurable devices, sample rate, channels, block size, and meter interval. Hardware behavior still needs broader USB sound-card testing.
 
 ## M3 AGC improvements
 

@@ -7,6 +7,7 @@ CFLAGS	?= -std=c17 -Wall -Wextra -Wconversion -Wsign-conversion -pedantic
 CPPFLAGS += -Iinclude
 LDLIBS	+= -lm
 WITH_SNDFILE ?= 0
+WITH_PORTAUDIO ?= 0
 
 BUILD_DIR = build
 FEATURE_DIR = base
@@ -16,6 +17,7 @@ TEST_BIN_DIR = $(BUILD_DIR)/tests
 
 CORE_SRCS = \
 	src/cp_agc.c \
+	src/cp_audio.c \
 	src/cp_block.c \
 	src/cp_dc_blocker.c \
 	src/cp_limiter.c \
@@ -25,18 +27,29 @@ APP_SRCS = src/main.c
 
 TEST_SRCS = \
 	tests/test_agc.c \
+	tests/test_audio.c \
 	tests/test_dc_blocker.c \
 	tests/test_limiter.c \
 	tests/test_meter.c
 
 ifeq ($(WITH_SNDFILE),1)
-FEATURE_DIR = sndfile
+FEATURE_DIR := $(FEATURE_DIR)-sndfile
 CPPFLAGS += -DCP_WITH_SNDFILE
 LDLIBS	+= -lsndfile
 CORE_SRCS += src/cp_wav.c
 TEST_SRCS += tests/test_wav.c
 SNDFILE_ORDER = check-sndfile
 endif
+
+ifeq ($(WITH_PORTAUDIO),1)
+FEATURE_DIR := $(FEATURE_DIR)-portaudio
+CPPFLAGS += -DCP_WITH_PORTAUDIO
+LDLIBS	+= -lportaudio
+CORE_SRCS += src/cp_portaudio.c
+PORTAUDIO_ORDER = check-portaudio
+endif
+
+BACKEND_ORDER = $(SNDFILE_ORDER) $(PORTAUDIO_ORDER)
 
 APP_CORE_OBJS = $(CORE_SRCS:src/%.c=$(APP_OBJ_DIR)/src/%.o)
 APP_OBJS = $(APP_CORE_OBJS) $(APP_SRCS:src/%.c=$(APP_OBJ_DIR)/src/%.o)
@@ -45,6 +58,7 @@ TEST_OBJS = $(TEST_SRCS:tests/%.c=$(TEST_OBJ_DIR)/tests/%.o)
 
 TEST_BINS = \
 	$(TEST_BIN_DIR)/test_agc \
+	$(TEST_BIN_DIR)/test_audio \
 	$(TEST_BIN_DIR)/test_dc_blocker \
 	$(TEST_BIN_DIR)/test_limiter \
 	$(TEST_BIN_DIR)/test_meter
@@ -65,6 +79,10 @@ $(TEST_BIN_DIR)/test_agc: $(TEST_OBJ_DIR)/tests/test_agc.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_agc.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_audio: $(TEST_OBJ_DIR)/tests/test_audio.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_audio.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_dc_blocker: $(TEST_OBJ_DIR)/tests/test_dc_blocker.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_dc_blocker.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -84,6 +102,7 @@ $(TEST_BIN_DIR)/test_wav: $(TEST_OBJ_DIR)/tests/test_wav.o $(TEST_CORE_OBJS)
 test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_dc_blocker
 	./$(TEST_BIN_DIR)/test_agc
+	./$(TEST_BIN_DIR)/test_audio
 	./$(TEST_BIN_DIR)/test_limiter
 	./$(TEST_BIN_DIR)/test_meter
 ifeq ($(WITH_SNDFILE),1)
@@ -95,22 +114,28 @@ check-sndfile:
 	@printf '#include <sndfile.h>\nint main(void) { return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/check-sndfile -lsndfile >/dev/null 2>&1 || { printf 'error: missing libsndfile development package/library. Install libsndfile (for example libsndfile1-dev, libsndfile-devel, or libsndfile).\n'; exit 1; }
 	@rm -f $(BUILD_DIR)/check-sndfile
 
-$(APP_OBJ_DIR)/src/%.o: src/%.c | $(SNDFILE_ORDER)
+check-portaudio:
+	@mkdir -p $(BUILD_DIR)
+	@printf '#include <portaudio.h>\nint main(void) { return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/check-portaudio -lportaudio >/dev/null 2>&1 || { printf 'error: missing PortAudio development package/library. Install PortAudio (for example portaudio19-dev, portaudio-devel, or portaudio).\n'; exit 1; }
+	@rm -f $(BUILD_DIR)/check-portaudio
+
+$(APP_OBJ_DIR)/src/%.o: src/%.c | $(BACKEND_ORDER)
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
-$(TEST_OBJ_DIR)/src/%.o: src/%.c | $(SNDFILE_ORDER)
+$(TEST_OBJ_DIR)/src/%.o: src/%.c | $(BACKEND_ORDER)
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
-$(TEST_OBJ_DIR)/tests/%.o: tests/%.c | $(SNDFILE_ORDER)
+$(TEST_OBJ_DIR)/tests/%.o: tests/%.c | $(BACKEND_ORDER)
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -f carrierpress libcarrierpress.a src/*.o tests/*.o
-	rm -f tests/test_agc tests/test_dc_blocker tests/test_limiter tests/test_meter
+	rm -f tests/test_agc tests/test_audio tests/test_dc_blocker
+	rm -f tests/test_limiter tests/test_meter
 	rm -f tests/test_wav tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all check-sndfile clean test
+.PHONY: all check-portaudio check-sndfile clean test
