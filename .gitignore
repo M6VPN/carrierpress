@@ -3,8 +3,12 @@
 
 *.a
 *.o
+build/
 carrierpress
 tests/test_agc
 tests/test_dc_blocker
 tests/test_limiter
 tests/test_meter
+tests/test_wav
+tests/wav_input.wav
+tests/wav_output.wav

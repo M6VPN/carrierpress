@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "carrierpress.h"
+#include "cp_wav.h"
 
 #define CP_SELF_TEST_BLOCK	128
 #define CP_SELF_TEST_FRAMES	4800
@@ -15,18 +16,72 @@
 #define CP_SELF_TEST_TONE	1000.0f
 #define CP_SELF_TEST_LEVEL	0.30f
 #define CP_TWO_PI		6.28318530717958647692f
+#define CP_WAV_BLOCK_FRAMES	512
 
+static int	run_wav_process(const char *, const char *);
 static int	run_self_test(void);
 static void	usage(const char *);
 
 int
 main(int argc, char *argv[])
 {
+	const char *input_path;
+	const char *output_path;
+	int arg;
+
 	if (argc == 2 && strcmp(argv[1], "--self-test") == 0)
 		return run_self_test();
 
+	input_path  = NULL;
+	output_path = NULL;
+
+	for (arg = 1; arg < argc; arg++) {
+		if (strcmp(argv[arg], "--input") == 0 && arg + 1 < argc) {
+			input_path = argv[++arg];
+		} else if (strcmp(argv[arg], "--output") == 0 &&
+		    arg + 1 < argc) {
+			output_path = argv[++arg];
+		} else {
+			usage(argv[0]);
+			return 1;
+		}
+	}
+
+	if (input_path != NULL || output_path != NULL) {
+		if (input_path == NULL || output_path == NULL) {
+			usage(argv[0]);
+			return 1;
+		}
+
+		return run_wav_process(input_path, output_path);
+	}
+
 	usage(argv[0]);
 	return 1;
+}
+
+static int
+run_wav_process(const char *input_path, const char *output_path)
+{
+#ifdef CP_WITH_SNDFILE
+	int status;
+
+	status = cp_wav_process_file(input_path, output_path,
+	    CP_WAV_BLOCK_FRAMES);
+	if (status != CP_WAV_OK) {
+		printf("carrierpress: WAV processing failed: %s\n",
+		    cp_wav_status_string(status));
+		return 1;
+	}
+
+	return 0;
+#else
+	(void)input_path;
+	(void)output_path;
+
+	printf("WAV support not enabled. Rebuild with WITH_SNDFILE=1.\n");
+	return 1;
+#endif
 }
 
 static int
@@ -88,4 +143,5 @@ static void
 usage(const char *program)
 {
 	printf("usage: %s --self-test\n", program);
+	printf("usage: %s --input input.wav --output output.wav\n", program);
 }

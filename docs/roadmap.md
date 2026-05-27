@@ -6,7 +6,7 @@ Create the portable C17 DSP core, public headers, block API, CLI self-test, and 
 
 ## M1 offline WAV processing
 
-Add optional offline WAV input and output. The core must still build without libsndfile or other WAV dependencies.
+Partially implemented. Optional libsndfile support can process mono and stereo WAV files in fixed-size blocks while preserving sample rate and channel count. The core still builds without libsndfile.
 
 ## M2 live PortAudio backend
 
