@@ -20,6 +20,9 @@ cp_audio_default_config(struct cp_audio_config *config)
 	config->hum_base_frequency = CP_DEHUMMER_DEFAULT_BASE_HZ;
 	config->hum_harmonic_count = CP_DEHUMMER_DEFAULT_HARMONICS;
 	config->hum_q_factor      = CP_DEHUMMER_DEFAULT_Q;
+	config->multiband_enabled = CP_MULTIBAND_DEFAULT_ENABLED;
+	config->multiband_band_count = CP_MULTIBAND_DEFAULT_BANDS;
+	config->multiband_preset  = CP_MULTIBAND_PRESET_SPEECH;
 }
 
 const char *
@@ -42,6 +45,8 @@ cp_audio_status_string(int status)
 		return "invalid meter interval";
 	case CP_AUDIO_ERR_HUM:
 		return "invalid dehummer settings";
+	case CP_AUDIO_ERR_MB:
+		return "invalid multiband settings";
 	default:
 		return "unknown audio error";
 	}
@@ -80,6 +85,12 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 	    (cp_sample_t)config->hum_harmonic_count) >=
 	    (cp_sample_t)(config->sample_rate * 0.5))
 		return CP_AUDIO_ERR_HUM;
+	if (config->multiband_band_count < CP_MULTIBAND_MIN_BANDS ||
+	    config->multiband_band_count > CP_MULTIBAND_M5_MAX_BANDS)
+		return CP_AUDIO_ERR_MB;
+	if (config->multiband_preset != CP_MULTIBAND_PRESET_SPEECH &&
+	    config->multiband_preset != CP_MULTIBAND_PRESET_MUSIC)
+		return CP_AUDIO_ERR_MB;
 
 	return CP_AUDIO_OK;
 }

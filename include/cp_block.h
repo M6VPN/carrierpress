@@ -9,6 +9,7 @@
 #include "cp_dehummer.h"
 #include "cp_limiter.h"
 #include "cp_meter.h"
+#include "cp_multiband.h"
 #include "cp_types.h"
 
 struct cp_block_config {
@@ -32,6 +33,9 @@ struct cp_block_config {
 	cp_sample_t silence_threshold_db;
 	cp_sample_t max_gain_step_db;
 	cp_sample_t sample_rate;
+	int multiband_enabled;
+	size_t multiband_band_count;
+	enum cp_multiband_preset multiband_preset;
 	cp_sample_t limiter_ceiling;
 };
 
@@ -40,6 +44,7 @@ struct cp_block_processor {
 	struct cp_dc_blocker dc_blocker;
 	struct cp_dehummer dehummer;
 	struct cp_agc agc;
+	struct cp_multiband multiband;
 	struct cp_limiter limiter;
 	struct cp_meter input_meter;
 	struct cp_meter output_meter;

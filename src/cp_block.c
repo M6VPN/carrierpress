@@ -33,6 +33,9 @@ cp_block_default_config(struct cp_block_config *config, size_t channels)
 	config->silence_threshold_db = CP_AGC_DEFAULT_SILENCE_DB;
 	config->max_gain_step_db = CP_AGC_DEFAULT_MAX_STEP_DB;
 	config->sample_rate     = CP_AGC_DEFAULT_SAMPLE_RATE;
+	config->multiband_enabled = CP_MULTIBAND_DEFAULT_ENABLED;
+	config->multiband_band_count = CP_MULTIBAND_DEFAULT_BANDS;
+	config->multiband_preset = CP_MULTIBAND_PRESET_SPEECH;
 	config->limiter_ceiling = CP_DEFAULT_CEILING;
 }
 
@@ -42,6 +45,7 @@ cp_block_init(struct cp_block_processor *processor,
 {
 	struct cp_agc_config agc_config;
 	struct cp_dehummer_config dehummer_config;
+	struct cp_multiband_config multiband_config;
 	int status;
 
 	if (processor == NULL || config == NULL)
@@ -83,6 +87,17 @@ cp_block_init(struct cp_block_processor *processor,
 
 	status = cp_agc_init_config(&processor->agc, config->channels,
 	    &agc_config);
+	if (status != CP_OK)
+		return status;
+
+	cp_multiband_default_config(&multiband_config);
+	multiband_config.channels   = config->channels;
+	multiband_config.sample_rate = config->sample_rate;
+	multiband_config.enabled    = config->multiband_enabled;
+	multiband_config.band_count = config->multiband_band_count;
+	multiband_config.preset     = config->multiband_preset;
+
+	status = cp_multiband_init(&processor->multiband, &multiband_config);
 	if (status != CP_OK)
 		return status;
 
@@ -139,6 +154,11 @@ cp_block_process(struct cp_block_processor *processor,
 	if (status != CP_OK)
 		return status;
 
+	status = cp_multiband_process(&processor->multiband, output, output,
+	    frames);
+	if (status != CP_OK)
+		return status;
+
 	status = cp_limiter_process(&processor->limiter, output, output,
 	    frames);
 	if (status != CP_OK)
@@ -167,6 +187,10 @@ cp_block_reset(struct cp_block_processor *processor)
 		return status;
 
 	status = cp_agc_reset(&processor->agc);
+	if (status != CP_OK)
+		return status;
+
+	status = cp_multiband_reset(&processor->multiband);
 	if (status != CP_OK)
 		return status;
 

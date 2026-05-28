@@ -61,6 +61,54 @@ cp_biquad_notch(struct cp_biquad_coeff *coeff, cp_sample_t sample_rate,
 	return CP_OK;
 }
 
+int
+cp_biquad_lowpass(struct cp_biquad_coeff *coeff, cp_sample_t sample_rate,
+	cp_sample_t frequency, cp_sample_t q_factor)
+{
+	cp_sample_t a0;
+	cp_sample_t alpha;
+	cp_sample_t cos_w0;
+	cp_sample_t sin_w0;
+	cp_sample_t w0;
+
+	if (coeff == NULL)
+		return CP_ERR_NULL;
+	if (!isfinite(sample_rate) || !isfinite(frequency) ||
+	    !isfinite(q_factor))
+		return CP_ERR_RANGE;
+	if (sample_rate <= 0.0f || frequency <= 0.0f ||
+	    frequency >= (sample_rate * 0.5f))
+		return CP_ERR_RANGE;
+	if (q_factor < CP_BIQUAD_MIN_Q || q_factor > CP_BIQUAD_MAX_Q)
+		return CP_ERR_RANGE;
+
+	/*
+	 * RBJ low-pass filter. M5 cascades two identical 2nd-order sections
+	 * per crossover point for a conservative 4th-order slope.
+	 */
+	w0     = (CP_BIQUAD_TWO_PI * frequency) / sample_rate;
+	sin_w0 = sinf(w0);
+	cos_w0 = cosf(w0);
+	alpha  = sin_w0 / (2.0f * q_factor);
+	a0     = 1.0f + alpha;
+
+	if (!isfinite(a0) || a0 <= 0.0f)
+		return CP_ERR_RANGE;
+
+	coeff->b0 = ((1.0f - cos_w0) * 0.5f) / a0;
+	coeff->b1 = (1.0f - cos_w0) / a0;
+	coeff->b2 = ((1.0f - cos_w0) * 0.5f) / a0;
+	coeff->a1 = (-2.0f * cos_w0) / a0;
+	coeff->a2 = (1.0f - alpha) / a0;
+
+	if (!isfinite(coeff->b0) || !isfinite(coeff->b1) ||
+	    !isfinite(coeff->b2) || !isfinite(coeff->a1) ||
+	    !isfinite(coeff->a2))
+		return CP_ERR_RANGE;
+
+	return CP_OK;
+}
+
 cp_sample_t
 cp_biquad_process_sample(const struct cp_biquad_coeff *coeff,
 	struct cp_biquad_state *state, cp_sample_t input)

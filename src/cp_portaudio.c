@@ -263,6 +263,9 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	block_config.hum_base_frequency = config->hum_base_frequency;
 	block_config.hum_harmonic_count = config->hum_harmonic_count;
 	block_config.hum_q_factor = config->hum_q_factor;
+	block_config.multiband_enabled = config->multiband_enabled;
+	block_config.multiband_band_count = config->multiband_band_count;
+	block_config.multiband_preset = config->multiband_preset;
 	status = cp_block_init(&runtime->processor, &block_config);
 	if (status != CP_OK) {
 		free(runtime->scratch);

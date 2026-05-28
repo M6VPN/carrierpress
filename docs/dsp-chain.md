@@ -20,21 +20,28 @@ AM or SSB output shaping
 output
 ```
 
-v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, first multiband compressor scaffold, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
 
-## M4 Dehummer Behavior
+## M5 Multiband Behavior
 
-The active M4 chain is:
+The active M5 chain is:
 
 ```text
 input
 DC blocker
 dehummer
 AGC
+multiband compressor 1
 limiter
 meter
 output
 ```
+
+The first multiband stage is disabled by default. When enabled, it sits after AGC so the band compressors see a more stable input level, then the final limiter catches recombined peaks. M5 supports 2 to 4 bands now. The data structures are sized for a later 2 to 9 band design.
+
+The crossover scaffold uses cascaded 2nd-order low-pass filters and subtractive band creation. This is stable and bounded for the current tests, but it is not a final Linkwitz-Riley implementation. Per-band compression is conservative and exposes per-band RMS, peak, and gain-reduction meters.
+
+## M4 Dehummer Behavior
 
 The dehummer uses cascaded fixed-frequency biquad notch filters for 50 Hz or 60 Hz mains hum and configured harmonics. It is disabled by default. Hum reduction before AGC is important because otherwise the AGC detector can treat steady hum as program energy and ride gain around the interference.
 

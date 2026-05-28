@@ -4,6 +4,7 @@
 #ifndef CP_AUDIO_H
 #define CP_AUDIO_H
 
+#include "cp_multiband.h"
 #include "cp_types.h"
 
 #define CP_AUDIO_DEFAULT_DEVICE		(-1)
@@ -26,7 +27,8 @@ enum cp_audio_status {
 	CP_AUDIO_ERR_CHANNEL = -203,
 	CP_AUDIO_ERR_BLOCK   = -204,
 	CP_AUDIO_ERR_METER   = -205,
-	CP_AUDIO_ERR_HUM     = -206
+	CP_AUDIO_ERR_HUM     = -206,
+	CP_AUDIO_ERR_MB      = -207
 };
 
 struct cp_audio_config {
@@ -40,6 +42,9 @@ struct cp_audio_config {
 	cp_sample_t hum_base_frequency;
 	size_t hum_harmonic_count;
 	cp_sample_t hum_q_factor;
+	int multiband_enabled;
+	size_t multiband_band_count;
+	enum cp_multiband_preset multiband_preset;
 };
 
 void		cp_audio_default_config(struct cp_audio_config *);

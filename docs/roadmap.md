@@ -22,7 +22,7 @@ Partially implemented. CarrierPress now has an optional fixed-frequency dehummer
 
 ## M5 multiband compressor
 
-Add crossover design, per-band dynamics, meters, and limiter interaction.
+Partially implemented. CarrierPress now has an optional first multiband compressor scaffold with 2 to 4 active bands, speech and music starting presets, per-band RMS/peak/gain-reduction meters, and recombination before the final limiter. The structs are sized for later 2 to 9 band support, but only 2 to 4 bands are accepted in M5.
 
 ## M6 AM chain
 

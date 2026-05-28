@@ -21,6 +21,8 @@ struct cp_biquad_state {
 
 int		cp_biquad_notch(struct cp_biquad_coeff *, cp_sample_t,
 		    cp_sample_t, cp_sample_t);
+int		cp_biquad_lowpass(struct cp_biquad_coeff *, cp_sample_t,
+		    cp_sample_t, cp_sample_t);
 cp_sample_t	cp_biquad_process_sample(const struct cp_biquad_coeff *,
 		    struct cp_biquad_state *, cp_sample_t);
 int		cp_biquad_reset(struct cp_biquad_state *);

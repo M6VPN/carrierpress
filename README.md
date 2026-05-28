@@ -1,6 +1,6 @@
 # CarrierPress
 
-CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.1 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, and a safe peak limiter.
+CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.1 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, an optional dehummer, a simple optional multiband compressor foundation, and a safe peak limiter.
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
@@ -84,6 +84,12 @@ Run the same self-test with the dehummer enabled:
 ./carrierpress --self-test --dehummer --hum-frequency 50 --hum-harmonics 4
 ```
 
+Run the self-test with the M5 multiband compressor enabled:
+
+```sh
+./carrierpress --self-test --multiband --multiband-bands 3 --multiband-preset speech
+```
+
 Process a mono or stereo WAV file through the current chain:
 
 ```sh
@@ -130,6 +136,12 @@ Run live processing with conservative 50 Hz dehumming:
 
 ```sh
 ./carrierpress --live --dehummer --hum-frequency 50 --hum-harmonics 4 --hum-q 35
+```
+
+Run live processing with the simple speech multiband preset:
+
+```sh
+./carrierpress --live --multiband --multiband-bands 3 --multiband-preset speech
 ```
 
 Print meters once per second:
@@ -206,6 +218,19 @@ The M4 dehummer is an optional fixed-frequency hum reducer placed after the DC b
 Use `--hum-frequency 50` in regions with 50 Hz mains power, and `--hum-frequency 60` in regions with 60 Hz mains power. `--hum-harmonics N` adds matching notches at integer multiples of the base frequency, for example 50, 100, 150, and 200 Hz when `N` is 4.
 
 `--hum-q Q` controls notch width. Higher Q values are narrower and usually safer for program audio. Lower Q values remove a wider band but can damage nearby wanted low-frequency content. CarrierPress defaults to conservative narrow notches and does not claim to remove all noise or provide forensic-quality restoration.
+
+## Multiband
+
+The M5 multiband mode is an optional first compressor foundation. It splits mono or stereo audio into 2 to 4 bands, applies simple linked per-band compression, meters each band, and recombines before the final limiter. The structs are sized so 2 to 9 bands can be added later, but v0.1 accepts only 2, 3, or 4 active bands.
+
+Enable it with `--multiband`. The `speech` preset uses slightly stronger conservative compression for spoken audio. The `music` preset uses gentler ratios and slower timing. These are practical starting points, not final AM or SSB broadcast presets.
+
+```sh
+./carrierpress --input input.wav --output output.wav --multiband --multiband-bands 2 --multiband-preset speech
+./carrierpress --input input.wav --output output.wav --multiband --multiband-bands 3 --multiband-preset music
+```
+
+M5 uses cascaded 2nd-order low-pass sections with subtractive band creation for the crossover scaffold. It is bounded and deterministic, but it is not final broadcast processing.
 
 | Area       | v0.1 status                          |
 | ---------- | ------------------------------------ |

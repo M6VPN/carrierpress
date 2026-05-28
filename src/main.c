@@ -30,6 +30,8 @@ static void	handle_signal(int);
 #endif
 static int	parse_double_arg(const char *, double *);
 static int	parse_int_arg(const char *, int *);
+static int	parse_multiband_preset(const char *,
+		    enum cp_multiband_preset *);
 static int	parse_size_arg(const char *, size_t *);
 static int	parse_uint_arg(const char *, unsigned int *);
 static int	run_list_devices(void);
@@ -141,6 +143,26 @@ main(int argc, char *argv[])
 			}
 			block_config.hum_q_factor = (cp_sample_t)parsed_double;
 			audio_config.hum_q_factor = (cp_sample_t)parsed_double;
+		} else if (strcmp(argv[arg], "--multiband") == 0) {
+			block_config.multiband_enabled = 1;
+			audio_config.multiband_enabled = 1;
+		} else if (strcmp(argv[arg], "--multiband-bands") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_size_arg(argv[++arg], &parsed_size)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.multiband_band_count = parsed_size;
+			audio_config.multiband_band_count = parsed_size;
+		} else if (strcmp(argv[arg], "--multiband-preset") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_multiband_preset(argv[++arg],
+			    &block_config.multiband_preset)) {
+				usage(argv[0]);
+				return 1;
+			}
+			audio_config.multiband_preset =
+			    block_config.multiband_preset;
 		} else {
 			usage(argv[0]);
 			return 1;
@@ -234,6 +256,23 @@ parse_int_arg(const char *text, int *value)
 
 	*value = (int)parsed;
 	return 1;
+}
+
+static int
+parse_multiband_preset(const char *text, enum cp_multiband_preset *preset)
+{
+	if (text == NULL || preset == NULL)
+		return 0;
+	if (strcmp(text, "speech") == 0) {
+		*preset = CP_MULTIBAND_PRESET_SPEECH;
+		return 1;
+	}
+	if (strcmp(text, "music") == 0) {
+		*preset = CP_MULTIBAND_PRESET_MUSIC;
+		return 1;
+	}
+
+	return 0;
 }
 
 static int
@@ -371,6 +410,7 @@ run_self_test(const struct cp_block_config *self_config)
 	cp_sample_t phase;
 	cp_sample_t step;
 	size_t block_frames;
+	size_t band;
 	size_t frame;
 	size_t offset;
 	int status;
@@ -415,6 +455,15 @@ run_self_test(const struct cp_block_config *self_config)
 	    config.dehummer_enabled ? "on" : "off",
 	    config.hum_base_frequency, config.hum_harmonic_count,
 	    config.hum_q_factor);
+	printf("multiband=%s bands=%zu preset=%s\n",
+	    config.multiband_enabled ? "on" : "off",
+	    processor.multiband.band_count,
+	    cp_multiband_preset_string(processor.multiband.config.preset));
+	for (band = 0; band < processor.multiband.band_count; band++) {
+		printf("band%zu_rms=%0.6f band%zu_gr_db=%0.2f\n", band + 1,
+		    processor.multiband.band_rms[band], band + 1,
+		    processor.multiband.band_gain_reduction_db[band]);
+	}
 	printf("input_peak=%0.6f input_rms=%0.6f\n",
 	    processor.input_meter.peak[0], processor.input_meter.rms[0]);
 	printf("output_peak=%0.6f output_rms=%0.6f gain=%0.6f "
@@ -441,4 +490,6 @@ usage(const char *program)
 	printf("usage: %s --live --meter-interval-ms 1000\n", program);
 	printf("dehummer options: --dehummer --hum-frequency 50|60 "
 	    "--hum-harmonics N --hum-q Q\n");
+	printf("multiband options: --multiband --multiband-bands 2|3|4 "
+	    "--multiband-preset speech|music\n");
 }

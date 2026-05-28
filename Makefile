@@ -20,10 +20,13 @@ CORE_SRCS = \
 	src/cp_audio.c \
 	src/cp_biquad.c \
 	src/cp_block.c \
+	src/cp_compressor.c \
+	src/cp_crossover.c \
 	src/cp_dc_blocker.c \
 	src/cp_dehummer.c \
 	src/cp_limiter.c \
-	src/cp_meter.c
+	src/cp_meter.c \
+	src/cp_multiband.c
 
 APP_SRCS = src/main.c
 
@@ -31,10 +34,13 @@ TEST_SRCS = \
 	tests/test_agc.c \
 	tests/test_audio.c \
 	tests/test_biquad.c \
+	tests/test_compressor.c \
+	tests/test_crossover.c \
 	tests/test_dc_blocker.c \
 	tests/test_dehummer.c \
 	tests/test_limiter.c \
-	tests/test_meter.c
+	tests/test_meter.c \
+	tests/test_multiband.c
 
 ifeq ($(WITH_SNDFILE),1)
 FEATURE_DIR := $(FEATURE_DIR)-sndfile
@@ -64,10 +70,13 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_agc \
 	$(TEST_BIN_DIR)/test_audio \
 	$(TEST_BIN_DIR)/test_biquad \
+	$(TEST_BIN_DIR)/test_compressor \
+	$(TEST_BIN_DIR)/test_crossover \
 	$(TEST_BIN_DIR)/test_dc_blocker \
 	$(TEST_BIN_DIR)/test_dehummer \
 	$(TEST_BIN_DIR)/test_limiter \
-	$(TEST_BIN_DIR)/test_meter
+	$(TEST_BIN_DIR)/test_meter \
+	$(TEST_BIN_DIR)/test_multiband
 
 ifeq ($(WITH_SNDFILE),1)
 TEST_BINS += $(TEST_BIN_DIR)/test_wav
@@ -93,6 +102,14 @@ $(TEST_BIN_DIR)/test_biquad: $(TEST_OBJ_DIR)/tests/test_biquad.o $(TEST_CORE_OBJ
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_biquad.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_compressor: $(TEST_OBJ_DIR)/tests/test_compressor.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_compressor.o $(TEST_CORE_OBJS) $(LDLIBS)
+
+$(TEST_BIN_DIR)/test_crossover: $(TEST_OBJ_DIR)/tests/test_crossover.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_crossover.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_dc_blocker: $(TEST_OBJ_DIR)/tests/test_dc_blocker.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_dc_blocker.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -109,6 +126,10 @@ $(TEST_BIN_DIR)/test_meter: $(TEST_OBJ_DIR)/tests/test_meter.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_meter.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_multiband: $(TEST_OBJ_DIR)/tests/test_multiband.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_multiband.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_wav: $(TEST_OBJ_DIR)/tests/test_wav.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_wav.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -118,9 +139,12 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_agc
 	./$(TEST_BIN_DIR)/test_audio
 	./$(TEST_BIN_DIR)/test_biquad
+	./$(TEST_BIN_DIR)/test_compressor
+	./$(TEST_BIN_DIR)/test_crossover
 	./$(TEST_BIN_DIR)/test_dehummer
 	./$(TEST_BIN_DIR)/test_limiter
 	./$(TEST_BIN_DIR)/test_meter
+	./$(TEST_BIN_DIR)/test_multiband
 ifeq ($(WITH_SNDFILE),1)
 	./$(TEST_BIN_DIR)/test_wav
 endif
@@ -151,8 +175,10 @@ clean:
 	rm -rf $(BUILD_DIR)
 	rm -f carrierpress libcarrierpress.a src/*.o tests/*.o
 	rm -f tests/test_agc tests/test_audio tests/test_biquad
+	rm -f tests/test_compressor tests/test_crossover
 	rm -f tests/test_dc_blocker tests/test_dehummer
 	rm -f tests/test_limiter tests/test_meter
+	rm -f tests/test_multiband
 	rm -f tests/test_wav tests/wav_input.wav tests/wav_output.wav
 
 .PHONY: all check-portaudio check-sndfile clean test

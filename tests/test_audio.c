@@ -52,5 +52,12 @@ main(void)
 		return 1;
 	}
 
+	cp_audio_default_config(&config);
+	config.multiband_band_count = CP_MULTIBAND_M5_MAX_BANDS + 1;
+	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_MB) {
+		printf("test_audio: invalid multiband band count accepted\n");
+		return 1;
+	}
+
 	return 0;
 }
