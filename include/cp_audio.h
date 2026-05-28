@@ -25,7 +25,8 @@ enum cp_audio_status {
 	CP_AUDIO_ERR_RATE    = -202,
 	CP_AUDIO_ERR_CHANNEL = -203,
 	CP_AUDIO_ERR_BLOCK   = -204,
-	CP_AUDIO_ERR_METER   = -205
+	CP_AUDIO_ERR_METER   = -205,
+	CP_AUDIO_ERR_HUM     = -206
 };
 
 struct cp_audio_config {
@@ -35,6 +36,10 @@ struct cp_audio_config {
 	size_t channels;
 	size_t block_size;
 	unsigned int meter_interval_ms;
+	int dehummer_enabled;
+	cp_sample_t hum_base_frequency;
+	size_t hum_harmonic_count;
+	cp_sample_t hum_q_factor;
 };
 
 void		cp_audio_default_config(struct cp_audio_config *);

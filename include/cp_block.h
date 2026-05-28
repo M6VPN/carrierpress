@@ -6,6 +6,7 @@
 
 #include "cp_agc.h"
 #include "cp_dc_blocker.h"
+#include "cp_dehummer.h"
 #include "cp_limiter.h"
 #include "cp_meter.h"
 #include "cp_types.h"
@@ -13,6 +14,10 @@
 struct cp_block_config {
 	size_t channels;
 	cp_sample_t dc_coefficient;
+	int dehummer_enabled;
+	cp_sample_t hum_base_frequency;
+	size_t hum_harmonic_count;
+	cp_sample_t hum_q_factor;
 	cp_sample_t target_rms;
 	cp_sample_t min_gain;
 	cp_sample_t max_gain;
@@ -33,6 +38,7 @@ struct cp_block_config {
 struct cp_block_processor {
 	size_t channels;
 	struct cp_dc_blocker dc_blocker;
+	struct cp_dehummer dehummer;
 	struct cp_agc agc;
 	struct cp_limiter limiter;
 	struct cp_meter input_meter;

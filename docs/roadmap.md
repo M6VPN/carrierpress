@@ -18,7 +18,7 @@ Implemented as a gated single-band input gain rider. It supports target RMS, min
 
 ## M4 dehummer
 
-Research and add hum detection and reduction suitable for speech and program audio.
+Partially implemented. CarrierPress now has an optional fixed-frequency dehummer using cascaded biquad notches for 50 Hz or 60 Hz mains hum and configured harmonics. It is conservative, disabled by default, and does not claim to remove all noise.
 
 ## M5 multiband compressor
 

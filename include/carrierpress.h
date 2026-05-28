@@ -6,8 +6,10 @@
 
 #include "cp_agc.h"
 #include "cp_audio.h"
+#include "cp_biquad.h"
 #include "cp_block.h"
 #include "cp_dc_blocker.h"
+#include "cp_dehummer.h"
 #include "cp_limiter.h"
 #include "cp_meter.h"
 #include "cp_types.h"

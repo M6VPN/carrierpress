@@ -34,8 +34,9 @@ static int	parse_size_arg(const char *, size_t *);
 static int	parse_uint_arg(const char *, unsigned int *);
 static int	run_list_devices(void);
 static int	run_live_audio(const struct cp_audio_config *);
-static int	run_wav_process(const char *, const char *);
-static int	run_self_test(void);
+static int	run_wav_process(const char *, const char *,
+		    const struct cp_block_config *);
+static int	run_self_test(const struct cp_block_config *);
 static void	usage(const char *);
 
 int
@@ -44,21 +45,27 @@ main(int argc, char *argv[])
 	const char *input_path;
 	const char *output_path;
 	struct cp_audio_config audio_config;
+	struct cp_block_config block_config;
+	double parsed_double;
+	size_t parsed_size;
 	int arg;
 	int live_mode;
 	int list_devices;
-
-	if (argc == 2 && strcmp(argv[1], "--self-test") == 0)
-		return run_self_test();
+	int self_test_mode;
 
 	input_path   = NULL;
 	output_path  = NULL;
 	live_mode    = 0;
 	list_devices = 0;
+	self_test_mode = 0;
 	cp_audio_default_config(&audio_config);
+	cp_block_default_config(&block_config, CP_CHANNELS_MONO);
+	block_config.sample_rate = CP_SELF_TEST_RATE;
 
 	for (arg = 1; arg < argc; arg++) {
-		if (strcmp(argv[arg], "--input") == 0 && arg + 1 < argc) {
+		if (strcmp(argv[arg], "--self-test") == 0) {
+			self_test_mode = 1;
+		} else if (strcmp(argv[arg], "--input") == 0 && arg + 1 < argc) {
 			input_path = argv[++arg];
 		} else if (strcmp(argv[arg], "--output") == 0 &&
 		    arg + 1 < argc) {
@@ -107,10 +114,47 @@ main(int argc, char *argv[])
 				usage(argv[0]);
 				return 1;
 			}
+		} else if (strcmp(argv[arg], "--dehummer") == 0) {
+			block_config.dehummer_enabled = 1;
+			audio_config.dehummer_enabled = 1;
+		} else if (strcmp(argv[arg], "--hum-frequency") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.hum_base_frequency = (cp_sample_t)parsed_double;
+			audio_config.hum_base_frequency = (cp_sample_t)parsed_double;
+		} else if (strcmp(argv[arg], "--hum-harmonics") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_size_arg(argv[++arg], &parsed_size)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.hum_harmonic_count = parsed_size;
+			audio_config.hum_harmonic_count = parsed_size;
+		} else if (strcmp(argv[arg], "--hum-q") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.hum_q_factor = (cp_sample_t)parsed_double;
+			audio_config.hum_q_factor = (cp_sample_t)parsed_double;
 		} else {
 			usage(argv[0]);
 			return 1;
 		}
+	}
+
+	if (self_test_mode) {
+		if (input_path != NULL || output_path != NULL || live_mode ||
+		    list_devices) {
+			usage(argv[0]);
+			return 1;
+		}
+
+		return run_self_test(&block_config);
 	}
 
 	if (input_path != NULL || output_path != NULL) {
@@ -123,7 +167,7 @@ main(int argc, char *argv[])
 			return 1;
 		}
 
-		return run_wav_process(input_path, output_path);
+		return run_wav_process(input_path, output_path, &block_config);
 	}
 
 	if (list_devices) {
@@ -291,13 +335,14 @@ run_live_audio(const struct cp_audio_config *config)
 }
 
 static int
-run_wav_process(const char *input_path, const char *output_path)
+run_wav_process(const char *input_path, const char *output_path,
+	const struct cp_block_config *config)
 {
 #ifdef CP_WITH_SNDFILE
 	int status;
 
-	status = cp_wav_process_file(input_path, output_path,
-	    CP_WAV_BLOCK_FRAMES);
+	status = cp_wav_process_file_config(input_path, output_path,
+	    CP_WAV_BLOCK_FRAMES, config);
 	if (status != CP_WAV_OK) {
 		printf("carrierpress: WAV processing failed: %s\n",
 		    cp_wav_status_string(status));
@@ -308,6 +353,7 @@ run_wav_process(const char *input_path, const char *output_path)
 #else
 	(void)input_path;
 	(void)output_path;
+	(void)config;
 
 	printf("WAV support not enabled. Rebuild with WITH_SNDFILE=1.\n");
 	return 1;
@@ -315,7 +361,7 @@ run_wav_process(const char *input_path, const char *output_path)
 }
 
 static int
-run_self_test(void)
+run_self_test(const struct cp_block_config *self_config)
 {
 	cp_sample_t input[CP_SELF_TEST_BLOCK];
 	cp_sample_t output[CP_SELF_TEST_BLOCK];
@@ -329,7 +375,12 @@ run_self_test(void)
 	size_t offset;
 	int status;
 
-	cp_block_default_config(&config, CP_CHANNELS_MONO);
+	if (self_config == NULL)
+		cp_block_default_config(&config, CP_CHANNELS_MONO);
+	else
+		config = *self_config;
+	config.channels = CP_CHANNELS_MONO;
+	config.sample_rate = CP_SELF_TEST_RATE;
 	status = cp_block_init(&processor, &config);
 	if (status != CP_OK) {
 		printf("carrierpress: init failed: %d\n", status);
@@ -360,6 +411,10 @@ run_self_test(void)
 	}
 
 	printf("CarrierPress self-test\n");
+	printf("dehummer=%s hum_frequency=%0.1f hum_harmonics=%zu hum_q=%0.1f\n",
+	    config.dehummer_enabled ? "on" : "off",
+	    config.hum_base_frequency, config.hum_harmonic_count,
+	    config.hum_q_factor);
 	printf("input_peak=%0.6f input_rms=%0.6f\n",
 	    processor.input_meter.peak[0], processor.input_meter.rms[0]);
 	printf("output_peak=%0.6f output_rms=%0.6f gain=%0.6f "
@@ -375,6 +430,8 @@ static void
 usage(const char *program)
 {
 	printf("usage: %s --self-test\n", program);
+	printf("usage: %s --self-test --dehummer --hum-frequency 50 "
+	    "--hum-harmonics 4\n", program);
 	printf("usage: %s --input input.wav --output output.wav\n", program);
 	printf("usage: %s --list-devices\n", program);
 	printf("usage: %s --live [--input-device N] [--output-device N]\n",
@@ -382,4 +439,6 @@ usage(const char *program)
 	printf("usage: %s --live --sample-rate 48000 --channels 2 "
 	    "--block-size 256\n", program);
 	printf("usage: %s --live --meter-interval-ms 1000\n", program);
+	printf("dehummer options: --dehummer --hum-frequency 50|60 "
+	    "--hum-harmonics N --hum-q Q\n");
 }

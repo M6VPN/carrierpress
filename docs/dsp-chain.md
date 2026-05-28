@@ -5,9 +5,9 @@ The intended final CarrierPress chain is:
 ```text
 input
 DC blocker
+dehummer
 declipper
 delossifier
-dehummer
 natural dynamics
 low-level boost
 AGC
@@ -20,7 +20,25 @@ AM or SSB output shaping
 output
 ```
 
-v0.1 implements only the portable skeleton pieces: DC blocker, meter, gated AGC, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+
+## M4 Dehummer Behavior
+
+The active M4 chain is:
+
+```text
+input
+DC blocker
+dehummer
+AGC
+limiter
+meter
+output
+```
+
+The dehummer uses cascaded fixed-frequency biquad notch filters for 50 Hz or 60 Hz mains hum and configured harmonics. It is disabled by default. Hum reduction before AGC is important because otherwise the AGC detector can treat steady hum as program energy and ride gain around the interference.
+
+Narrow notches are safer than aggressive wide filtering. The dehummer reduces steady hum tones and harmonics, but it does not remove all noise and is not forensic restoration.
 
 ## M3 AGC Behavior
 

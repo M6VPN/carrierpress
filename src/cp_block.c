@@ -15,6 +15,10 @@ cp_block_default_config(struct cp_block_config *config, size_t channels)
 
 	config->channels        = channels;
 	config->dc_coefficient  = CP_DEFAULT_DC_R;
+	config->dehummer_enabled = CP_DEHUMMER_DEFAULT_ENABLED;
+	config->hum_base_frequency = CP_DEHUMMER_DEFAULT_BASE_HZ;
+	config->hum_harmonic_count = CP_DEHUMMER_DEFAULT_HARMONICS;
+	config->hum_q_factor    = CP_DEHUMMER_DEFAULT_Q;
 	config->target_rms      = CP_DEFAULT_TARGET_RMS;
 	config->min_gain        = CP_AGC_DEFAULT_MIN_GAIN;
 	config->max_gain        = CP_DEFAULT_MAX_GAIN;
@@ -37,6 +41,7 @@ cp_block_init(struct cp_block_processor *processor,
 	const struct cp_block_config *config)
 {
 	struct cp_agc_config agc_config;
+	struct cp_dehummer_config dehummer_config;
 	int status;
 
 	if (processor == NULL || config == NULL)
@@ -49,6 +54,18 @@ cp_block_init(struct cp_block_processor *processor,
 
 	status = cp_dc_blocker_init(&processor->dc_blocker, config->channels,
 	    config->dc_coefficient);
+	if (status != CP_OK)
+		return status;
+
+	cp_dehummer_default_config(&dehummer_config);
+	dehummer_config.channel_count  = config->channels;
+	dehummer_config.sample_rate    = config->sample_rate;
+	dehummer_config.enabled        = config->dehummer_enabled;
+	dehummer_config.base_frequency = config->hum_base_frequency;
+	dehummer_config.harmonic_count = config->hum_harmonic_count;
+	dehummer_config.q_factor       = config->hum_q_factor;
+
+	status = cp_dehummer_init(&processor->dehummer, &dehummer_config);
 	if (status != CP_OK)
 		return status;
 
@@ -113,6 +130,11 @@ cp_block_process(struct cp_block_processor *processor,
 	if (status != CP_OK)
 		return status;
 
+	status = cp_dehummer_process(&processor->dehummer, scratch, scratch,
+	    frames);
+	if (status != CP_OK)
+		return status;
+
 	status = cp_agc_process(&processor->agc, scratch, output, frames);
 	if (status != CP_OK)
 		return status;
@@ -137,6 +159,10 @@ cp_block_reset(struct cp_block_processor *processor)
 		return CP_ERR_CHANNELS;
 
 	status = cp_dc_blocker_reset(&processor->dc_blocker);
+	if (status != CP_OK)
+		return status;
+
+	status = cp_dehummer_reset(&processor->dehummer);
 	if (status != CP_OK)
 		return status;
 

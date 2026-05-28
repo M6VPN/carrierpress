@@ -2,6 +2,7 @@
 /* carrierpress/src/cp_audio.c */
 
 #include "cp_audio.h"
+#include "cp_dehummer.h"
 
 void
 cp_audio_default_config(struct cp_audio_config *config)
@@ -15,6 +16,10 @@ cp_audio_default_config(struct cp_audio_config *config)
 	config->channels          = CP_AUDIO_DEFAULT_CHANNELS;
 	config->block_size        = CP_AUDIO_DEFAULT_BLOCK_SIZE;
 	config->meter_interval_ms = CP_AUDIO_DEFAULT_METER_MS;
+	config->dehummer_enabled  = CP_DEHUMMER_DEFAULT_ENABLED;
+	config->hum_base_frequency = CP_DEHUMMER_DEFAULT_BASE_HZ;
+	config->hum_harmonic_count = CP_DEHUMMER_DEFAULT_HARMONICS;
+	config->hum_q_factor      = CP_DEHUMMER_DEFAULT_Q;
 }
 
 const char *
@@ -35,6 +40,8 @@ cp_audio_status_string(int status)
 		return "invalid block size";
 	case CP_AUDIO_ERR_METER:
 		return "invalid meter interval";
+	case CP_AUDIO_ERR_HUM:
+		return "invalid dehummer settings";
 	default:
 		return "unknown audio error";
 	}
@@ -60,6 +67,19 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 	if (config->meter_interval_ms < CP_AUDIO_MIN_METER_MS ||
 	    config->meter_interval_ms > CP_AUDIO_MAX_METER_MS)
 		return CP_AUDIO_ERR_METER;
+	if (config->hum_base_frequency < CP_DEHUMMER_MIN_BASE_HZ ||
+	    config->hum_base_frequency > CP_DEHUMMER_MAX_BASE_HZ)
+		return CP_AUDIO_ERR_HUM;
+	if (config->hum_harmonic_count == 0 ||
+	    config->hum_harmonic_count > CP_DEHUMMER_MAX_HARMONICS)
+		return CP_AUDIO_ERR_HUM;
+	if (config->hum_q_factor < CP_DEHUMMER_MIN_Q ||
+	    config->hum_q_factor > CP_DEHUMMER_MAX_Q)
+		return CP_AUDIO_ERR_HUM;
+	if ((config->hum_base_frequency *
+	    (cp_sample_t)config->hum_harmonic_count) >=
+	    (cp_sample_t)(config->sample_rate * 0.5))
+		return CP_AUDIO_ERR_HUM;
 
 	return CP_AUDIO_OK;
 }

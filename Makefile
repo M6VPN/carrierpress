@@ -18,8 +18,10 @@ TEST_BIN_DIR = $(BUILD_DIR)/tests
 CORE_SRCS = \
 	src/cp_agc.c \
 	src/cp_audio.c \
+	src/cp_biquad.c \
 	src/cp_block.c \
 	src/cp_dc_blocker.c \
+	src/cp_dehummer.c \
 	src/cp_limiter.c \
 	src/cp_meter.c
 
@@ -28,7 +30,9 @@ APP_SRCS = src/main.c
 TEST_SRCS = \
 	tests/test_agc.c \
 	tests/test_audio.c \
+	tests/test_biquad.c \
 	tests/test_dc_blocker.c \
+	tests/test_dehummer.c \
 	tests/test_limiter.c \
 	tests/test_meter.c
 
@@ -59,7 +63,9 @@ TEST_OBJS = $(TEST_SRCS:tests/%.c=$(TEST_OBJ_DIR)/tests/%.o)
 TEST_BINS = \
 	$(TEST_BIN_DIR)/test_agc \
 	$(TEST_BIN_DIR)/test_audio \
+	$(TEST_BIN_DIR)/test_biquad \
 	$(TEST_BIN_DIR)/test_dc_blocker \
+	$(TEST_BIN_DIR)/test_dehummer \
 	$(TEST_BIN_DIR)/test_limiter \
 	$(TEST_BIN_DIR)/test_meter
 
@@ -83,9 +89,17 @@ $(TEST_BIN_DIR)/test_audio: $(TEST_OBJ_DIR)/tests/test_audio.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_audio.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_biquad: $(TEST_OBJ_DIR)/tests/test_biquad.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_biquad.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_dc_blocker: $(TEST_OBJ_DIR)/tests/test_dc_blocker.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_dc_blocker.o $(TEST_CORE_OBJS) $(LDLIBS)
+
+$(TEST_BIN_DIR)/test_dehummer: $(TEST_OBJ_DIR)/tests/test_dehummer.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_dehummer.o $(TEST_CORE_OBJS) $(LDLIBS)
 
 $(TEST_BIN_DIR)/test_limiter: $(TEST_OBJ_DIR)/tests/test_limiter.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
@@ -103,6 +117,8 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_dc_blocker
 	./$(TEST_BIN_DIR)/test_agc
 	./$(TEST_BIN_DIR)/test_audio
+	./$(TEST_BIN_DIR)/test_biquad
+	./$(TEST_BIN_DIR)/test_dehummer
 	./$(TEST_BIN_DIR)/test_limiter
 	./$(TEST_BIN_DIR)/test_meter
 ifeq ($(WITH_SNDFILE),1)
@@ -134,7 +150,8 @@ $(TEST_OBJ_DIR)/tests/%.o: tests/%.c | $(BACKEND_ORDER)
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -f carrierpress libcarrierpress.a src/*.o tests/*.o
-	rm -f tests/test_agc tests/test_audio tests/test_dc_blocker
+	rm -f tests/test_agc tests/test_audio tests/test_biquad
+	rm -f tests/test_dc_blocker tests/test_dehummer
 	rm -f tests/test_limiter tests/test_meter
 	rm -f tests/test_wav tests/wav_input.wav tests/wav_output.wav
 

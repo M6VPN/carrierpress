@@ -78,10 +78,22 @@ Run the built-in synthetic tone through the v0.1 chain:
 
 The command prints input and output meter values plus AGC gain, gain dB, and gate state.
 
+Run the same self-test with the dehummer enabled:
+
+```sh
+./carrierpress --self-test --dehummer --hum-frequency 50 --hum-harmonics 4
+```
+
 Process a mono or stereo WAV file through the current chain:
 
 ```sh
 ./carrierpress --input input.wav --output output.wav
+```
+
+Process a WAV file with 60 Hz hum notches and four harmonics:
+
+```sh
+./carrierpress --input input.wav --output output.wav --dehummer --hum-frequency 60 --hum-harmonics 4
 ```
 
 WAV support requires a `WITH_SNDFILE=1` build. Without it, the command exits with:
@@ -112,6 +124,12 @@ Run live processing with explicit stream settings:
 
 ```sh
 ./carrierpress --live --sample-rate 48000 --channels 2 --block-size 256
+```
+
+Run live processing with conservative 50 Hz dehumming:
+
+```sh
+./carrierpress --live --dehummer --hum-frequency 50 --hum-harmonics 4 --hum-q 35
 ```
 
 Print meters once per second:
@@ -180,6 +198,14 @@ Practical starting points for later tuning:
 | AM speech            | 0.18       | 0.125    | 8.0      | 40        | 1200       | 5              | 200     | -50     | -75        | 5           |
 | SSB speech           | 0.16       | 0.125    | 10.0     | 30        | 900        | 4              | 150     | -55     | -78        | 6           |
 | Gentle file levelling | 0.18      | 0.25     | 4.0      | 120       | 2500       | 20             | 300     | -50     | -75        | 2           |
+
+## Dehummer
+
+The M4 dehummer is an optional fixed-frequency hum reducer placed after the DC blocker and before AGC. Removing steady mains hum before AGC keeps the gain rider from reacting to hum energy.
+
+Use `--hum-frequency 50` in regions with 50 Hz mains power, and `--hum-frequency 60` in regions with 60 Hz mains power. `--hum-harmonics N` adds matching notches at integer multiples of the base frequency, for example 50, 100, 150, and 200 Hz when `N` is 4.
+
+`--hum-q Q` controls notch width. Higher Q values are narrower and usually safer for program audio. Lower Q values remove a wider band but can damage nearby wanted low-frequency content. CarrierPress defaults to conservative narrow notches and does not claim to remove all noise or provide forensic-quality restoration.
 
 | Area       | v0.1 status                          |
 | ---------- | ------------------------------------ |

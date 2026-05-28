@@ -16,6 +16,14 @@ int
 cp_wav_process_file(const char *input_path, const char *output_path,
 	size_t block_frames)
 {
+	return cp_wav_process_file_config(input_path, output_path, block_frames,
+	    NULL);
+}
+
+int
+cp_wav_process_file_config(const char *input_path, const char *output_path,
+	size_t block_frames, const struct cp_block_config *block_config)
+{
 	SF_INFO input_info;
 	SF_INFO output_info;
 	SNDFILE *input_file;
@@ -68,7 +76,11 @@ cp_wav_process_file(const char *input_path, const char *output_path,
 		return CP_WAV_ERR_ALLOC;
 	}
 
-	cp_block_default_config(&config, channels);
+	if (block_config == NULL)
+		cp_block_default_config(&config, channels);
+	else
+		config = *block_config;
+	config.channels = channels;
 	config.sample_rate = (cp_sample_t)input_info.samplerate;
 	status = cp_block_init(&processor, &config);
 	if (status != CP_OK) {
