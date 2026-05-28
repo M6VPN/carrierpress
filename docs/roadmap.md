@@ -26,7 +26,7 @@ Partially implemented. CarrierPress now has an optional first multiband compress
 
 ## M6 AM chain
 
-Add AM-oriented shaping, bandwidth controls, and legal transmitter test-load workflows.
+Partially implemented. CarrierPress now has an optional AM output-chain foundation with high-pass and low-pass filtering, optional phase rotation, separate positive and negative peak control, explicit asymmetry config, and conservative AM presets. It is audio-chain processing only, not an RF exciter or certified compliance implementation.
 
 ## M7 SSB chain
 

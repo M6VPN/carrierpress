@@ -5,6 +5,7 @@
 #define CP_BLOCK_H
 
 #include "cp_agc.h"
+#include "cp_am.h"
 #include "cp_dc_blocker.h"
 #include "cp_dehummer.h"
 #include "cp_limiter.h"
@@ -36,6 +37,7 @@ struct cp_block_config {
 	int multiband_enabled;
 	size_t multiband_band_count;
 	enum cp_multiband_preset multiband_preset;
+	struct cp_am_config am_config;
 	cp_sample_t limiter_ceiling;
 };
 
@@ -45,6 +47,7 @@ struct cp_block_processor {
 	struct cp_dehummer dehummer;
 	struct cp_agc agc;
 	struct cp_multiband multiband;
+	struct cp_am am;
 	struct cp_limiter limiter;
 	struct cp_meter input_meter;
 	struct cp_meter output_meter;

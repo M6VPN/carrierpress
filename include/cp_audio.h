@@ -4,6 +4,7 @@
 #ifndef CP_AUDIO_H
 #define CP_AUDIO_H
 
+#include "cp_am.h"
 #include "cp_multiband.h"
 #include "cp_types.h"
 
@@ -28,7 +29,8 @@ enum cp_audio_status {
 	CP_AUDIO_ERR_BLOCK   = -204,
 	CP_AUDIO_ERR_METER   = -205,
 	CP_AUDIO_ERR_HUM     = -206,
-	CP_AUDIO_ERR_MB      = -207
+	CP_AUDIO_ERR_MB      = -207,
+	CP_AUDIO_ERR_AM      = -208
 };
 
 struct cp_audio_config {
@@ -45,6 +47,7 @@ struct cp_audio_config {
 	int multiband_enabled;
 	size_t multiband_band_count;
 	enum cp_multiband_preset multiband_preset;
+	struct cp_am_config am_config;
 };
 
 void		cp_audio_default_config(struct cp_audio_config *);

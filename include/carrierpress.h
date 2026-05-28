@@ -5,6 +5,7 @@
 #define CARRIERPRESS_H
 
 #include "cp_agc.h"
+#include "cp_am.h"
 #include "cp_audio.h"
 #include "cp_biquad.h"
 #include "cp_block.h"

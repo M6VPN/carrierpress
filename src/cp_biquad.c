@@ -11,6 +11,9 @@
 #define CP_BIQUAD_TWO_PI	(6.28318530717958647692f)
 
 static cp_sample_t	cp_biquad_clean(cp_sample_t);
+static int		cp_biquad_check_filter(const struct cp_biquad_coeff *);
+static int		cp_biquad_check_params(cp_sample_t, cp_sample_t,
+			    cp_sample_t);
 
 int
 cp_biquad_notch(struct cp_biquad_coeff *coeff, cp_sample_t sample_rate,
@@ -62,6 +65,72 @@ cp_biquad_notch(struct cp_biquad_coeff *coeff, cp_sample_t sample_rate,
 }
 
 int
+cp_biquad_highpass(struct cp_biquad_coeff *coeff, cp_sample_t sample_rate,
+	cp_sample_t frequency, cp_sample_t q_factor)
+{
+	cp_sample_t a0;
+	cp_sample_t alpha;
+	cp_sample_t cos_w0;
+	cp_sample_t sin_w0;
+	cp_sample_t w0;
+
+	if (coeff == NULL)
+		return CP_ERR_NULL;
+	if (cp_biquad_check_params(sample_rate, frequency, q_factor) != CP_OK)
+		return CP_ERR_RANGE;
+
+	w0     = (CP_BIQUAD_TWO_PI * frequency) / sample_rate;
+	sin_w0 = sinf(w0);
+	cos_w0 = cosf(w0);
+	alpha  = sin_w0 / (2.0f * q_factor);
+	a0     = 1.0f + alpha;
+
+	if (!isfinite(a0) || a0 <= 0.0f)
+		return CP_ERR_RANGE;
+
+	coeff->b0 = ((1.0f + cos_w0) * 0.5f) / a0;
+	coeff->b1 = -(1.0f + cos_w0) / a0;
+	coeff->b2 = ((1.0f + cos_w0) * 0.5f) / a0;
+	coeff->a1 = (-2.0f * cos_w0) / a0;
+	coeff->a2 = (1.0f - alpha) / a0;
+
+	return cp_biquad_check_filter(coeff);
+}
+
+int
+cp_biquad_allpass(struct cp_biquad_coeff *coeff, cp_sample_t sample_rate,
+	cp_sample_t frequency, cp_sample_t q_factor)
+{
+	cp_sample_t a0;
+	cp_sample_t alpha;
+	cp_sample_t cos_w0;
+	cp_sample_t sin_w0;
+	cp_sample_t w0;
+
+	if (coeff == NULL)
+		return CP_ERR_NULL;
+	if (cp_biquad_check_params(sample_rate, frequency, q_factor) != CP_OK)
+		return CP_ERR_RANGE;
+
+	w0     = (CP_BIQUAD_TWO_PI * frequency) / sample_rate;
+	sin_w0 = sinf(w0);
+	cos_w0 = cosf(w0);
+	alpha  = sin_w0 / (2.0f * q_factor);
+	a0     = 1.0f + alpha;
+
+	if (!isfinite(a0) || a0 <= 0.0f)
+		return CP_ERR_RANGE;
+
+	coeff->b0 = (1.0f - alpha) / a0;
+	coeff->b1 = (-2.0f * cos_w0) / a0;
+	coeff->b2 = 1.0f;
+	coeff->a1 = (-2.0f * cos_w0) / a0;
+	coeff->a2 = (1.0f - alpha) / a0;
+
+	return cp_biquad_check_filter(coeff);
+}
+
+int
 cp_biquad_lowpass(struct cp_biquad_coeff *coeff, cp_sample_t sample_rate,
 	cp_sample_t frequency, cp_sample_t q_factor)
 {
@@ -73,13 +142,7 @@ cp_biquad_lowpass(struct cp_biquad_coeff *coeff, cp_sample_t sample_rate,
 
 	if (coeff == NULL)
 		return CP_ERR_NULL;
-	if (!isfinite(sample_rate) || !isfinite(frequency) ||
-	    !isfinite(q_factor))
-		return CP_ERR_RANGE;
-	if (sample_rate <= 0.0f || frequency <= 0.0f ||
-	    frequency >= (sample_rate * 0.5f))
-		return CP_ERR_RANGE;
-	if (q_factor < CP_BIQUAD_MIN_Q || q_factor > CP_BIQUAD_MAX_Q)
+	if (cp_biquad_check_params(sample_rate, frequency, q_factor) != CP_OK)
 		return CP_ERR_RANGE;
 
 	/*
@@ -101,12 +164,7 @@ cp_biquad_lowpass(struct cp_biquad_coeff *coeff, cp_sample_t sample_rate,
 	coeff->a1 = (-2.0f * cos_w0) / a0;
 	coeff->a2 = (1.0f - alpha) / a0;
 
-	if (!isfinite(coeff->b0) || !isfinite(coeff->b1) ||
-	    !isfinite(coeff->b2) || !isfinite(coeff->a1) ||
-	    !isfinite(coeff->a2))
-		return CP_ERR_RANGE;
-
-	return CP_OK;
+	return cp_biquad_check_filter(coeff);
 }
 
 cp_sample_t
@@ -155,4 +213,33 @@ cp_biquad_clean(cp_sample_t sample)
 		return 0.0f;
 
 	return sample;
+}
+
+static int
+cp_biquad_check_filter(const struct cp_biquad_coeff *coeff)
+{
+	if (coeff == NULL)
+		return CP_ERR_NULL;
+	if (!isfinite(coeff->b0) || !isfinite(coeff->b1) ||
+	    !isfinite(coeff->b2) || !isfinite(coeff->a1) ||
+	    !isfinite(coeff->a2))
+		return CP_ERR_RANGE;
+
+	return CP_OK;
+}
+
+static int
+cp_biquad_check_params(cp_sample_t sample_rate, cp_sample_t frequency,
+	cp_sample_t q_factor)
+{
+	if (!isfinite(sample_rate) || !isfinite(frequency) ||
+	    !isfinite(q_factor))
+		return CP_ERR_RANGE;
+	if (sample_rate <= 0.0f || frequency <= 0.0f ||
+	    frequency >= (sample_rate * 0.5f))
+		return CP_ERR_RANGE;
+	if (q_factor < CP_BIQUAD_MIN_Q || q_factor > CP_BIQUAD_MAX_Q)
+		return CP_ERR_RANGE;
+
+	return CP_OK;
 }

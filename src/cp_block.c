@@ -36,6 +36,7 @@ cp_block_default_config(struct cp_block_config *config, size_t channels)
 	config->multiband_enabled = CP_MULTIBAND_DEFAULT_ENABLED;
 	config->multiband_band_count = CP_MULTIBAND_DEFAULT_BANDS;
 	config->multiband_preset = CP_MULTIBAND_PRESET_SPEECH;
+	cp_am_default_config(&config->am_config);
 	config->limiter_ceiling = CP_DEFAULT_CEILING;
 }
 
@@ -101,6 +102,13 @@ cp_block_init(struct cp_block_processor *processor,
 	if (status != CP_OK)
 		return status;
 
+	processor->am.config = config->am_config;
+	processor->am.config.channel_count = config->channels;
+	processor->am.config.sample_rate = config->sample_rate;
+	status = cp_am_init(&processor->am, &processor->am.config);
+	if (status != CP_OK)
+		return status;
+
 	status = cp_limiter_init(&processor->limiter, config->channels,
 	    config->limiter_ceiling);
 	if (status != CP_OK)
@@ -159,6 +167,10 @@ cp_block_process(struct cp_block_processor *processor,
 	if (status != CP_OK)
 		return status;
 
+	status = cp_am_process(&processor->am, output, output, frames);
+	if (status != CP_OK)
+		return status;
+
 	status = cp_limiter_process(&processor->limiter, output, output,
 	    frames);
 	if (status != CP_OK)
@@ -191,6 +203,10 @@ cp_block_reset(struct cp_block_processor *processor)
 		return status;
 
 	status = cp_multiband_reset(&processor->multiband);
+	if (status != CP_OK)
+		return status;
+
+	status = cp_am_reset(&processor->am);
 	if (status != CP_OK)
 		return status;
 

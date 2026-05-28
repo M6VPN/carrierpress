@@ -23,6 +23,9 @@ cp_audio_default_config(struct cp_audio_config *config)
 	config->multiband_enabled = CP_MULTIBAND_DEFAULT_ENABLED;
 	config->multiband_band_count = CP_MULTIBAND_DEFAULT_BANDS;
 	config->multiband_preset  = CP_MULTIBAND_PRESET_SPEECH;
+	cp_am_default_config(&config->am_config);
+	config->am_config.channel_count = config->channels;
+	config->am_config.sample_rate = (cp_sample_t)config->sample_rate;
 }
 
 const char *
@@ -47,6 +50,8 @@ cp_audio_status_string(int status)
 		return "invalid dehummer settings";
 	case CP_AUDIO_ERR_MB:
 		return "invalid multiband settings";
+	case CP_AUDIO_ERR_AM:
+		return "invalid AM settings";
 	default:
 		return "unknown audio error";
 	}
@@ -55,6 +60,8 @@ cp_audio_status_string(int status)
 int
 cp_audio_validate_config(const struct cp_audio_config *config)
 {
+	struct cp_am am;
+
 	if (config == NULL)
 		return CP_AUDIO_ERR_NULL;
 	if (config->input_device < CP_AUDIO_DEFAULT_DEVICE ||
@@ -91,6 +98,14 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 	if (config->multiband_preset != CP_MULTIBAND_PRESET_SPEECH &&
 	    config->multiband_preset != CP_MULTIBAND_PRESET_MUSIC)
 		return CP_AUDIO_ERR_MB;
+	if (config->am_config.channel_count != config->channels)
+		return CP_AUDIO_ERR_AM;
+	if (config->am_config.sample_rate != (cp_sample_t)config->sample_rate)
+		return CP_AUDIO_ERR_AM;
+	if (config->am_config.enabled) {
+		if (cp_am_init(&am, &config->am_config) != CP_OK)
+			return CP_AUDIO_ERR_AM;
+	}
 
 	return CP_AUDIO_OK;
 }

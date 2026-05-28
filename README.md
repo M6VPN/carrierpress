@@ -4,7 +4,7 @@ CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB a
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
-Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. AM presets, SSB shaping, and STM32H753 support are planned but are not part of v0.1.
+Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. AM output-chain shaping is available as an M6 foundation. SSB shaping and STM32H753 support are planned but are not part of v0.1.
 
 ## Table of Contents
 
@@ -90,6 +90,14 @@ Run the self-test with the M5 multiband compressor enabled:
 ./carrierpress --self-test --multiband --multiband-bands 3 --multiband-preset speech
 ```
 
+Run the self-test with the M6 AM output chain enabled:
+
+```sh
+./carrierpress --self-test --am --am-preset am-safe
+./carrierpress --self-test --am --am-preset am-shortwave
+./carrierpress --self-test --dehummer --multiband --multiband-bands 3 --am --am-preset am-shortwave
+```
+
 Process a mono or stereo WAV file through the current chain:
 
 ```sh
@@ -142,6 +150,12 @@ Run live processing with the simple speech multiband preset:
 
 ```sh
 ./carrierpress --live --multiband --multiband-bands 3 --multiband-preset speech
+```
+
+Run live processing with AM-safe output shaping:
+
+```sh
+./carrierpress --live --am --am-preset am-safe
 ```
 
 Print meters once per second:
@@ -231,6 +245,29 @@ Enable it with `--multiband`. The `speech` preset uses slightly stronger conserv
 ```
 
 M5 uses cascaded 2nd-order low-pass sections with subtractive band creation for the crossover scaffold. It is bounded and deterministic, but it is not final broadcast processing.
+
+## AM Mode
+
+The M6 AM mode is audio-chain processing for legal AM transmitters and dummy-load testing. It is not an RF exciter, modulator, transmitter controller, or certified compliance tool. Users must obey their licence terms, transmitter limits, occupied bandwidth limits, and local radio regulations.
+
+Enable AM mode with `--am`. The AM chain runs after AGC and the first multiband compressor, then before the final limiter. It provides high-pass filtering, low-pass audio bandwidth limiting, optional phase rotation, positive and negative peak control, and explicitly configured positive asymmetry.
+
+```sh
+./carrierpress --input input.wav --output output.wav --am --am-preset am-safe
+./carrierpress --input input.wav --output output.wav --am --am-preset am-shortwave
+./carrierpress --input input.wav --output output.wav --am --am-lowpass 4500 --am-highpass 80
+```
+
+AM presets:
+
+| Preset         | Purpose                                      |
+| -------------- | -------------------------------------------- |
+| `am-safe`      | Conservative mono-safe starting point        |
+| `am-shortwave` | 5-7 MHz shortwave-style starting bandwidth   |
+| `am-wide`      | Wider lab and dummy-load testing preset      |
+| `am-voice`     | Narrower voice-focused preset                |
+
+Use `--am-asymmetry FLOAT` only when positive asymmetry is explicitly wanted. The module allows up to 200 percent positive capability for experiments, but that is not a default and is not a compliance claim. Negative peaks remain strictly limited by `--am-negative-peak`.
 
 | Area       | v0.1 status                          |
 | ---------- | ------------------------------------ |

@@ -266,6 +266,7 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	block_config.multiband_enabled = config->multiband_enabled;
 	block_config.multiband_band_count = config->multiband_band_count;
 	block_config.multiband_preset = config->multiband_preset;
+	block_config.am_config = config->am_config;
 	status = cp_block_init(&runtime->processor, &block_config);
 	if (status != CP_OK) {
 		free(runtime->scratch);

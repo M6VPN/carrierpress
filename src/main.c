@@ -28,6 +28,7 @@ static volatile sig_atomic_t stop_requested = 0;
 
 static void	handle_signal(int);
 #endif
+static int	parse_am_preset(struct cp_am_config *, const char *);
 static int	parse_double_arg(const char *, double *);
 static int	parse_int_arg(const char *, int *);
 static int	parse_multiband_preset(const char *,
@@ -163,11 +164,80 @@ main(int argc, char *argv[])
 			}
 			audio_config.multiband_preset =
 			    block_config.multiband_preset;
+		} else if (strcmp(argv[arg], "--am") == 0) {
+			block_config.am_config.enabled = 1;
+			audio_config.am_config.enabled = 1;
+		} else if (strcmp(argv[arg], "--am-preset") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_am_preset(&block_config.am_config,
+			    argv[++arg])) {
+				usage(argv[0]);
+				return 1;
+			}
+			audio_config.am_config = block_config.am_config;
+		} else if (strcmp(argv[arg], "--am-lowpass") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.am_config.lowpass_hz =
+			    (cp_sample_t)parsed_double;
+			audio_config.am_config.lowpass_hz =
+			    (cp_sample_t)parsed_double;
+		} else if (strcmp(argv[arg], "--am-highpass") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.am_config.highpass_hz =
+			    (cp_sample_t)parsed_double;
+			audio_config.am_config.highpass_hz =
+			    (cp_sample_t)parsed_double;
+		} else if (strcmp(argv[arg], "--am-phase-rotator") == 0) {
+			block_config.am_config.phase_rotator_enabled = 1;
+			audio_config.am_config.phase_rotator_enabled = 1;
+		} else if (strcmp(argv[arg], "--am-positive-peak") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.am_config.positive_peak_limit =
+			    (cp_sample_t)parsed_double;
+			audio_config.am_config.positive_peak_limit =
+			    (cp_sample_t)parsed_double;
+		} else if (strcmp(argv[arg], "--am-negative-peak") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.am_config.negative_peak_limit =
+			    (cp_sample_t)parsed_double;
+			audio_config.am_config.negative_peak_limit =
+			    (cp_sample_t)parsed_double;
+		} else if (strcmp(argv[arg], "--am-asymmetry") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.am_config.asymmetry_enabled = 1;
+			block_config.am_config.asymmetry_ratio =
+			    (cp_sample_t)parsed_double;
+			audio_config.am_config.asymmetry_enabled = 1;
+			audio_config.am_config.asymmetry_ratio =
+			    (cp_sample_t)parsed_double;
 		} else {
 			usage(argv[0]);
 			return 1;
 		}
 	}
+
+	audio_config.am_config.channel_count = audio_config.channels;
+	audio_config.am_config.sample_rate = (cp_sample_t)audio_config.sample_rate;
 
 	if (self_test_mode) {
 		if (input_path != NULL || output_path != NULL || live_mode ||
@@ -217,6 +287,17 @@ handle_signal(int signal_number)
 	stop_requested = 1;
 }
 #endif
+
+static int
+parse_am_preset(struct cp_am_config *config, const char *text)
+{
+	if (config == NULL || text == NULL)
+		return 0;
+	if (cp_am_apply_preset(config, text) != CP_OK)
+		return 0;
+
+	return 1;
+}
 
 static int
 parse_double_arg(const char *text, double *value)
@@ -466,6 +547,18 @@ run_self_test(const struct cp_block_config *self_config)
 	}
 	printf("input_peak=%0.6f input_rms=%0.6f\n",
 	    processor.input_meter.peak[0], processor.input_meter.rms[0]);
+	printf("am=%s preset=%s highpass=%0.1f lowpass=%0.1f "
+	    "phase_rotator=%s positive_peak=%0.2f negative_peak=%0.2f "
+	    "asymmetry=%s asymmetry_ratio=%0.2f\n",
+	    processor.am.config.enabled ? "on" : "off",
+	    processor.am.config.preset_name,
+	    processor.am.config.highpass_hz,
+	    processor.am.config.lowpass_hz,
+	    processor.am.config.phase_rotator_enabled ? "on" : "off",
+	    processor.am.config.positive_peak_limit,
+	    processor.am.config.negative_peak_limit,
+	    processor.am.config.asymmetry_enabled ? "on" : "off",
+	    processor.am.config.asymmetry_ratio);
 	printf("output_peak=%0.6f output_rms=%0.6f gain=%0.6f "
 	    "gain_db=%0.2f agc_state=%s\n",
 	    processor.output_meter.peak[0], processor.output_meter.rms[0],
@@ -492,4 +585,8 @@ usage(const char *program)
 	    "--hum-harmonics N --hum-q Q\n");
 	printf("multiband options: --multiband --multiband-bands 2|3|4 "
 	    "--multiband-preset speech|music\n");
+	printf("AM options: --am --am-preset am-safe|am-shortwave|am-wide|am-voice "
+	    "--am-lowpass HZ --am-highpass HZ --am-phase-rotator "
+	    "--am-positive-peak FLOAT --am-negative-peak FLOAT "
+	    "--am-asymmetry FLOAT\n");
 }

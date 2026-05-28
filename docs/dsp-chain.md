@@ -15,12 +15,32 @@ multiband compressor 1
 auto EQ / bass EQ
 immersive bass / true bass
 multiband compressor 2
-final limiter / clipper
 AM or SSB output shaping
+final limiter / clipper
 output
 ```
 
-v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, first multiband compressor scaffold, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, first multiband compressor scaffold, AM output-chain foundation, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+
+## M6 AM Behavior
+
+The active M6 chain is:
+
+```text
+input
+DC blocker
+dehummer
+AGC
+multiband compressor 1
+AM output chain
+limiter
+meter
+output
+```
+
+The AM output chain is disabled by default. When enabled, it runs before the final limiter so audio bandwidth limiting, phase rotation, and AM-oriented peak control happen before the last safety clamp.
+
+Negative peak control matters because excessive negative modulation can overdrive an AM transmitter into carrier cutoff or distortion. CarrierPress limits negative peaks separately from positive peaks. Positive asymmetry is allowed only through explicit config and remains an experimental audio-chain option, not a regulatory compliance claim.
 
 ## M5 Multiband Behavior
 

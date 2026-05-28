@@ -59,5 +59,13 @@ main(void)
 		return 1;
 	}
 
+	cp_audio_default_config(&config);
+	config.am_config.enabled = 1;
+	config.am_config.lowpass_hz = config.am_config.sample_rate;
+	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_AM) {
+		printf("test_audio: invalid AM config accepted\n");
+		return 1;
+	}
+
 	return 0;
 }

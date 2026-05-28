@@ -13,6 +13,7 @@
 #define TEST_TWO_PI	6.28318530717958647692f
 
 static cp_sample_t	measure_notch(cp_sample_t);
+static int		test_invalid_highpass_allpass(void);
 static int		test_invalid_lowpass(void);
 static int		test_invalid_notch(void);
 static int		test_notch_reduces_center(void);
@@ -25,6 +26,8 @@ main(void)
 	if (!test_invalid_notch())
 		return 1;
 	if (!test_invalid_lowpass())
+		return 1;
+	if (!test_invalid_highpass_allpass())
 		return 1;
 
 	return 0;
@@ -68,6 +71,27 @@ measure_notch(cp_sample_t frequency)
 	output_rms = sqrtf(sum_out / (cp_sample_t)(TEST_FRAMES / 2));
 
 	return output_rms / input_rms;
+}
+
+static int
+test_invalid_highpass_allpass(void)
+{
+	struct cp_biquad_coeff coeff;
+
+	if (cp_biquad_highpass(NULL, TEST_RATE, 250.0f, 0.707f) !=
+	    CP_ERR_NULL)
+		return 0;
+	if (cp_biquad_highpass(&coeff, TEST_RATE, 0.0f, 0.707f) !=
+	    CP_ERR_RANGE)
+		return 0;
+	if (cp_biquad_allpass(NULL, TEST_RATE, 250.0f, 0.707f) !=
+	    CP_ERR_NULL)
+		return 0;
+	if (cp_biquad_allpass(&coeff, TEST_RATE, 250.0f, 0.0f) !=
+	    CP_ERR_RANGE)
+		return 0;
+
+	return 1;
 }
 
 static int
