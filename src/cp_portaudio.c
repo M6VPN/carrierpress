@@ -11,18 +11,13 @@
 #include <portaudio.h>
 
 #include "cp_block.h"
+#include "cp_monitor.h"
 #include "cp_portaudio.h"
+#ifdef CP_WITH_TUI
+#include "cp_tui.h"
+#endif
 
-#define CP_PA_METER_SCALE	1000000.0f
 #define CP_PA_SLEEP_MS		50
-
-enum cp_pa_flags {
-	CP_PA_INPUT_UNDERFLOW  = 1u << 0,
-	CP_PA_INPUT_OVERFLOW   = 1u << 1,
-	CP_PA_OUTPUT_UNDERFLOW = 1u << 2,
-	CP_PA_OUTPUT_OVERFLOW  = 1u << 3,
-	CP_PA_PRIMING_OUTPUT   = 1u << 4
-};
 
 struct cp_portaudio_runtime {
 	struct cp_block_processor processor;
@@ -34,6 +29,12 @@ struct cp_portaudio_runtime {
 	atomic_uint input_rms;
 	atomic_uint output_peak;
 	atomic_uint output_rms;
+	atomic_uint agc_gain;
+	atomic_int agc_gain_db_centibel;
+	atomic_int agc_state;
+	atomic_uint band_count;
+	atomic_uint band_rms[CP_MONITOR_MAX_BANDS];
+	atomic_int band_gr_db_centibel[CP_MONITOR_MAX_BANDS];
 	atomic_uint status_flags;
 	atomic_int dsp_status;
 };
@@ -41,11 +42,13 @@ struct cp_portaudio_runtime {
 static unsigned int	cp_pa_flags_from_status(PaStreamCallbackFlags);
 static int		cp_pa_init_processor(struct cp_portaudio_runtime *,
 			    const struct cp_audio_config *);
-static unsigned int	cp_pa_meter_value(cp_sample_t);
+static void		cp_pa_load_snapshot(struct cp_portaudio_runtime *,
+			    struct cp_monitor_snapshot *);
 static void		cp_pa_print_flags(unsigned int);
-static void		cp_pa_print_meters(struct cp_portaudio_runtime *);
+static void		cp_pa_print_meters(const struct cp_monitor_snapshot *);
 static int		cp_pa_select_devices(const struct cp_audio_config *,
 			    PaDeviceIndex *, PaDeviceIndex *);
+static void		cp_pa_store_meters(struct cp_portaudio_runtime *);
 static int		cp_pa_stream_callback(const void *, void *,
 			    unsigned long, const PaStreamCallbackTimeInfo *,
 			    PaStreamCallbackFlags, void *);
@@ -93,7 +96,10 @@ cp_portaudio_run(const struct cp_audio_config *config,
 	PaDeviceIndex output_device;
 	PaError error;
 	struct cp_portaudio_runtime runtime;
-	unsigned int flags;
+	struct cp_monitor_snapshot snapshot;
+#ifdef CP_WITH_TUI
+	struct cp_tui tui;
+#endif
 	int status;
 
 	status = cp_audio_validate_config(config);
@@ -101,6 +107,10 @@ cp_portaudio_run(const struct cp_audio_config *config,
 		return CP_PORTAUDIO_ERR_CONFIG;
 	if (stop_requested == NULL)
 		return CP_PORTAUDIO_ERR_CONFIG;
+#ifndef CP_WITH_TUI
+	if (config->tui_enabled)
+		return CP_PORTAUDIO_ERR_CONFIG;
+#endif
 
 	error = Pa_Initialize();
 	if (error != paNoError)
@@ -143,8 +153,22 @@ cp_portaudio_run(const struct cp_audio_config *config,
 		return CP_PORTAUDIO_ERR_STREAM;
 	}
 
+#ifdef CP_WITH_TUI
+	tui.active = 0;
+	if (config->tui_enabled && cp_tui_init(&tui) != 0) {
+		Pa_CloseStream(stream);
+		free(runtime.scratch);
+		free(runtime.zero_input);
+		Pa_Terminate();
+		return CP_PORTAUDIO_ERR_CONFIG;
+	}
+#endif
+
 	error = Pa_StartStream(stream);
 	if (error != paNoError) {
+#ifdef CP_WITH_TUI
+		cp_tui_close(&tui);
+#endif
 		Pa_CloseStream(stream);
 		free(runtime.scratch);
 		free(runtime.zero_input);
@@ -152,14 +176,24 @@ cp_portaudio_run(const struct cp_audio_config *config,
 		return CP_PORTAUDIO_ERR_START;
 	}
 
-	printf("live audio started. press Ctrl-C to stop.\n");
+	if (!config->tui_enabled)
+		printf("live audio started. press Ctrl-C to stop.\n");
 	while (!*stop_requested && Pa_IsStreamActive(stream) == 1) {
-		Pa_Sleep((long)config->meter_interval_ms);
-		cp_pa_print_meters(&runtime);
-		flags = atomic_exchange(&runtime.status_flags, 0u);
-		cp_pa_print_flags(flags);
+		Pa_Sleep(config->tui_enabled ? CP_PA_SLEEP_MS :
+		    (long)config->meter_interval_ms);
+		cp_pa_load_snapshot(&runtime, &snapshot);
+#ifdef CP_WITH_TUI
+		if (config->tui_enabled) {
+			if (cp_tui_update(&tui, config, &snapshot))
+				*stop_requested = 1;
+		} else
+#endif
+		{
+			cp_pa_print_meters(&snapshot);
+			cp_pa_print_flags(snapshot.stream_flags);
+		}
 
-		if (atomic_load(&runtime.dsp_status) != CP_OK)
+		if (snapshot.dsp_status != CP_OK)
 			break;
 	}
 
@@ -169,6 +203,9 @@ cp_portaudio_run(const struct cp_audio_config *config,
 	else
 		status = CP_PORTAUDIO_OK;
 
+#ifdef CP_WITH_TUI
+	cp_tui_close(&tui);
+#endif
 	Pa_CloseStream(stream);
 	free(runtime.scratch);
 	free(runtime.zero_input);
@@ -214,15 +251,15 @@ cp_pa_flags_from_status(PaStreamCallbackFlags status_flags)
 
 	flags = 0u;
 	if ((status_flags & paInputUnderflow) != 0)
-		flags |= CP_PA_INPUT_UNDERFLOW;
+		flags |= CP_MONITOR_INPUT_UNDERFLOW;
 	if ((status_flags & paInputOverflow) != 0)
-		flags |= CP_PA_INPUT_OVERFLOW;
+		flags |= CP_MONITOR_INPUT_OVERFLOW;
 	if ((status_flags & paOutputUnderflow) != 0)
-		flags |= CP_PA_OUTPUT_UNDERFLOW;
+		flags |= CP_MONITOR_OUTPUT_UNDERFLOW;
 	if ((status_flags & paOutputOverflow) != 0)
-		flags |= CP_PA_OUTPUT_OVERFLOW;
+		flags |= CP_MONITOR_OUTPUT_OVERFLOW;
 	if ((status_flags & paPrimingOutput) != 0)
-		flags |= CP_PA_PRIMING_OUTPUT;
+		flags |= CP_MONITOR_PRIMING_OUTPUT;
 
 	return flags;
 }
@@ -233,6 +270,7 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 {
 	struct cp_block_config block_config;
 	size_t samples;
+	size_t band;
 	int status;
 
 	if (config->block_size > (SIZE_MAX / config->channels))
@@ -254,6 +292,14 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	atomic_init(&runtime->input_rms, 0u);
 	atomic_init(&runtime->output_peak, 0u);
 	atomic_init(&runtime->output_rms, 0u);
+	atomic_init(&runtime->agc_gain, 0u);
+	atomic_init(&runtime->agc_gain_db_centibel, 0);
+	atomic_init(&runtime->agc_state, 0);
+	atomic_init(&runtime->band_count, 0u);
+	for (band = 0; band < CP_MONITOR_MAX_BANDS; band++) {
+		atomic_init(&runtime->band_rms[band], 0u);
+		atomic_init(&runtime->band_gr_db_centibel[band], 0);
+	}
 	atomic_init(&runtime->status_flags, 0u);
 	atomic_init(&runtime->dsp_status, CP_OK);
 
@@ -277,15 +323,34 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	return CP_PORTAUDIO_OK;
 }
 
-static unsigned int
-cp_pa_meter_value(cp_sample_t value)
+static void
+cp_pa_load_snapshot(struct cp_portaudio_runtime *runtime,
+	struct cp_monitor_snapshot *snapshot)
 {
-	if (value <= 0.0f)
-		return 0u;
-	if (value >= 4.0f)
-		return 4000000u;
+	size_t band;
+	unsigned int band_count;
 
-	return (unsigned int)(value * CP_PA_METER_SCALE);
+	cp_monitor_snapshot_clear(snapshot);
+	snapshot->input_peak = atomic_load(&runtime->input_peak);
+	snapshot->input_rms = atomic_load(&runtime->input_rms);
+	snapshot->output_peak = atomic_load(&runtime->output_peak);
+	snapshot->output_rms = atomic_load(&runtime->output_rms);
+	snapshot->agc_gain = atomic_load(&runtime->agc_gain);
+	snapshot->agc_gain_db_centibel =
+	    atomic_load(&runtime->agc_gain_db_centibel);
+	snapshot->agc_state = atomic_load(&runtime->agc_state);
+	snapshot->stream_flags = atomic_exchange(&runtime->status_flags, 0u);
+	snapshot->dsp_status = atomic_load(&runtime->dsp_status);
+
+	band_count = atomic_load(&runtime->band_count);
+	if (band_count > CP_MONITOR_MAX_BANDS)
+		band_count = CP_MONITOR_MAX_BANDS;
+	snapshot->band_count = band_count;
+	for (band = 0; band < snapshot->band_count; band++) {
+		snapshot->band_rms[band] = atomic_load(&runtime->band_rms[band]);
+		snapshot->band_gr_db_centibel[band] =
+		    atomic_load(&runtime->band_gr_db_centibel[band]);
+	}
 }
 
 static void
@@ -295,28 +360,28 @@ cp_pa_print_flags(unsigned int flags)
 		return;
 
 	printf("stream_status:");
-	if ((flags & CP_PA_INPUT_UNDERFLOW) != 0)
+	if ((flags & CP_MONITOR_INPUT_UNDERFLOW) != 0)
 		printf(" input_underflow");
-	if ((flags & CP_PA_INPUT_OVERFLOW) != 0)
+	if ((flags & CP_MONITOR_INPUT_OVERFLOW) != 0)
 		printf(" input_overflow");
-	if ((flags & CP_PA_OUTPUT_UNDERFLOW) != 0)
+	if ((flags & CP_MONITOR_OUTPUT_UNDERFLOW) != 0)
 		printf(" output_underflow");
-	if ((flags & CP_PA_OUTPUT_OVERFLOW) != 0)
+	if ((flags & CP_MONITOR_OUTPUT_OVERFLOW) != 0)
 		printf(" output_overflow");
-	if ((flags & CP_PA_PRIMING_OUTPUT) != 0)
+	if ((flags & CP_MONITOR_PRIMING_OUTPUT) != 0)
 		printf(" priming_output");
 	printf("\n");
 }
 
 static void
-cp_pa_print_meters(struct cp_portaudio_runtime *runtime)
+cp_pa_print_meters(const struct cp_monitor_snapshot *snapshot)
 {
 	printf("input_peak=%0.6f input_rms=%0.6f output_peak=%0.6f "
 	    "output_rms=%0.6f\n",
-	    (double)atomic_load(&runtime->input_peak) / CP_PA_METER_SCALE,
-	    (double)atomic_load(&runtime->input_rms) / CP_PA_METER_SCALE,
-	    (double)atomic_load(&runtime->output_peak) / CP_PA_METER_SCALE,
-	    (double)atomic_load(&runtime->output_rms) / CP_PA_METER_SCALE);
+	    cp_monitor_level_to_sample(snapshot->input_peak),
+	    cp_monitor_level_to_sample(snapshot->input_rms),
+	    cp_monitor_level_to_sample(snapshot->output_peak),
+	    cp_monitor_level_to_sample(snapshot->output_rms));
 }
 
 static int
@@ -351,6 +416,41 @@ cp_pa_select_devices(const struct cp_audio_config *config,
 		return CP_PORTAUDIO_ERR_DEVICE;
 
 	return CP_PORTAUDIO_OK;
+}
+
+static void
+cp_pa_store_meters(struct cp_portaudio_runtime *runtime)
+{
+	size_t band;
+	size_t band_count;
+
+	atomic_store(&runtime->input_peak,
+	    cp_monitor_sample_to_level(runtime->processor.input_meter.peak[0]));
+	atomic_store(&runtime->input_rms,
+	    cp_monitor_sample_to_level(runtime->processor.input_meter.rms[0]));
+	atomic_store(&runtime->output_peak,
+	    cp_monitor_sample_to_level(runtime->processor.output_meter.peak[0]));
+	atomic_store(&runtime->output_rms,
+	    cp_monitor_sample_to_level(runtime->processor.output_meter.rms[0]));
+	atomic_store(&runtime->agc_gain,
+	    cp_monitor_sample_to_level(runtime->processor.agc.gain));
+	atomic_store(&runtime->agc_gain_db_centibel,
+	    cp_monitor_db_to_centibel(runtime->processor.agc.gain_db));
+	atomic_store(&runtime->agc_state,
+	    (int)runtime->processor.agc.gate_state);
+
+	band_count = runtime->processor.multiband.band_count;
+	if (band_count > CP_MONITOR_MAX_BANDS)
+		band_count = CP_MONITOR_MAX_BANDS;
+	atomic_store(&runtime->band_count, (unsigned int)band_count);
+	for (band = 0; band < band_count; band++) {
+		atomic_store(&runtime->band_rms[band],
+		    cp_monitor_sample_to_level(
+		    runtime->processor.multiband.band_rms[band]));
+		atomic_store(&runtime->band_gr_db_centibel[band],
+		    cp_monitor_db_to_centibel(
+		    runtime->processor.multiband.band_gain_reduction_db[band]));
+	}
 }
 
 static int
@@ -390,14 +490,7 @@ cp_pa_stream_callback(const void *input_buffer, void *output_buffer,
 		return paAbort;
 	}
 
-	atomic_store(&runtime->input_peak,
-	    cp_pa_meter_value(runtime->processor.input_meter.peak[0]));
-	atomic_store(&runtime->input_rms,
-	    cp_pa_meter_value(runtime->processor.input_meter.rms[0]));
-	atomic_store(&runtime->output_peak,
-	    cp_pa_meter_value(runtime->processor.output_meter.peak[0]));
-	atomic_store(&runtime->output_rms,
-	    cp_pa_meter_value(runtime->processor.output_meter.rms[0]));
+	cp_pa_store_meters(runtime);
 
 	return paContinue;
 }

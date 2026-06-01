@@ -15,6 +15,7 @@
 #include "cp_dehummer.h"
 #include "cp_limiter.h"
 #include "cp_meter.h"
+#include "cp_monitor.h"
 #include "cp_multiband.h"
 #include "cp_types.h"
 

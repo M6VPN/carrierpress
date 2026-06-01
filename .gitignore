@@ -12,3 +12,4 @@ tests/test_meter
 tests/test_wav
 tests/wav_input.wav
 tests/wav_output.wav
+media/

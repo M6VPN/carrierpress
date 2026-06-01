@@ -48,6 +48,7 @@ struct cp_audio_config {
 	size_t multiband_band_count;
 	enum cp_multiband_preset multiband_preset;
 	struct cp_am_config am_config;
+	int tui_enabled;
 };
 
 void		cp_audio_default_config(struct cp_audio_config *);

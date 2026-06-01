@@ -28,6 +28,10 @@ Partially implemented. CarrierPress now has an optional first multiband compress
 
 Partially implemented. CarrierPress now has an optional AM output-chain foundation with high-pass and low-pass filtering, optional phase rotation, separate positive and negative peak control, explicit asymmetry config, and conservative AM presets. It is audio-chain processing only, not an RF exciter or certified compliance implementation.
 
+## M6.5 live monitor foundation
+
+Implemented as an optional ncurses TUI for PortAudio live mode. It shows input/output levels, AGC state, stream flags, multiband meters, and AM settings without adding runtime DSP controls. The PortAudio callback still only updates atomic monitor values.
+
 ## M7 SSB chain
 
 Add SSB-oriented filtering, asymmetry handling, and speech-focused processing.

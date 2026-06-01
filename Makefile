@@ -8,6 +8,7 @@ CPPFLAGS += -Iinclude
 LDLIBS	+= -lm
 WITH_SNDFILE ?= 0
 WITH_PORTAUDIO ?= 0
+WITH_TUI ?= 0
 
 BUILD_DIR = build
 FEATURE_DIR = base
@@ -27,6 +28,7 @@ CORE_SRCS = \
 	src/cp_dehummer.c \
 	src/cp_limiter.c \
 	src/cp_meter.c \
+	src/cp_monitor.c \
 	src/cp_multiband.c
 
 APP_SRCS = src/main.c
@@ -42,6 +44,7 @@ TEST_SRCS = \
 	tests/test_dehummer.c \
 	tests/test_limiter.c \
 	tests/test_meter.c \
+	tests/test_monitor.c \
 	tests/test_multiband.c
 
 ifeq ($(WITH_SNDFILE),1)
@@ -61,7 +64,15 @@ CORE_SRCS += src/cp_portaudio.c
 PORTAUDIO_ORDER = check-portaudio
 endif
 
-BACKEND_ORDER = $(SNDFILE_ORDER) $(PORTAUDIO_ORDER)
+ifeq ($(WITH_TUI),1)
+FEATURE_DIR := $(FEATURE_DIR)-tui
+CPPFLAGS += -DCP_WITH_TUI
+LDLIBS	+= -lncurses
+CORE_SRCS += src/cp_tui.c
+TUI_ORDER = check-tui
+endif
+
+BACKEND_ORDER = $(SNDFILE_ORDER) $(PORTAUDIO_ORDER) $(TUI_ORDER)
 
 APP_CORE_OBJS = $(CORE_SRCS:src/%.c=$(APP_OBJ_DIR)/src/%.o)
 APP_OBJS = $(APP_CORE_OBJS) $(APP_SRCS:src/%.c=$(APP_OBJ_DIR)/src/%.o)
@@ -79,6 +90,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_dehummer \
 	$(TEST_BIN_DIR)/test_limiter \
 	$(TEST_BIN_DIR)/test_meter \
+	$(TEST_BIN_DIR)/test_monitor \
 	$(TEST_BIN_DIR)/test_multiband
 
 ifeq ($(WITH_SNDFILE),1)
@@ -133,6 +145,10 @@ $(TEST_BIN_DIR)/test_meter: $(TEST_OBJ_DIR)/tests/test_meter.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_meter.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_monitor: $(TEST_OBJ_DIR)/tests/test_monitor.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_monitor.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_multiband: $(TEST_OBJ_DIR)/tests/test_multiband.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_multiband.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -152,6 +168,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_dehummer
 	./$(TEST_BIN_DIR)/test_limiter
 	./$(TEST_BIN_DIR)/test_meter
+	./$(TEST_BIN_DIR)/test_monitor
 	./$(TEST_BIN_DIR)/test_multiband
 ifeq ($(WITH_SNDFILE),1)
 	./$(TEST_BIN_DIR)/test_wav
@@ -166,6 +183,11 @@ check-portaudio:
 	@mkdir -p $(BUILD_DIR)
 	@printf '#include <portaudio.h>\nint main(void) { return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/check-portaudio -lportaudio >/dev/null 2>&1 || { printf 'error: missing PortAudio development package/library. Install PortAudio (for example portaudio19-dev, portaudio-devel, or portaudio).\n'; exit 1; }
 	@rm -f $(BUILD_DIR)/check-portaudio
+
+check-tui:
+	@mkdir -p $(BUILD_DIR)
+	@printf '#include <curses.h>\nint main(void) { initscr(); endwin(); return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/check-tui -lncurses >/dev/null 2>&1 || { printf 'error: missing ncurses development package/library. Install ncurses (for example libncurses-dev, ncurses-devel, or ncurses).\n'; exit 1; }
+	@rm -f $(BUILD_DIR)/check-tui
 
 $(APP_OBJ_DIR)/src/%.o: src/%.c | $(BACKEND_ORDER)
 	@mkdir -p $(dir $@)
@@ -186,7 +208,7 @@ clean:
 	rm -f tests/test_compressor tests/test_crossover
 	rm -f tests/test_dc_blocker tests/test_dehummer
 	rm -f tests/test_limiter tests/test_meter
-	rm -f tests/test_multiband
+	rm -f tests/test_monitor tests/test_multiband
 	rm -f tests/test_wav tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all check-portaudio check-sndfile clean test
+.PHONY: all check-portaudio check-sndfile check-tui clean test

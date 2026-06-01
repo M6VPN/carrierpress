@@ -77,6 +77,13 @@ main(int argc, char *argv[])
 			list_devices = 1;
 		} else if (strcmp(argv[arg], "--live") == 0) {
 			live_mode = 1;
+		} else if (strcmp(argv[arg], "--tui") == 0) {
+#ifdef CP_WITH_TUI
+			audio_config.tui_enabled = 1;
+#else
+			printf("TUI support not enabled. Rebuild with WITH_TUI=1.\n");
+			return 1;
+#endif
 		} else if (strcmp(argv[arg], "--input-device") == 0 &&
 		    arg + 1 < argc) {
 			if (!parse_int_arg(argv[++arg], &audio_config.input_device)) {
@@ -581,6 +588,7 @@ usage(const char *program)
 	printf("usage: %s --live --sample-rate 48000 --channels 2 "
 	    "--block-size 256\n", program);
 	printf("usage: %s --live --meter-interval-ms 1000\n", program);
+	printf("usage: %s --live --tui\n", program);
 	printf("dehummer options: --dehummer --hum-frequency 50|60 "
 	    "--hum-harmonics N --hum-q Q\n");
 	printf("multiband options: --multiband --multiband-bands 2|3|4 "

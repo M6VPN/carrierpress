@@ -26,6 +26,7 @@ cp_audio_default_config(struct cp_audio_config *config)
 	cp_am_default_config(&config->am_config);
 	config->am_config.channel_count = config->channels;
 	config->am_config.sample_rate = (cp_sample_t)config->sample_rate;
+	config->tui_enabled = 0;
 }
 
 const char *

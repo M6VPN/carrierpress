@@ -21,8 +21,9 @@ Offline WAV processing is available as an optional M1 foundation when built with
 - Standard C math library
 - Optional [libsndfile](https://libsndfile.github.io/libsndfile/) development package for WAV processing
 - Optional [PortAudio](https://www.portaudio.com/) development package for live USB sound-card processing
+- Optional [ncurses](https://invisible-island.net/ncurses/) development package for the live TUI monitor
 
-The DSP core builds without PortAudio or libsndfile. If your system is missing optional WAV support, install the libsndfile development package manually. Common package names are `libsndfile1-dev`, `libsndfile-devel`, or `libsndfile`. If your system is missing optional live audio support, install the PortAudio development package manually. Common package names are `portaudio19-dev`, `portaudio-devel`, or `portaudio`.
+The DSP core builds without PortAudio, libsndfile, or ncurses. If your system is missing optional WAV support, install the libsndfile development package manually. Common package names are `libsndfile1-dev`, `libsndfile-devel`, or `libsndfile`. If your system is missing optional live audio support, install the PortAudio development package manually. Common package names are `portaudio19-dev`, `portaudio-devel`, or `portaudio`. If your system is missing optional TUI support, install the ncurses development package manually. Common package names are `libncurses-dev`, `ncurses-devel`, or `ncurses`.
 
 ## Setup
 
@@ -54,6 +55,12 @@ Build with optional PortAudio live audio support:
 
 ```sh
 make WITH_PORTAUDIO=1
+```
+
+Build with optional PortAudio live audio and the ncurses TUI monitor:
+
+```sh
+make WITH_PORTAUDIO=1 WITH_TUI=1
 ```
 
 Build with both optional WAV and PortAudio support:
@@ -158,6 +165,12 @@ Run live processing with AM-safe output shaping:
 ./carrierpress --live --am --am-preset am-safe
 ```
 
+Run live processing with the ncurses monitor:
+
+```sh
+./carrierpress --live --tui
+```
+
 Print meters once per second:
 
 ```sh
@@ -170,6 +183,12 @@ PortAudio support requires a `WITH_PORTAUDIO=1` build. Without it, live and devi
 PortAudio support not enabled. Rebuild with WITH_PORTAUDIO=1.
 ```
 
+TUI support requires a `WITH_TUI=1` build. Without it, `--tui` exits with:
+
+```text
+TUI support not enabled. Rebuild with WITH_TUI=1.
+```
+
 Live mode is experimental. It is a USB sound-card backend for testing the existing DC blocker, AGC, limiter, and metering chain. It is not a broadcast-quality processor.
 
 ## Manual Live-Audio Test
@@ -178,6 +197,12 @@ Build with PortAudio:
 
 ```sh
 make WITH_PORTAUDIO=1
+```
+
+Build with PortAudio and the TUI monitor:
+
+```sh
+make WITH_PORTAUDIO=1 WITH_TUI=1
 ```
 
 List devices:
@@ -194,9 +219,17 @@ Run live passthrough processing with the chosen devices:
 
 Check that meter lines update while audio is present. Stop with `Ctrl-C`.
 
+Run the TUI monitor:
+
+```sh
+./carrierpress --live --tui --input-device 2 --output-device 3 --sample-rate 48000 --channels 2 --block-size 256
+```
+
+Check that input/output meters, AGC state, stream flags, multiband meters, and AM settings update. Press `q` or `Ctrl-C` to stop.
+
 ## Development
 
-The core library has no optional audio backend dependency. WAV support lives in `cp_wav.c`, and PortAudio support lives in `cp_portaudio.c`. Both are compiled only when requested. Process functions use caller-owned buffers and explicit state structs so real-time callbacks can remain malloc-free and deterministic.
+The core library has no optional audio backend dependency. WAV support lives in `cp_wav.c`, PortAudio support lives in `cp_portaudio.c`, and the ncurses monitor lives in `cp_tui.c`. Optional files are compiled only when requested. Process functions use caller-owned buffers and explicit state structs so real-time callbacks can remain malloc-free and deterministic.
 
 ## AGC Controls
 
