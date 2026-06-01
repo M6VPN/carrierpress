@@ -28,6 +28,13 @@
 #define CP_AM_MIN_ASYM_RATIO		(1.0f)
 #define CP_AM_MAX_ASYM_RATIO		(2.0f)
 
+enum cp_am_preset {
+	CP_AM_PRESET_SAFE = 0,
+	CP_AM_PRESET_SHORTWAVE,
+	CP_AM_PRESET_WIDE,
+	CP_AM_PRESET_VOICE
+};
+
 struct cp_am_config {
 	int enabled;
 	cp_sample_t sample_rate;
@@ -60,10 +67,13 @@ struct cp_am {
 };
 
 int		cp_am_apply_preset(struct cp_am_config *, const char *);
+int		cp_am_apply_preset_id(struct cp_am_config *, enum cp_am_preset);
 void		cp_am_default_config(struct cp_am_config *);
 int		cp_am_init(struct cp_am *, const struct cp_am_config *);
+int		cp_am_preset_from_string(const char *, enum cp_am_preset *);
 int		cp_am_process(struct cp_am *, const cp_sample_t *,
 		    cp_sample_t *, size_t);
+const char	*cp_am_preset_string(enum cp_am_preset);
 int		cp_am_reset(struct cp_am *);
 
 #endif

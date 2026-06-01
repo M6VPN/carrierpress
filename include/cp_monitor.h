@@ -31,6 +31,16 @@ struct cp_monitor_snapshot {
 	int agc_state;
 	unsigned int stream_flags;
 	int dsp_status;
+	unsigned int am_enabled;
+	unsigned int am_highpass_hz;
+	unsigned int am_lowpass_hz;
+	unsigned int am_positive_peak;
+	unsigned int am_negative_peak;
+	unsigned int am_asymmetry_enabled;
+	unsigned int am_asymmetry_ratio;
+	int am_preset;
+	int control_command;
+	int control_status;
 	size_t band_count;
 	unsigned int band_rms[CP_MONITOR_MAX_BANDS];
 	int band_gr_db_centibel[CP_MONITOR_MAX_BANDS];

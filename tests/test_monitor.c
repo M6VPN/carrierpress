@@ -67,11 +67,14 @@ test_snapshot_clear(void)
 	struct cp_monitor_snapshot snapshot;
 
 	snapshot.input_peak = 1u;
+	snapshot.am_enabled = 1u;
+	snapshot.control_status = CP_ERR_RANGE;
 	snapshot.band_count = CP_MONITOR_MAX_BANDS;
 	snapshot.band_rms[0] = 2u;
 	cp_monitor_snapshot_clear(&snapshot);
 	if (snapshot.input_peak != 0u || snapshot.band_count != 0 ||
-	    snapshot.band_rms[0] != 0u) {
+	    snapshot.band_rms[0] != 0u || snapshot.am_enabled != 0u ||
+	    snapshot.control_status != 0) {
 		printf("test_monitor: snapshot clear failed\n");
 		return 0;
 	}

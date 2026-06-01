@@ -5,6 +5,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "cp_am.h"
 
@@ -30,6 +31,7 @@ static int		test_invalid_filter_settings(void);
 static int		test_lowpass_reduces_high_frequency(void);
 static int		test_negative_peak_limit(void);
 static int		test_positive_peak_limit(void);
+static int		test_preset_helpers(void);
 static int		test_stereo_stable(void);
 
 int
@@ -46,6 +48,8 @@ main(void)
 	if (!test_negative_peak_limit())
 		return 1;
 	if (!test_positive_peak_limit())
+		return 1;
+	if (!test_preset_helpers())
 		return 1;
 	if (!test_asymmetry_changes_positive_peak())
 		return 1;
@@ -319,6 +323,33 @@ test_positive_peak_limit(void)
 			return 0;
 		}
 	}
+
+	return 1;
+}
+
+static int
+test_preset_helpers(void)
+{
+	struct cp_am_config config;
+	enum cp_am_preset preset;
+
+	cp_am_default_config(&config);
+	if (cp_am_preset_from_string("am-shortwave", &preset) != CP_OK ||
+	    preset != CP_AM_PRESET_SHORTWAVE) {
+		printf("test_am: preset string parse failed\n");
+		return 0;
+	}
+	if (cp_am_preset_string(CP_AM_PRESET_VOICE) == NULL)
+		return 0;
+	if (cp_am_apply_preset_id(&config, CP_AM_PRESET_WIDE) != CP_OK)
+		return 0;
+	if (config.lowpass_hz != 9000.0f ||
+	    strcmp(config.preset_name, "am-wide") != 0) {
+		printf("test_am: preset id apply failed\n");
+		return 0;
+	}
+	if (cp_am_preset_from_string("bad", &preset) != CP_ERR_RANGE)
+		return 0;
 
 	return 1;
 }

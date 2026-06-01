@@ -3,6 +3,7 @@
 
 #include <sys/types.h>
 
+#include <math.h>
 #include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -11,6 +12,7 @@
 #include <portaudio.h>
 
 #include "cp_block.h"
+#include "cp_control.h"
 #include "cp_monitor.h"
 #include "cp_portaudio.h"
 #ifdef CP_WITH_TUI
@@ -35,11 +37,26 @@ struct cp_portaudio_runtime {
 	atomic_uint band_count;
 	atomic_uint band_rms[CP_MONITOR_MAX_BANDS];
 	atomic_int band_gr_db_centibel[CP_MONITOR_MAX_BANDS];
+	atomic_uint am_enabled;
+	atomic_uint am_highpass_hz;
+	atomic_uint am_lowpass_hz;
+	atomic_uint am_positive_peak;
+	atomic_uint am_negative_peak;
+	atomic_uint am_asymmetry_enabled;
+	atomic_uint am_asymmetry_ratio;
+	atomic_int am_preset;
+	atomic_int pending_control_type;
+	atomic_int pending_am_preset;
+	atomic_int control_command;
+	atomic_int control_status;
 	atomic_uint status_flags;
 	atomic_int dsp_status;
 };
 
+static void		cp_pa_apply_pending_control(
+			    struct cp_portaudio_runtime *);
 static unsigned int	cp_pa_flags_from_status(PaStreamCallbackFlags);
+static unsigned int	cp_pa_hz_to_uint(cp_sample_t);
 static int		cp_pa_init_processor(struct cp_portaudio_runtime *,
 			    const struct cp_audio_config *);
 static void		cp_pa_load_snapshot(struct cp_portaudio_runtime *,
@@ -48,6 +65,11 @@ static void		cp_pa_print_flags(unsigned int);
 static void		cp_pa_print_meters(const struct cp_monitor_snapshot *);
 static int		cp_pa_select_devices(const struct cp_audio_config *,
 			    PaDeviceIndex *, PaDeviceIndex *);
+#ifdef CP_WITH_TUI
+static void		cp_pa_store_control_request(
+			    struct cp_portaudio_runtime *,
+			    const struct cp_control_command *);
+#endif
 static void		cp_pa_store_meters(struct cp_portaudio_runtime *);
 static int		cp_pa_stream_callback(const void *, void *,
 			    unsigned long, const PaStreamCallbackTimeInfo *,
@@ -98,6 +120,7 @@ cp_portaudio_run(const struct cp_audio_config *config,
 	struct cp_portaudio_runtime runtime;
 	struct cp_monitor_snapshot snapshot;
 #ifdef CP_WITH_TUI
+	struct cp_control_command command;
 	struct cp_tui tui;
 #endif
 	int status;
@@ -184,8 +207,12 @@ cp_portaudio_run(const struct cp_audio_config *config,
 		cp_pa_load_snapshot(&runtime, &snapshot);
 #ifdef CP_WITH_TUI
 		if (config->tui_enabled) {
-			if (cp_tui_update(&tui, config, &snapshot))
+			if (cp_tui_update(&tui, config, &snapshot, &command))
 				*stop_requested = 1;
+			if (command.type != CP_CONTROL_COMMAND_NONE &&
+			    command.type != CP_CONTROL_COMMAND_STOP)
+				cp_pa_store_control_request(&runtime,
+				    &command);
 		} else
 #endif
 		{
@@ -244,6 +271,26 @@ cp_portaudio_status_string(int status)
 	}
 }
 
+static void
+cp_pa_apply_pending_control(struct cp_portaudio_runtime *runtime)
+{
+	struct cp_control_command command;
+	enum cp_control_command_type type;
+	int status;
+
+	type = (enum cp_control_command_type)atomic_exchange(
+	    &runtime->pending_control_type, CP_CONTROL_COMMAND_NONE);
+	if (type == CP_CONTROL_COMMAND_NONE)
+		return;
+
+	command.type = type;
+	command.am_preset = (enum cp_am_preset)atomic_load(
+	    &runtime->pending_am_preset);
+	status = cp_control_apply(&runtime->processor, &command);
+	atomic_store(&runtime->control_command, (int)command.type);
+	atomic_store(&runtime->control_status, status);
+}
+
 static unsigned int
 cp_pa_flags_from_status(PaStreamCallbackFlags status_flags)
 {
@@ -262,6 +309,17 @@ cp_pa_flags_from_status(PaStreamCallbackFlags status_flags)
 		flags |= CP_MONITOR_PRIMING_OUTPUT;
 
 	return flags;
+}
+
+static unsigned int
+cp_pa_hz_to_uint(cp_sample_t frequency)
+{
+	if (!isfinite(frequency) || frequency <= 0.0f)
+		return 0u;
+	if (frequency >= (cp_sample_t)UINT32_MAX)
+		return UINT32_MAX;
+
+	return (unsigned int)lrintf(frequency);
 }
 
 static int
@@ -300,6 +358,20 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 		atomic_init(&runtime->band_rms[band], 0u);
 		atomic_init(&runtime->band_gr_db_centibel[band], 0);
 	}
+	atomic_init(&runtime->am_enabled, 0u);
+	atomic_init(&runtime->am_highpass_hz, 0u);
+	atomic_init(&runtime->am_lowpass_hz, 0u);
+	atomic_init(&runtime->am_positive_peak, 0u);
+	atomic_init(&runtime->am_negative_peak, 0u);
+	atomic_init(&runtime->am_asymmetry_enabled, 0u);
+	atomic_init(&runtime->am_asymmetry_ratio, 0u);
+	atomic_init(&runtime->am_preset, (int)CP_AM_PRESET_SAFE);
+	atomic_init(&runtime->pending_control_type,
+	    (int)CP_CONTROL_COMMAND_NONE);
+	atomic_init(&runtime->pending_am_preset, (int)CP_AM_PRESET_SAFE);
+	atomic_init(&runtime->control_command,
+	    (int)CP_CONTROL_COMMAND_NONE);
+	atomic_init(&runtime->control_status, CP_OK);
 	atomic_init(&runtime->status_flags, 0u);
 	atomic_init(&runtime->dsp_status, CP_OK);
 
@@ -319,6 +391,8 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 		free(runtime->zero_input);
 		return CP_PORTAUDIO_ERR_DSP;
 	}
+
+	cp_pa_store_meters(runtime);
 
 	return CP_PORTAUDIO_OK;
 }
@@ -341,6 +415,18 @@ cp_pa_load_snapshot(struct cp_portaudio_runtime *runtime,
 	snapshot->agc_state = atomic_load(&runtime->agc_state);
 	snapshot->stream_flags = atomic_exchange(&runtime->status_flags, 0u);
 	snapshot->dsp_status = atomic_load(&runtime->dsp_status);
+	snapshot->am_enabled = atomic_load(&runtime->am_enabled);
+	snapshot->am_highpass_hz = atomic_load(&runtime->am_highpass_hz);
+	snapshot->am_lowpass_hz = atomic_load(&runtime->am_lowpass_hz);
+	snapshot->am_positive_peak = atomic_load(&runtime->am_positive_peak);
+	snapshot->am_negative_peak = atomic_load(&runtime->am_negative_peak);
+	snapshot->am_asymmetry_enabled =
+	    atomic_load(&runtime->am_asymmetry_enabled);
+	snapshot->am_asymmetry_ratio =
+	    atomic_load(&runtime->am_asymmetry_ratio);
+	snapshot->am_preset = atomic_load(&runtime->am_preset);
+	snapshot->control_command = atomic_load(&runtime->control_command);
+	snapshot->control_status = atomic_load(&runtime->control_status);
 
 	band_count = atomic_load(&runtime->band_count);
 	if (band_count > CP_MONITOR_MAX_BANDS)
@@ -418,11 +504,25 @@ cp_pa_select_devices(const struct cp_audio_config *config,
 	return CP_PORTAUDIO_OK;
 }
 
+#ifdef CP_WITH_TUI
+static void
+cp_pa_store_control_request(struct cp_portaudio_runtime *runtime,
+	const struct cp_control_command *command)
+{
+	if (runtime == NULL || command == NULL)
+		return;
+
+	atomic_store(&runtime->pending_am_preset, (int)command->am_preset);
+	atomic_store(&runtime->pending_control_type, (int)command->type);
+}
+#endif
+
 static void
 cp_pa_store_meters(struct cp_portaudio_runtime *runtime)
 {
 	size_t band;
 	size_t band_count;
+	enum cp_am_preset am_preset;
 
 	atomic_store(&runtime->input_peak,
 	    cp_monitor_sample_to_level(runtime->processor.input_meter.peak[0]));
@@ -451,6 +551,27 @@ cp_pa_store_meters(struct cp_portaudio_runtime *runtime)
 		    cp_monitor_db_to_centibel(
 		    runtime->processor.multiband.band_gain_reduction_db[band]));
 	}
+
+	atomic_store(&runtime->am_enabled,
+	    runtime->processor.am.config.enabled ? 1u : 0u);
+	atomic_store(&runtime->am_highpass_hz,
+	    cp_pa_hz_to_uint(runtime->processor.am.config.highpass_hz));
+	atomic_store(&runtime->am_lowpass_hz,
+	    cp_pa_hz_to_uint(runtime->processor.am.config.lowpass_hz));
+	atomic_store(&runtime->am_positive_peak,
+	    cp_monitor_sample_to_level(
+	    runtime->processor.am.config.positive_peak_limit));
+	atomic_store(&runtime->am_negative_peak,
+	    cp_monitor_sample_to_level(
+	    runtime->processor.am.config.negative_peak_limit));
+	atomic_store(&runtime->am_asymmetry_enabled,
+	    runtime->processor.am.config.asymmetry_enabled ? 1u : 0u);
+	atomic_store(&runtime->am_asymmetry_ratio,
+	    cp_monitor_sample_to_level(
+	    runtime->processor.am.config.asymmetry_ratio));
+	if (cp_am_preset_from_string(runtime->processor.am.config.preset_name,
+	    &am_preset) == CP_OK)
+		atomic_store(&runtime->am_preset, (int)am_preset);
 }
 
 static int
@@ -482,6 +603,7 @@ cp_pa_stream_callback(const void *input_buffer, void *output_buffer,
 		atomic_fetch_or(&runtime->status_flags,
 		    cp_pa_flags_from_status(status_flags));
 
+	cp_pa_apply_pending_control(runtime);
 	status = cp_block_process(&runtime->processor, input, output,
 	    runtime->scratch, runtime->block_size * runtime->channels,
 	    (size_t)frame_count);

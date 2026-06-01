@@ -171,6 +171,17 @@ Run live processing with the ncurses monitor:
 ./carrierpress --live --tui
 ```
 
+Run live AM processing with the ncurses monitor and preset keys:
+
+```sh
+./carrierpress --live --tui --am
+```
+
+The live TUI supports safe AM preset switching while audio is running. Press `0`
+for AM off, `1` for `am-safe`, `2` for `am-shortwave`, `3` for `am-wide`,
+`4` for `am-voice`, and `q` to stop. Preset changes are validated and applied at
+audio block boundaries.
+
 Print meters once per second:
 
 ```sh
@@ -227,9 +238,16 @@ Run the TUI monitor:
 
 Check that input/output meters, AGC state, stream flags, multiband meters, and AM settings update. Press `q` or `Ctrl-C` to stop.
 
+For live AM control testing, add `--am` and press `0` through `4` to switch AM
+off or select one of the validated AM presets.
+
 ## Development
 
 The core library has no optional audio backend dependency. WAV support lives in `cp_wav.c`, PortAudio support lives in `cp_portaudio.c`, and the ncurses monitor lives in `cp_tui.c`. Optional files are compiled only when requested. Process functions use caller-owned buffers and explicit state structs so real-time callbacks can remain malloc-free and deterministic.
+
+Live TUI control is preset-only in this milestone. It can switch the AM output
+chain between validated presets, but it does not expose arbitrary DSP parameter
+editing.
 
 ## AGC Controls
 

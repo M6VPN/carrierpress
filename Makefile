@@ -23,6 +23,7 @@ CORE_SRCS = \
 	src/cp_biquad.c \
 	src/cp_block.c \
 	src/cp_compressor.c \
+	src/cp_control.c \
 	src/cp_crossover.c \
 	src/cp_dc_blocker.c \
 	src/cp_dehummer.c \
@@ -39,6 +40,7 @@ TEST_SRCS = \
 	tests/test_audio.c \
 	tests/test_biquad.c \
 	tests/test_compressor.c \
+	tests/test_control.c \
 	tests/test_crossover.c \
 	tests/test_dc_blocker.c \
 	tests/test_dehummer.c \
@@ -85,6 +87,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_audio \
 	$(TEST_BIN_DIR)/test_biquad \
 	$(TEST_BIN_DIR)/test_compressor \
+	$(TEST_BIN_DIR)/test_control \
 	$(TEST_BIN_DIR)/test_crossover \
 	$(TEST_BIN_DIR)/test_dc_blocker \
 	$(TEST_BIN_DIR)/test_dehummer \
@@ -125,6 +128,10 @@ $(TEST_BIN_DIR)/test_compressor: $(TEST_OBJ_DIR)/tests/test_compressor.o $(TEST_
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_compressor.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_control: $(TEST_OBJ_DIR)/tests/test_control.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_control.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_crossover: $(TEST_OBJ_DIR)/tests/test_crossover.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_crossover.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -164,6 +171,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_audio
 	./$(TEST_BIN_DIR)/test_biquad
 	./$(TEST_BIN_DIR)/test_compressor
+	./$(TEST_BIN_DIR)/test_control
 	./$(TEST_BIN_DIR)/test_crossover
 	./$(TEST_BIN_DIR)/test_dehummer
 	./$(TEST_BIN_DIR)/test_limiter
@@ -206,6 +214,7 @@ clean:
 	rm -f carrierpress libcarrierpress.a src/*.o tests/*.o
 	rm -f tests/test_agc tests/test_am tests/test_audio tests/test_biquad
 	rm -f tests/test_compressor tests/test_crossover
+	rm -f tests/test_control
 	rm -f tests/test_dc_blocker tests/test_dehummer
 	rm -f tests/test_limiter tests/test_meter
 	rm -f tests/test_monitor tests/test_multiband

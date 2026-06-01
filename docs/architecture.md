@@ -14,6 +14,7 @@ The DSP core does not include PortAudio, libsndfile, sndio, or embedded platform
 - `cp_wav` owns optional offline WAV processing with libsndfile.
 - `cp_portaudio` owns optional live sound-card processing with PortAudio.
 - `cp_monitor` owns dependency-free monitor snapshots and scaling.
+- `cp_control` owns validated live control commands.
 - `cp_tui` owns optional ncurses live monitoring.
 
 This split keeps the core library usable for offline tools, live hosts, and embedded ports without forcing every dependency into every build.
@@ -24,7 +25,9 @@ This split keeps the core library usable for offline tools, live hosts, and embe
 - sndio for OpenBSD live audio after the portable core is stable.
 - CMSIS-DSP for STM32H753 after the float32 host chain is proven.
 
-The PortAudio backend uses callback mode. Buffers and DSP state are allocated before stream start, the callback does not print, and meter/status values are handed to the foreground loop for reporting. Text meters and the optional ncurses TUI both read monitor snapshots outside the callback. Future sndio/OpenBSD work should keep the same boundary. The STM32H753 path should call the same block DSP model directly or through a CMSIS-DSP adapter.
+The PortAudio backend uses callback mode. Buffers and DSP state are allocated before stream start, the callback does not print, and meter/status values are handed to the foreground loop for reporting. Text meters and the optional ncurses TUI both read monitor snapshots outside the callback.
+
+Live TUI controls use a small command handoff. The foreground TUI validates key input into a preset command, stores one pending command atomically, and the callback applies it at the next block boundary. M6.6 only allows AM off and validated AM preset changes. Future sndio/OpenBSD work should keep the same boundary. The STM32H753 path should call the same block DSP model directly or through a CMSIS-DSP adapter.
 
 ## State Ownership
 

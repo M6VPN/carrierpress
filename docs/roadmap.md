@@ -32,6 +32,10 @@ Partially implemented. CarrierPress now has an optional AM output-chain foundati
 
 Implemented as an optional ncurses TUI for PortAudio live mode. It shows input/output levels, AGC state, stream flags, multiband meters, and AM settings without adding runtime DSP controls. The PortAudio callback still only updates atomic monitor values.
 
+## M6.6 live AM control foundation
+
+Implemented as a preset-only live control layer for the optional ncurses TUI. It can switch AM off or select validated AM presets while live audio is running. Commands are handed from the foreground UI to the PortAudio callback and applied at audio block boundaries. Full parameter editing and web control are deferred.
+
 ## M7 SSB chain
 
 Add SSB-oriented filtering, asymmetry handling, and speech-focused processing.

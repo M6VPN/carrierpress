@@ -17,6 +17,7 @@
 
 static void	cp_tui_draw_bar(int, int, const char *, cp_sample_t,
 		    cp_sample_t);
+static void	cp_tui_draw_am(int, const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_flags(int, unsigned int);
 static void	cp_tui_draw_header(const struct cp_audio_config *);
 static void	cp_tui_draw_multiband(int, const struct cp_monitor_snapshot *);
@@ -52,13 +53,16 @@ cp_tui_init(struct cp_tui *tui)
 
 int
 cp_tui_update(struct cp_tui *tui, const struct cp_audio_config *config,
-	const struct cp_monitor_snapshot *snapshot)
+	const struct cp_monitor_snapshot *snapshot,
+	struct cp_control_command *command)
 {
 	cp_sample_t agc_gain;
 	int key;
 
-	if (tui == NULL || config == NULL || snapshot == NULL || !tui->active)
+	if (tui == NULL || config == NULL || snapshot == NULL ||
+	    command == NULL || !tui->active)
 		return 1;
+	cp_control_command_clear(command);
 
 	erase();
 	cp_tui_draw_header(config);
@@ -79,27 +83,48 @@ cp_tui_update(struct cp_tui *tui, const struct cp_audio_config *config,
 
 	cp_tui_draw_multiband(12, snapshot);
 
-	mvprintw(18, 2, "AM %s preset %s HP %0.1f Hz LP %0.1f Hz "
-	    "pos %0.2f neg %0.2f asym %s %0.2f",
-	    config->am_config.enabled ? "on" : "off",
-	    config->am_config.preset_name,
-	    config->am_config.highpass_hz,
-	    config->am_config.lowpass_hz,
-	    config->am_config.positive_peak_limit,
-	    config->am_config.negative_peak_limit,
-	    config->am_config.asymmetry_enabled ? "on" : "off",
-	    config->am_config.asymmetry_ratio);
-
+	cp_tui_draw_am(18, snapshot);
 	cp_tui_draw_flags(20, snapshot->stream_flags);
-	mvprintw(22, 2, "DSP status %d", snapshot->dsp_status);
-	mvprintw(24, 2, "Press q to stop.");
+	mvprintw(22, 2, "DSP status %d  control %s status %d",
+	    snapshot->dsp_status,
+	    cp_control_command_string(
+	    (enum cp_control_command_type)snapshot->control_command),
+	    snapshot->control_status);
+	mvprintw(24, 2, "Keys: 0 AM off  1 safe  2 shortwave  3 wide  "
+	    "4 voice  q stop");
 	refresh();
 
 	key = getch();
-	if (key == CP_TUI_QUIT_KEY || key == 'Q')
+	if (key == ERR)
+		return 0;
+	if (cp_control_command_from_key(key, command) != CP_OK)
+		return 0;
+	if (command->type == CP_CONTROL_COMMAND_STOP)
 		return 1;
 
 	return 0;
+}
+
+static void
+cp_tui_draw_am(int row, const struct cp_monitor_snapshot *snapshot)
+{
+	const char *preset_name;
+
+	preset_name = cp_am_preset_string(
+	    (enum cp_am_preset)snapshot->am_preset);
+	if (preset_name == NULL)
+		preset_name = "unknown";
+
+	mvprintw(row, 2, "AM %s preset %s HP %u Hz LP %u Hz pos %0.2f "
+	    "neg %0.2f asym %s %0.2f",
+	    snapshot->am_enabled ? "on" : "off",
+	    preset_name,
+	    snapshot->am_highpass_hz,
+	    snapshot->am_lowpass_hz,
+	    cp_monitor_level_to_sample(snapshot->am_positive_peak),
+	    cp_monitor_level_to_sample(snapshot->am_negative_peak),
+	    snapshot->am_asymmetry_enabled ? "on" : "off",
+	    cp_monitor_level_to_sample(snapshot->am_asymmetry_ratio));
 }
 
 static void

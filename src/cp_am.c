@@ -22,10 +22,29 @@ static int		cp_am_valid_config(const struct cp_am_config *);
 int
 cp_am_apply_preset(struct cp_am_config *config, const char *preset_name)
 {
+	enum cp_am_preset preset;
+
 	if (config == NULL || preset_name == NULL)
 		return CP_ERR_NULL;
+	if (cp_am_preset_from_string(preset_name, &preset) != CP_OK)
+		return CP_ERR_RANGE;
 
-	if (strcmp(preset_name, "am-safe") == 0) {
+	return cp_am_apply_preset_id(config, preset);
+}
+
+int
+cp_am_apply_preset_id(struct cp_am_config *config, enum cp_am_preset preset)
+{
+	const char *preset_name;
+
+	if (config == NULL)
+		return CP_ERR_NULL;
+
+	preset_name = cp_am_preset_string(preset);
+	if (preset_name == NULL)
+		return CP_ERR_RANGE;
+
+	if (preset == CP_AM_PRESET_SAFE) {
 		config->highpass_hz           = 60.0f;
 		config->lowpass_hz            = 5000.0f;
 		config->phase_rotator_enabled = 1;
@@ -37,7 +56,7 @@ cp_am_apply_preset(struct cp_am_config *config, const char *preset_name)
 		cp_am_set_name(config, preset_name);
 		return CP_OK;
 	}
-	if (strcmp(preset_name, "am-shortwave") == 0) {
+	if (preset == CP_AM_PRESET_SHORTWAVE) {
 		config->highpass_hz           = 80.0f;
 		config->lowpass_hz            = 5000.0f;
 		config->phase_rotator_enabled = 1;
@@ -49,7 +68,7 @@ cp_am_apply_preset(struct cp_am_config *config, const char *preset_name)
 		cp_am_set_name(config, preset_name);
 		return CP_OK;
 	}
-	if (strcmp(preset_name, "am-wide") == 0) {
+	if (preset == CP_AM_PRESET_WIDE) {
 		config->highpass_hz           = 40.0f;
 		config->lowpass_hz            = 9000.0f;
 		config->phase_rotator_enabled = 1;
@@ -61,7 +80,7 @@ cp_am_apply_preset(struct cp_am_config *config, const char *preset_name)
 		cp_am_set_name(config, preset_name);
 		return CP_OK;
 	}
-	if (strcmp(preset_name, "am-voice") == 0) {
+	if (preset == CP_AM_PRESET_VOICE) {
 		config->highpass_hz           = 120.0f;
 		config->lowpass_hz            = 3500.0f;
 		config->phase_rotator_enabled = 1;
@@ -136,6 +155,31 @@ cp_am_init(struct cp_am *state, const struct cp_am_config *config)
 }
 
 int
+cp_am_preset_from_string(const char *text, enum cp_am_preset *preset)
+{
+	if (text == NULL || preset == NULL)
+		return CP_ERR_NULL;
+	if (strcmp(text, "am-safe") == 0) {
+		*preset = CP_AM_PRESET_SAFE;
+		return CP_OK;
+	}
+	if (strcmp(text, "am-shortwave") == 0) {
+		*preset = CP_AM_PRESET_SHORTWAVE;
+		return CP_OK;
+	}
+	if (strcmp(text, "am-wide") == 0) {
+		*preset = CP_AM_PRESET_WIDE;
+		return CP_OK;
+	}
+	if (strcmp(text, "am-voice") == 0) {
+		*preset = CP_AM_PRESET_VOICE;
+		return CP_OK;
+	}
+
+	return CP_ERR_RANGE;
+}
+
+int
 cp_am_process(struct cp_am *state, const cp_sample_t *input,
 	cp_sample_t *output, size_t frames)
 {
@@ -189,6 +233,23 @@ cp_am_process(struct cp_am *state, const cp_sample_t *input,
 	}
 
 	return CP_OK;
+}
+
+const char *
+cp_am_preset_string(enum cp_am_preset preset)
+{
+	switch (preset) {
+	case CP_AM_PRESET_SAFE:
+		return "am-safe";
+	case CP_AM_PRESET_SHORTWAVE:
+		return "am-shortwave";
+	case CP_AM_PRESET_WIDE:
+		return "am-wide";
+	case CP_AM_PRESET_VOICE:
+		return "am-voice";
+	default:
+		return NULL;
+	}
 }
 
 int
