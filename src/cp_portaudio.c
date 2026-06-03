@@ -54,6 +54,7 @@ struct cp_portaudio_runtime {
 	atomic_int ssb_preset;
 	atomic_int pending_control_type;
 	atomic_int pending_am_preset;
+	atomic_int pending_ssb_preset;
 	atomic_int control_command;
 	atomic_int control_status;
 	atomic_uint status_flags;
@@ -380,8 +381,13 @@ cp_pa_apply_pending_control(struct cp_portaudio_runtime *runtime)
 		return;
 
 	command.type = type;
+	command.bank = type == CP_CONTROL_COMMAND_SSB_PRESET ||
+	    type == CP_CONTROL_COMMAND_SSB_OFF ? CP_CONTROL_BANK_SSB :
+	    CP_CONTROL_BANK_AM;
 	command.am_preset = (enum cp_am_preset)atomic_load(
 	    &runtime->pending_am_preset);
+	command.ssb_preset = (enum cp_ssb_preset)atomic_load(
+	    &runtime->pending_ssb_preset);
 	status = cp_control_apply(&runtime->processor, &command);
 	atomic_store(&runtime->control_command, (int)command.type);
 	atomic_store(&runtime->control_status, status);
@@ -498,6 +504,8 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	atomic_init(&runtime->pending_control_type,
 	    (int)CP_CONTROL_COMMAND_NONE);
 	atomic_init(&runtime->pending_am_preset, (int)CP_AM_PRESET_SAFE);
+	atomic_init(&runtime->pending_ssb_preset,
+	    (int)CP_SSB_PRESET_SPEECH);
 	atomic_init(&runtime->control_command,
 	    (int)CP_CONTROL_COMMAND_NONE);
 	atomic_init(&runtime->control_status, CP_OK);
@@ -727,6 +735,8 @@ cp_pa_store_control_request(struct cp_portaudio_runtime *runtime,
 		return;
 
 	atomic_store(&runtime->pending_am_preset, (int)command->am_preset);
+	atomic_store(&runtime->pending_ssb_preset,
+	    (int)command->ssb_preset);
 	atomic_store(&runtime->pending_control_type, (int)command->type);
 }
 #endif

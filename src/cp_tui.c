@@ -24,7 +24,10 @@ static void	cp_tui_draw_flags(int, unsigned int);
 static void	cp_tui_draw_header(const struct cp_tui_view *);
 static void	cp_tui_draw_multiband(int, const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_ssb(int, const struct cp_monitor_snapshot *);
-static void	cp_tui_draw_keys(const struct cp_tui_view *);
+static void	cp_tui_draw_keys(const struct cp_tui_view *,
+		    enum cp_control_bank);
+static enum cp_control_bank
+		cp_tui_initial_bank(const struct cp_tui_view *);
 static int	cp_tui_level_columns(cp_sample_t, cp_sample_t);
 
 void
@@ -51,6 +54,8 @@ cp_tui_init(struct cp_tui *tui)
 	keypad(stdscr, TRUE);
 	curs_set(0);
 	tui->active = 1;
+	tui->control_bank_set = 0;
+	tui->control_bank = CP_CONTROL_BANK_AM;
 
 	return 0;
 }
@@ -85,6 +90,10 @@ cp_tui_update_view(struct cp_tui *tui, const struct cp_tui_view *view,
 		return 1;
 	cp_control_command_clear(command);
 	snapshot = view->snapshot;
+	if (!tui->control_bank_set) {
+		tui->control_bank = cp_tui_initial_bank(view);
+		tui->control_bank_set = 1;
+	}
 
 	erase();
 	cp_tui_draw_header(view);
@@ -108,21 +117,30 @@ cp_tui_update_view(struct cp_tui *tui, const struct cp_tui_view *view,
 	cp_tui_draw_am(18, snapshot);
 	cp_tui_draw_ssb(19, snapshot);
 	cp_tui_draw_flags(20, snapshot->stream_flags);
+	mvprintw(21, 2, "Control bank %s",
+	    cp_control_bank_string(tui->control_bank));
 	mvprintw(22, 2, "DSP status %d  control %s status %d",
 	    snapshot->dsp_status,
 	    cp_control_command_string(
 	    (enum cp_control_command_type)snapshot->control_command),
 	    snapshot->control_status);
-	cp_tui_draw_keys(view);
+	cp_tui_draw_keys(view, tui->control_bank);
 	refresh();
 
 	key = getch();
 	if (key == ERR)
 		return 0;
-	if (cp_control_command_from_key(key, command) != CP_OK)
+	if (cp_control_command_from_key(key, tui->control_bank, command) !=
+	    CP_OK)
 		return 0;
 	if (command->type == CP_CONTROL_COMMAND_STOP)
 		return 1;
+	if (command->type == CP_CONTROL_COMMAND_SELECT_AM ||
+	    command->type == CP_CONTROL_COMMAND_SELECT_SSB) {
+		tui->control_bank = command->bank;
+		cp_control_command_clear(command);
+		return 0;
+	}
 	if (command->type == CP_CONTROL_COMMAND_PLAYOUT_NEXT &&
 	    !view->next_enabled)
 		cp_control_command_clear(command);
@@ -256,15 +274,32 @@ cp_tui_draw_multiband(int row, const struct cp_monitor_snapshot *snapshot)
 }
 
 static void
-cp_tui_draw_keys(const struct cp_tui_view *view)
+cp_tui_draw_keys(const struct cp_tui_view *view, enum cp_control_bank bank)
 {
+	const char *preset_keys;
+
+	if (bank == CP_CONTROL_BANK_SSB)
+		preset_keys = "0 SSB off  1 speech  2 narrow  3 wide  "
+		    "4 gentle";
+	else
+		preset_keys = "0 AM off  1 safe  2 shortwave  3 wide  "
+		    "4 voice";
+
 	if (view->mode == CP_TUI_MODE_PLAYOUT && view->next_enabled) {
-		mvprintw(24, 2, "Keys: 0 AM off  1 safe  2 shortwave  "
-		    "3 wide  4 voice  n next  q stop");
+		mvprintw(24, 2, "Keys: a AM  s SSB  %s  n next  q stop",
+		    preset_keys);
 		return;
 	}
-	mvprintw(24, 2, "Keys: 0 AM off  1 safe  2 shortwave  3 wide  "
-	    "4 voice  q stop");
+	mvprintw(24, 2, "Keys: a AM  s SSB  %s  q stop", preset_keys);
+}
+
+static enum cp_control_bank
+cp_tui_initial_bank(const struct cp_tui_view *view)
+{
+	if (view->snapshot->ssb_enabled || view->config->ssb_config.enabled)
+		return CP_CONTROL_BANK_SSB;
+
+	return CP_CONTROL_BANK_AM;
 }
 
 static int

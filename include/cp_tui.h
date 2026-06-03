@@ -10,6 +10,8 @@
 
 struct cp_tui {
 	int active;
+	int control_bank_set;
+	enum cp_control_bank control_bank;
 };
 
 enum cp_tui_mode {

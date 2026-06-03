@@ -30,11 +30,11 @@ Partially implemented. CarrierPress now has an optional AM output-chain foundati
 
 ## M6.5 live monitor foundation
 
-Implemented as an optional ncurses TUI for PortAudio live mode. It shows input/output levels, AGC state, stream flags, multiband meters, and AM settings without adding runtime DSP controls. The PortAudio callback still only updates atomic monitor values.
+Implemented as an optional ncurses TUI for PortAudio live mode. It shows input/output levels, AGC state, stream flags, multiband meters, and AM/SSB settings. The PortAudio callback still only updates atomic monitor values.
 
 ## M6.6 live AM control foundation
 
-Implemented as a preset-only live control layer for the optional ncurses TUI. It can switch AM off or select validated AM presets while live audio is running. Commands are handed from the foreground UI to the PortAudio callback and applied at audio block boundaries. Full parameter editing and web control are deferred.
+Implemented as a preset-only live control layer for the optional ncurses TUI. It can switch AM or SSB off and select validated presets while live audio is running. AM and SSB use explicit control banks so preset keys cannot change the wrong mode. Commands are handed from the foreground UI to the PortAudio callback and applied at audio block boundaries. Full parameter editing and web control are deferred.
 
 ## M6.7 laptop live audio selection
 
@@ -50,7 +50,7 @@ Partially implemented. Play mode now reports live-style meters, honors `--meter-
 
 ## M6.10 playout TUI controls
 
-Implemented as a first ncurses monitor for `--play` and `--playlist`. The TUI shows file and playlist position, live-style meters, AM state, and multiband state. It can stop with `q`, skip to the next playlist item with `n`, and apply the same AM preset keys as live mode between processed blocks.
+Implemented as a first ncurses monitor for `--play` and `--playlist`. The TUI shows file and playlist position, live-style meters, AM/SSB state, and multiband state. It can stop with `q`, skip to the next playlist item with `n`, and apply the same mode-aware AM/SSB preset keys as live mode between processed blocks.
 
 ## M7 SSB chain
 
