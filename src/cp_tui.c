@@ -20,6 +20,8 @@
 static void	cp_tui_draw_bar(int, int, const char *, cp_sample_t,
 		    cp_sample_t);
 static void	cp_tui_draw_am(int, const struct cp_monitor_snapshot *);
+static void	cp_tui_draw_dehummer(int,
+		    const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_flags(int, unsigned int);
 static void	cp_tui_draw_header(const struct cp_tui_view *);
 static void	cp_tui_draw_multiband(int, const struct cp_monitor_snapshot *);
@@ -112,6 +114,7 @@ cp_tui_update_view(struct cp_tui *tui, const struct cp_tui_view *view,
 	    cp_monitor_centibel_to_db(snapshot->agc_gain_db_centibel),
 	    cp_agc_state_string((enum cp_agc_gate_state)snapshot->agc_state));
 
+	cp_tui_draw_dehummer(11, snapshot);
 	cp_tui_draw_multiband(12, snapshot);
 
 	cp_tui_draw_am(18, snapshot);
@@ -205,6 +208,15 @@ cp_tui_draw_bar(int row, int col, const char *label, cp_sample_t value,
 }
 
 static void
+cp_tui_draw_dehummer(int row, const struct cp_monitor_snapshot *snapshot)
+{
+	mvprintw(row, 2, "Dehummer %s base %u Hz harmonics %u",
+	    snapshot->dehummer_enabled ? "on" : "off",
+	    snapshot->dehummer_base_hz,
+	    snapshot->dehummer_harmonic_count);
+}
+
+static void
 cp_tui_draw_flags(int row, unsigned int flags)
 {
 	mvprintw(row, 2, "Stream flags:");
@@ -261,9 +273,17 @@ cp_tui_draw_header(const struct cp_tui_view *view)
 static void
 cp_tui_draw_multiband(int row, const struct cp_monitor_snapshot *snapshot)
 {
+	const char *preset_name;
 	size_t band;
 
-	mvprintw(row, 2, "Multiband bands %zu", snapshot->band_count);
+	preset_name = cp_multiband_preset_string(
+	    (enum cp_multiband_preset)snapshot->multiband_preset);
+	if (preset_name == NULL)
+		preset_name = "unknown";
+
+	mvprintw(row, 2, "Multiband %s bands %zu preset %s",
+	    snapshot->multiband_enabled ? "on" : "off",
+	    snapshot->band_count, preset_name);
 	for (band = 0; band < snapshot->band_count &&
 	    band < CP_MONITOR_MAX_BANDS; band++) {
 		mvprintw(row + 1 + (int)band, 2,
@@ -286,11 +306,13 @@ cp_tui_draw_keys(const struct cp_tui_view *view, enum cp_control_bank bank)
 		    "4 voice";
 
 	if (view->mode == CP_TUI_MODE_PLAYOUT && view->next_enabled) {
-		mvprintw(24, 2, "Keys: a AM  s SSB  %s  n next  q stop",
+		mvprintw(24, 2,
+		    "Keys: a AM  s SSB  d hum  m mb  %s  n next  q stop",
 		    preset_keys);
 		return;
 	}
-	mvprintw(24, 2, "Keys: a AM  s SSB  %s  q stop", preset_keys);
+	mvprintw(24, 2, "Keys: a AM  s SSB  d hum  m mb  %s  q stop",
+	    preset_keys);
 }
 
 static enum cp_control_bank

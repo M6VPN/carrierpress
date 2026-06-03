@@ -10,6 +10,8 @@ cp_control_apply(struct cp_block_processor *processor,
 	const struct cp_control_command *command)
 {
 	struct cp_am_config am_config;
+	struct cp_dehummer_config dehummer_config;
+	struct cp_multiband_config multiband_config;
 	struct cp_ssb_config ssb_config;
 	int status;
 
@@ -23,6 +25,28 @@ cp_control_apply(struct cp_block_processor *processor,
 	case CP_CONTROL_COMMAND_SELECT_AM:
 	case CP_CONTROL_COMMAND_SELECT_SSB:
 		return CP_OK;
+	case CP_CONTROL_COMMAND_DEHUMMER_TOGGLE:
+		dehummer_config = processor->dehummer.config;
+		dehummer_config.enabled = !processor->dehummer.config.enabled;
+		dehummer_config.channel_count = processor->channels;
+		return cp_dehummer_init(&processor->dehummer,
+		    &dehummer_config);
+	case CP_CONTROL_COMMAND_MULTIBAND_CYCLE:
+		multiband_config = processor->multiband.config;
+		multiband_config.channels = processor->channels;
+		if (!processor->multiband.config.enabled) {
+			multiband_config.enabled = 1;
+			multiband_config.preset = CP_MULTIBAND_PRESET_SPEECH;
+		} else if (processor->multiband.config.preset ==
+		    CP_MULTIBAND_PRESET_SPEECH) {
+			multiband_config.enabled = 1;
+			multiband_config.preset = CP_MULTIBAND_PRESET_MUSIC;
+		} else {
+			multiband_config.enabled = 0;
+			multiband_config.preset = CP_MULTIBAND_PRESET_SPEECH;
+		}
+		return cp_multiband_init(&processor->multiband,
+		    &multiband_config);
 	case CP_CONTROL_COMMAND_AM_OFF:
 		processor->am.config.enabled = 0;
 		processor->am.enabled = 0;
@@ -95,6 +119,14 @@ cp_control_command_from_key(int key, enum cp_control_bank bank,
 	case 'N':
 		command->type = CP_CONTROL_COMMAND_PLAYOUT_NEXT;
 		return CP_OK;
+	case 'd':
+	case 'D':
+		command->type = CP_CONTROL_COMMAND_DEHUMMER_TOGGLE;
+		return CP_OK;
+	case 'm':
+	case 'M':
+		command->type = CP_CONTROL_COMMAND_MULTIBAND_CYCLE;
+		return CP_OK;
 	case 'a':
 	case 'A':
 		command->type = CP_CONTROL_COMMAND_SELECT_AM;
@@ -148,6 +180,10 @@ cp_control_command_string(enum cp_control_command_type type)
 		return "stop";
 	case CP_CONTROL_COMMAND_PLAYOUT_NEXT:
 		return "playout-next";
+	case CP_CONTROL_COMMAND_DEHUMMER_TOGGLE:
+		return "dehummer-toggle";
+	case CP_CONTROL_COMMAND_MULTIBAND_CYCLE:
+		return "multiband-cycle";
 	case CP_CONTROL_COMMAND_SELECT_AM:
 		return "select-am";
 	case CP_CONTROL_COMMAND_SELECT_SSB:

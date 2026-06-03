@@ -278,12 +278,13 @@ Run live AM processing with the ncurses monitor and preset keys:
 ```
 
 The live TUI supports safe AM and SSB preset switching while audio is running.
-Press `a` for the AM control bank or `s` for the SSB control bank. In the AM
-bank, press `0` for AM off, `1` for `am-safe`, `2` for `am-shortwave`, `3` for
-`am-wide`, and `4` for `am-voice`. In the SSB bank, press `0` for SSB off, `1`
-for `ssb-speech`, `2` for `ssb-narrow`, `3` for `ssb-wide`, and `4` for
-`ssb-gentle`. Press `q` to stop. Preset changes are validated and applied at
-audio block boundaries.
+Press `d` to toggle the dehummer. Press `m` to cycle multiband mode through off,
+speech, and music. Press `a` for the AM control bank or `s` for the SSB control
+bank. In the AM bank, press `0` for AM off, `1` for `am-safe`, `2` for
+`am-shortwave`, `3` for `am-wide`, and `4` for `am-voice`. In the SSB bank,
+press `0` for SSB off, `1` for `ssb-speech`, `2` for `ssb-narrow`, `3` for
+`ssb-wide`, and `4` for `ssb-gentle`. Press `q` to stop. Preset changes are
+validated and applied at audio block boundaries.
 
 Print meters once per second:
 
@@ -359,10 +360,11 @@ Run the TUI monitor:
 
 Check that input/output meters, AGC state, stream flags, multiband meters, and AM/SSB settings update. Press `q` or `Ctrl-C` to stop.
 
-For live AM control testing, add `--am`, press `a`, and press `0` through `4`
-to switch AM off or select one of the validated AM presets. For live SSB
-control testing, add `--ssb`, press `s`, and press `0` through `4` to switch
-SSB off or select one of the validated SSB presets.
+For live control testing, press `d` to toggle dehummer and `m` to cycle
+multiband off, speech, and music. For AM control testing, add `--am`, press
+`a`, and press `0` through `4` to switch AM off or select one of the validated
+AM presets. For SSB control testing, add `--ssb`, press `s`, and press `0`
+through `4` to switch SSB off or select one of the validated SSB presets.
 
 ## Development
 
@@ -371,10 +373,11 @@ The core library has no optional audio backend dependency. WAV support lives in 
 WAV playout reads fixed-size blocks from libsndfile, processes them through the normal CarrierPress chain, reports live-style meters from the processor state, and writes processed float32 blocks to a PortAudio output stream. It does not load the whole file into memory. This milestone uses blocking PortAudio output for file playout; live input mode still uses the callback backend.
 
 TUI control is preset-only for DSP changes in this milestone. It can switch the
-AM and SSB output chains between validated presets, and playlist playout can
-skip to the next track. AM and SSB controls are split into explicit banks so
-AM preset keys do not change AM while SSB is selected. It does not expose
-arbitrary DSP parameter editing.
+dehummer on or off, cycle multiband between off, speech, and music, switch the
+AM and SSB output chains between validated presets, and skip to the next track
+during playlist playout. AM and SSB controls are split into explicit banks so AM
+preset keys do not change AM while SSB is selected. It does not expose arbitrary
+DSP parameter editing.
 
 ## AGC Controls
 

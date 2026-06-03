@@ -10,6 +10,8 @@
 
 static int	test_apply_am_off(void);
 static int	test_apply_am_preset(void);
+static int	test_apply_dehummer_toggle(void);
+static int	test_apply_multiband_cycle(void);
 static int	test_apply_mutual_exclusion(void);
 static int	test_apply_ssb_off(void);
 static int	test_apply_ssb_preset(void);
@@ -23,6 +25,10 @@ main(void)
 	if (!test_apply_am_preset())
 		return 1;
 	if (!test_apply_am_off())
+		return 1;
+	if (!test_apply_dehummer_toggle())
+		return 1;
+	if (!test_apply_multiband_cycle())
 		return 1;
 	if (!test_apply_ssb_preset())
 		return 1;
@@ -52,6 +58,75 @@ test_apply_am_off(void)
 		return 0;
 	if (processor.am.config.enabled || processor.am.enabled) {
 		printf("test_control: AM off command failed\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_apply_dehummer_toggle(void)
+{
+	struct cp_block_config config;
+	struct cp_block_processor processor;
+	struct cp_control_command command;
+
+	cp_block_default_config(&config, CP_CHANNELS_MONO);
+	if (cp_block_init(&processor, &config) != CP_OK)
+		return 0;
+
+	cp_control_command_clear(&command);
+	command.type = CP_CONTROL_COMMAND_DEHUMMER_TOGGLE;
+	if (cp_control_apply(&processor, &command) != CP_OK)
+		return 0;
+	if (!processor.dehummer.config.enabled ||
+	    !processor.dehummer.enabled) {
+		printf("test_control: dehummer toggle on failed\n");
+		return 0;
+	}
+	if (cp_control_apply(&processor, &command) != CP_OK)
+		return 0;
+	if (processor.dehummer.config.enabled ||
+	    processor.dehummer.enabled) {
+		printf("test_control: dehummer toggle off failed\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_apply_multiband_cycle(void)
+{
+	struct cp_block_config config;
+	struct cp_block_processor processor;
+	struct cp_control_command command;
+
+	cp_block_default_config(&config, CP_CHANNELS_MONO);
+	if (cp_block_init(&processor, &config) != CP_OK)
+		return 0;
+
+	cp_control_command_clear(&command);
+	command.type = CP_CONTROL_COMMAND_MULTIBAND_CYCLE;
+	if (cp_control_apply(&processor, &command) != CP_OK)
+		return 0;
+	if (!processor.multiband.config.enabled ||
+	    processor.multiband.config.preset != CP_MULTIBAND_PRESET_SPEECH) {
+		printf("test_control: multiband speech cycle failed\n");
+		return 0;
+	}
+	if (cp_control_apply(&processor, &command) != CP_OK)
+		return 0;
+	if (!processor.multiband.config.enabled ||
+	    processor.multiband.config.preset != CP_MULTIBAND_PRESET_MUSIC) {
+		printf("test_control: multiband music cycle failed\n");
+		return 0;
+	}
+	if (cp_control_apply(&processor, &command) != CP_OK)
+		return 0;
+	if (processor.multiband.config.enabled ||
+	    processor.multiband.config.preset != CP_MULTIBAND_PRESET_SPEECH) {
+		printf("test_control: multiband off cycle failed\n");
 		return 0;
 	}
 
@@ -230,6 +305,16 @@ test_command_keys(void)
 	    &command) != CP_OK)
 		return 0;
 	if (command.type != CP_CONTROL_COMMAND_PLAYOUT_NEXT)
+		return 0;
+	if (cp_control_command_from_key('d', CP_CONTROL_BANK_AM,
+	    &command) != CP_OK)
+		return 0;
+	if (command.type != CP_CONTROL_COMMAND_DEHUMMER_TOGGLE)
+		return 0;
+	if (cp_control_command_from_key('m', CP_CONTROL_BANK_SSB,
+	    &command) != CP_OK)
+		return 0;
+	if (command.type != CP_CONTROL_COMMAND_MULTIBAND_CYCLE)
 		return 0;
 	if (cp_control_command_from_key('N', CP_CONTROL_BANK_SSB,
 	    &command) != CP_OK)

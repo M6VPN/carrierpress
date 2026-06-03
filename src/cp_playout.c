@@ -90,6 +90,15 @@ cp_playout_build_snapshot(const struct cp_block_processor *processor,
 	    cp_monitor_db_to_centibel(processor->agc.gain_db);
 	snapshot->agc_state = (int)processor->agc.gate_state;
 	snapshot->dsp_status = CP_OK;
+	snapshot->dehummer_enabled =
+	    processor->dehummer.config.enabled ? 1u : 0u;
+	snapshot->dehummer_base_hz =
+	    (unsigned int)lrintf(processor->dehummer.config.base_frequency);
+	snapshot->dehummer_harmonic_count =
+	    (unsigned int)processor->dehummer.config.harmonic_count;
+	snapshot->multiband_enabled =
+	    processor->multiband.config.enabled ? 1u : 0u;
+	snapshot->multiband_preset = processor->multiband.config.preset;
 	snapshot->am_enabled = processor->am.config.enabled ? 1u : 0u;
 	snapshot->am_highpass_hz =
 	    (unsigned int)lrintf(processor->am.config.highpass_hz);

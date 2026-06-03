@@ -35,6 +35,11 @@ struct cp_portaudio_runtime {
 	atomic_uint agc_gain;
 	atomic_int agc_gain_db_centibel;
 	atomic_int agc_state;
+	atomic_uint dehummer_enabled;
+	atomic_uint dehummer_base_hz;
+	atomic_uint dehummer_harmonic_count;
+	atomic_uint multiband_enabled;
+	atomic_int multiband_preset;
 	atomic_uint band_count;
 	atomic_uint band_rms[CP_MONITOR_MAX_BANDS];
 	atomic_int band_gr_db_centibel[CP_MONITOR_MAX_BANDS];
@@ -482,6 +487,12 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	atomic_init(&runtime->agc_gain, 0u);
 	atomic_init(&runtime->agc_gain_db_centibel, 0);
 	atomic_init(&runtime->agc_state, 0);
+	atomic_init(&runtime->dehummer_enabled, 0u);
+	atomic_init(&runtime->dehummer_base_hz, 0u);
+	atomic_init(&runtime->dehummer_harmonic_count, 0u);
+	atomic_init(&runtime->multiband_enabled, 0u);
+	atomic_init(&runtime->multiband_preset,
+	    (int)CP_MULTIBAND_PRESET_SPEECH);
 	atomic_init(&runtime->band_count, 0u);
 	for (band = 0; band < CP_MONITOR_MAX_BANDS; band++) {
 		atomic_init(&runtime->band_rms[band], 0u);
@@ -557,6 +568,16 @@ cp_pa_load_snapshot(struct cp_portaudio_runtime *runtime,
 	snapshot->agc_state = atomic_load(&runtime->agc_state);
 	snapshot->stream_flags = atomic_exchange(&runtime->status_flags, 0u);
 	snapshot->dsp_status = atomic_load(&runtime->dsp_status);
+	snapshot->dehummer_enabled =
+	    atomic_load(&runtime->dehummer_enabled);
+	snapshot->dehummer_base_hz =
+	    atomic_load(&runtime->dehummer_base_hz);
+	snapshot->dehummer_harmonic_count =
+	    atomic_load(&runtime->dehummer_harmonic_count);
+	snapshot->multiband_enabled =
+	    atomic_load(&runtime->multiband_enabled);
+	snapshot->multiband_preset =
+	    atomic_load(&runtime->multiband_preset);
 	snapshot->am_enabled = atomic_load(&runtime->am_enabled);
 	snapshot->am_highpass_hz = atomic_load(&runtime->am_highpass_hz);
 	snapshot->am_lowpass_hz = atomic_load(&runtime->am_lowpass_hz);
@@ -763,6 +784,17 @@ cp_pa_store_meters(struct cp_portaudio_runtime *runtime)
 	    cp_monitor_db_to_centibel(runtime->processor.agc.gain_db));
 	atomic_store(&runtime->agc_state,
 	    (int)runtime->processor.agc.gate_state);
+
+	atomic_store(&runtime->dehummer_enabled,
+	    runtime->processor.dehummer.config.enabled ? 1u : 0u);
+	atomic_store(&runtime->dehummer_base_hz,
+	    cp_pa_hz_to_uint(runtime->processor.dehummer.config.base_frequency));
+	atomic_store(&runtime->dehummer_harmonic_count,
+	    (unsigned int)runtime->processor.dehummer.config.harmonic_count);
+	atomic_store(&runtime->multiband_enabled,
+	    runtime->processor.multiband.config.enabled ? 1u : 0u);
+	atomic_store(&runtime->multiband_preset,
+	    (int)runtime->processor.multiband.config.preset);
 
 	band_count = runtime->processor.multiband.band_count;
 	if (band_count > CP_MONITOR_MAX_BANDS)

@@ -56,6 +56,22 @@ Implemented as a first ncurses monitor for `--play` and `--playlist`. The TUI sh
 
 Partially implemented. CarrierPress now has an optional SSB output-chain foundation with speech-oriented high-pass and low-pass filtering, optional phase rotation, symmetric peak control, and conservative SSB presets. It is baseband audio-chain processing only, not an RF SSB modulator or compliance implementation.
 
+## M7.1 TUI operator controls
+
+Implemented as a preset-only operator-control pass for live and playout TUI modes. The TUI can toggle dehummer, cycle multiband through off, speech, and music, switch AM/SSB control banks, apply validated AM/SSB presets, stop processing, and skip playlist tracks. Arbitrary parameter editing, web control, and MP3 decode remain deferred.
+
+## M7.2 playout format bridge
+
+Planned. Keep CarrierPress WAV/PCM-native internally, document external decode workflows for MP3/FLAC/OGG, and improve unsupported playlist entry reporting without linking an MP3 library.
+
+## M7.3 sample-rate handling
+
+Planned. Add utility-quality sample-rate conversion for playout when file rate does not match the selected output device. High-quality resampling remains optional and deferred.
+
+## M7.4 live/playout parity pass
+
+Planned. Keep live and playout aligned for DSP flags, TUI controls, meters, AM/SSB behavior, and config validation.
+
 ## M8 auto EQ and bass modules
 
 Research auto EQ, bass EQ, immersive bass, and true bass style functions without copying proprietary algorithms or presets.

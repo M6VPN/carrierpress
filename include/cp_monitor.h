@@ -31,6 +31,11 @@ struct cp_monitor_snapshot {
 	int agc_state;
 	unsigned int stream_flags;
 	int dsp_status;
+	unsigned int dehummer_enabled;
+	unsigned int dehummer_base_hz;
+	unsigned int dehummer_harmonic_count;
+	unsigned int multiband_enabled;
+	int multiband_preset;
 	unsigned int am_enabled;
 	unsigned int am_highpass_hz;
 	unsigned int am_lowpass_hz;
