@@ -55,8 +55,17 @@ test_config_validation(void)
 	struct cp_playout_config config;
 
 	cp_playout_default_config(&config);
+	if (config.playlist_index != 0 || config.playlist_count != 0) {
+		printf("test_playout: playlist metadata default mismatch\n");
+		return 0;
+	}
 	if (cp_playout_validate_config(&config) != CP_PLAYOUT_OK) {
 		printf("test_playout: default config rejected\n");
+		return 0;
+	}
+	if (strcmp(cp_playout_status_string(CP_PLAYOUT_NEXT),
+	    "next playlist item") != 0) {
+		printf("test_playout: next status string mismatch\n");
 		return 0;
 	}
 

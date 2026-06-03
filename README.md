@@ -158,6 +158,16 @@ Play a simple playlist:
 ./carrierpress --playlist playlist.txt --device pulse
 ```
 
+Run playout with the ncurses monitor:
+
+```sh
+./carrierpress --play input.wav --device pulse --tui
+./carrierpress --playlist playlist.txt --device pulse --tui
+```
+
+In playout TUI mode, press `n` to skip to the next playlist item and `q` to
+stop. The same AM preset keys used by live mode are available during playout.
+
 Print live-style meters once per second while playing:
 
 ```sh
@@ -347,9 +357,9 @@ The core library has no optional audio backend dependency. WAV support lives in 
 
 WAV playout reads fixed-size blocks from libsndfile, processes them through the normal CarrierPress chain, reports live-style meters from the processor state, and writes processed float32 blocks to a PortAudio output stream. It does not load the whole file into memory. This milestone uses blocking PortAudio output for file playout; live input mode still uses the callback backend.
 
-Live TUI control is preset-only in this milestone. It can switch the AM output
-chain between validated presets, but it does not expose arbitrary DSP parameter
-editing.
+TUI control is preset-only for DSP changes in this milestone. It can switch the
+AM output chain between validated presets, and playlist playout can skip to the
+next track. It does not expose arbitrary DSP parameter editing.
 
 ## AGC Controls
 

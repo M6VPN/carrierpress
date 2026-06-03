@@ -92,6 +92,14 @@ test_command_keys(void)
 		return 0;
 	if (command.type != CP_CONTROL_COMMAND_AM_OFF)
 		return 0;
+	if (cp_control_command_from_key('n', &command) != CP_OK)
+		return 0;
+	if (command.type != CP_CONTROL_COMMAND_PLAYOUT_NEXT)
+		return 0;
+	if (cp_control_command_from_key('N', &command) != CP_OK)
+		return 0;
+	if (command.type != CP_CONTROL_COMMAND_PLAYOUT_NEXT)
+		return 0;
 	if (cp_control_command_from_key('x', &command) != CP_ERR_RANGE)
 		return 0;
 

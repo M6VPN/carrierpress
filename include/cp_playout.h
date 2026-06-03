@@ -16,6 +16,7 @@
 #define CP_PLAYOUT_MAX_LINE		4096
 
 enum cp_playout_status {
+	CP_PLAYOUT_NEXT           = 1,
 	CP_PLAYOUT_OK             = 0,
 	CP_PLAYOUT_ERR_NULL       = -700,
 	CP_PLAYOUT_ERR_ALLOC      = -701,
@@ -44,6 +45,8 @@ struct cp_playout_config {
 	size_t block_frames;
 	unsigned int meter_interval_ms;
 	volatile sig_atomic_t *stop_requested;
+	size_t playlist_index;
+	size_t playlist_count;
 };
 
 void		cp_playout_default_config(struct cp_playout_config *);

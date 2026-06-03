@@ -18,6 +18,7 @@ cp_control_apply(struct cp_block_processor *processor,
 	switch (command->type) {
 	case CP_CONTROL_COMMAND_NONE:
 	case CP_CONTROL_COMMAND_STOP:
+	case CP_CONTROL_COMMAND_PLAYOUT_NEXT:
 		return CP_OK;
 	case CP_CONTROL_COMMAND_AM_OFF:
 		processor->am.config.enabled = 0;
@@ -61,6 +62,10 @@ cp_control_command_from_key(int key, struct cp_control_command *command)
 	case 'Q':
 		command->type = CP_CONTROL_COMMAND_STOP;
 		return CP_OK;
+	case 'n':
+	case 'N':
+		command->type = CP_CONTROL_COMMAND_PLAYOUT_NEXT;
+		return CP_OK;
 	case '0':
 		command->type = CP_CONTROL_COMMAND_AM_OFF;
 		return CP_OK;
@@ -93,6 +98,8 @@ cp_control_command_string(enum cp_control_command_type type)
 		return "none";
 	case CP_CONTROL_COMMAND_STOP:
 		return "stop";
+	case CP_CONTROL_COMMAND_PLAYOUT_NEXT:
+		return "playout-next";
 	case CP_CONTROL_COMMAND_AM_OFF:
 		return "am-off";
 	case CP_CONTROL_COMMAND_AM_PRESET:

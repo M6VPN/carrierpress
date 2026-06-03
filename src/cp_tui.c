@@ -5,6 +5,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <curses.h>
 
@@ -19,8 +20,9 @@ static void	cp_tui_draw_bar(int, int, const char *, cp_sample_t,
 		    cp_sample_t);
 static void	cp_tui_draw_am(int, const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_flags(int, unsigned int);
-static void	cp_tui_draw_header(const struct cp_audio_config *);
+static void	cp_tui_draw_header(const struct cp_tui_view *);
 static void	cp_tui_draw_multiband(int, const struct cp_monitor_snapshot *);
+static void	cp_tui_draw_keys(const struct cp_tui_view *);
 static int	cp_tui_level_columns(cp_sample_t, cp_sample_t);
 
 void
@@ -56,16 +58,34 @@ cp_tui_update(struct cp_tui *tui, const struct cp_audio_config *config,
 	const struct cp_monitor_snapshot *snapshot,
 	struct cp_control_command *command)
 {
+	struct cp_tui_view view;
+
+	memset(&view, 0, sizeof(view));
+	view.mode          = CP_TUI_MODE_LIVE;
+	view.config        = config;
+	view.snapshot      = snapshot;
+	view.output_device = config == NULL ? 0 : config->output_device;
+
+	return cp_tui_update_view(tui, &view, command);
+}
+
+int
+cp_tui_update_view(struct cp_tui *tui, const struct cp_tui_view *view,
+	struct cp_control_command *command)
+{
 	cp_sample_t agc_gain;
+	const struct cp_monitor_snapshot *snapshot;
 	int key;
 
-	if (tui == NULL || config == NULL || snapshot == NULL ||
+	if (tui == NULL || view == NULL || view->config == NULL ||
+	    view->snapshot == NULL ||
 	    command == NULL || !tui->active)
 		return 1;
 	cp_control_command_clear(command);
+	snapshot = view->snapshot;
 
 	erase();
-	cp_tui_draw_header(config);
+	cp_tui_draw_header(view);
 	cp_tui_draw_bar(4, 2, "Input peak ",
 	    cp_monitor_level_to_sample(snapshot->input_peak), 1.0f);
 	cp_tui_draw_bar(5, 2, "Input RMS  ",
@@ -90,8 +110,7 @@ cp_tui_update(struct cp_tui *tui, const struct cp_audio_config *config,
 	    cp_control_command_string(
 	    (enum cp_control_command_type)snapshot->control_command),
 	    snapshot->control_status);
-	mvprintw(24, 2, "Keys: 0 AM off  1 safe  2 shortwave  3 wide  "
-	    "4 voice  q stop");
+	cp_tui_draw_keys(view);
 	refresh();
 
 	key = getch();
@@ -101,6 +120,9 @@ cp_tui_update(struct cp_tui *tui, const struct cp_audio_config *config,
 		return 0;
 	if (command->type == CP_CONTROL_COMMAND_STOP)
 		return 1;
+	if (command->type == CP_CONTROL_COMMAND_PLAYOUT_NEXT &&
+	    !view->next_enabled)
+		cp_control_command_clear(command);
 
 	return 0;
 }
@@ -162,8 +184,32 @@ cp_tui_draw_flags(int row, unsigned int flags)
 }
 
 static void
-cp_tui_draw_header(const struct cp_audio_config *config)
+cp_tui_draw_header(const struct cp_tui_view *view)
 {
+	const struct cp_audio_config *config;
+
+	config = view->config;
+	if (view->mode == CP_TUI_MODE_PLAYOUT) {
+		mvprintw(1, 2, "CarrierPress playout monitor");
+		if (view->playlist_count > 0) {
+			mvprintw(2, 2, "track %zu/%zu  rate %0.0f Hz  "
+			    "channels %zu  block %zu  output_device %d",
+			    view->playlist_index + 1, view->playlist_count,
+			    config->sample_rate, config->channels,
+			    config->block_size,
+			    view->output_device);
+		} else {
+			mvprintw(2, 2, "single file  rate %0.0f Hz  "
+			    "channels %zu  block %zu  output_device %d",
+			    config->sample_rate, config->channels,
+			    config->block_size,
+			    view->output_device);
+		}
+		mvprintw(3, 2, "file %s", view->path == NULL ? "" :
+		    view->path);
+		return;
+	}
+
 	mvprintw(1, 2, "CarrierPress live monitor");
 	mvprintw(2, 2, "rate %0.0f Hz  channels %zu  block %zu  "
 	    "input_device %d  output_device %d",
@@ -184,6 +230,18 @@ cp_tui_draw_multiband(int row, const struct cp_monitor_snapshot *snapshot)
 		    cp_monitor_level_to_sample(snapshot->band_rms[band]),
 		    cp_monitor_centibel_to_db(snapshot->band_gr_db_centibel[band]));
 	}
+}
+
+static void
+cp_tui_draw_keys(const struct cp_tui_view *view)
+{
+	if (view->mode == CP_TUI_MODE_PLAYOUT && view->next_enabled) {
+		mvprintw(24, 2, "Keys: 0 AM off  1 safe  2 shortwave  "
+		    "3 wide  4 voice  n next  q stop");
+		return;
+	}
+	mvprintw(24, 2, "Keys: 0 AM off  1 safe  2 shortwave  3 wide  "
+	    "4 voice  q stop");
 }
 
 static int

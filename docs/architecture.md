@@ -35,11 +35,11 @@ libsndfile and PortAudio, reads WAV data in fixed-size blocks, processes those
 blocks through the normal CarrierPress chain, and writes them to an output-only
 PortAudio stream. Play mode reports live-style meters from the same processor
 state used by the live monitor and stops cleanly between blocks when interrupted.
-M6.9 still uses blocking PortAudio output for file playout. Callback playout and
-playlist control from a TUI or web interface are planned after the basic file
-path is proven.
+M6.10 still uses blocking PortAudio output for file playout. The TUI can monitor
+playout, switch validated AM presets, and skip to the next playlist item.
+Callback playout and web control remain deferred.
 
-Live TUI controls use a small command handoff. The foreground TUI validates key input into a preset command, stores one pending command atomically, and the callback applies it at the next block boundary. M6.6 only allows AM off and validated AM preset changes. Future sndio/OpenBSD work should keep the same boundary. The STM32H753 path should call the same block DSP model directly or through a CMSIS-DSP adapter.
+Live TUI controls use a small command handoff. The foreground TUI validates key input into a preset command, stores one pending command atomically, and the callback applies it at the next block boundary. Playout TUI controls are applied between blocking file-output blocks. M6.10 allows AM off, validated AM preset changes, and next-track playlist control. Future sndio/OpenBSD work should keep the same boundary. The STM32H753 path should call the same block DSP model directly or through a CMSIS-DSP adapter.
 
 ## State Ownership
 

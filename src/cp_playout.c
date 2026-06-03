@@ -13,7 +13,11 @@
 #include <portaudio.h>
 #include <sndfile.h>
 
+#include "cp_control.h"
 #include "cp_playout.h"
+#ifdef CP_WITH_TUI
+#include "cp_tui.h"
+#endif
 
 static size_t	cp_playout_interval_frames(double, unsigned int);
 static int	cp_playout_append_path(struct cp_playlist *, const char *);
@@ -58,6 +62,8 @@ cp_playout_default_config(struct cp_playout_config *config)
 	config->block_frames = CP_PLAYOUT_DEFAULT_BLOCK_FRAMES;
 	config->meter_interval_ms = CP_AUDIO_DEFAULT_METER_MS;
 	config->stop_requested = NULL;
+	config->playlist_index = 0;
+	config->playlist_count = 0;
 }
 
 int
@@ -228,6 +234,11 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	struct cp_audio_config audio_config;
 	struct cp_block_config block_config;
 	struct cp_block_processor processor;
+#ifdef CP_WITH_TUI
+	struct cp_control_command command;
+	struct cp_tui tui;
+	struct cp_tui_view tui_view;
+#endif
 	sf_count_t frames_read;
 	size_t block_frames;
 	size_t block_samples;
@@ -244,6 +255,10 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 		return status;
 	if (!cp_playout_path_is_wav(path))
 		return CP_PLAYOUT_ERR_UNSUPPORTED;
+#ifndef CP_WITH_TUI
+	if (config->audio_config.tui_enabled)
+		return CP_PLAYOUT_ERR_AUDIO;
+#endif
 
 	memset(&input_info, 0, sizeof(input_info));
 	input_file = sf_open(path, SFM_READ, &input_info);
@@ -362,8 +377,23 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 		sf_close(input_file);
 		return CP_PLAYOUT_ERR_STREAM;
 	}
+#ifdef CP_WITH_TUI
+	tui.active = 0;
+	if (audio_config.tui_enabled && cp_tui_init(&tui) != 0) {
+		Pa_CloseStream(stream);
+		Pa_Terminate();
+		free(input);
+		free(output);
+		free(scratch);
+		sf_close(input_file);
+		return CP_PLAYOUT_ERR_AUDIO;
+	}
+#endif
 	error = Pa_StartStream(stream);
 	if (error != paNoError) {
+#ifdef CP_WITH_TUI
+		cp_tui_close(&tui);
+#endif
 		Pa_CloseStream(stream);
 		Pa_Terminate();
 		free(input);
@@ -373,8 +403,10 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 		return CP_PLAYOUT_ERR_STREAM;
 	}
 
-	printf("playing: %s rate=%d channels=%zu output_device=%d\n",
-	    path, input_info.samplerate, channels, output_device);
+	if (!audio_config.tui_enabled) {
+		printf("playing: %s rate=%d channels=%zu output_device=%d\n",
+		    path, input_info.samplerate, channels, output_device);
+	}
 
 	result = CP_PLAYOUT_OK;
 	meter_frames = cp_playout_interval_frames((double)input_info.samplerate,
@@ -395,13 +427,43 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 			result = CP_PLAYOUT_ERR_WRITE;
 			break;
 		}
-		if ((size_t)frames_read >= frames_until_meter) {
-			status = cp_playout_build_snapshot(&processor,
-			    &snapshot);
-			if (status != CP_PLAYOUT_OK) {
-				result = status;
+		status = cp_playout_build_snapshot(&processor, &snapshot);
+		if (status != CP_PLAYOUT_OK) {
+			result = status;
+			break;
+		}
+#ifdef CP_WITH_TUI
+		if (audio_config.tui_enabled) {
+			memset(&tui_view, 0, sizeof(tui_view));
+			tui_view.mode           = CP_TUI_MODE_PLAYOUT;
+			tui_view.config         = &audio_config;
+			tui_view.snapshot       = &snapshot;
+			tui_view.path           = path;
+			tui_view.playlist_index = config->playlist_index;
+			tui_view.playlist_count = config->playlist_count;
+			tui_view.next_enabled   = config->playlist_count >
+			    config->playlist_index + 1;
+			tui_view.output_device  = (int)output_device;
+			if (cp_tui_update_view(&tui, &tui_view, &command)) {
+				if (config->stop_requested != NULL)
+					*config->stop_requested = 1;
 				break;
 			}
+			if (command.type == CP_CONTROL_COMMAND_PLAYOUT_NEXT) {
+				result = CP_PLAYOUT_NEXT;
+				break;
+			}
+			if (command.type != CP_CONTROL_COMMAND_NONE) {
+				status = cp_control_apply(&processor, &command);
+				if (status != CP_OK) {
+					result = CP_PLAYOUT_ERR_PROCESS;
+					break;
+				}
+			}
+			continue;
+		}
+#endif
+		if ((size_t)frames_read >= frames_until_meter) {
 			cp_playout_print_meters(&snapshot);
 			frames_until_meter = meter_frames;
 		} else {
@@ -411,13 +473,16 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	if (!cp_playout_should_stop(config) && frames_read < 0 &&
 	    result == CP_PLAYOUT_OK)
 		result = CP_PLAYOUT_ERR_READ;
-	if (result == CP_PLAYOUT_OK) {
+	if (result == CP_PLAYOUT_OK && !audio_config.tui_enabled) {
 		status = cp_playout_build_snapshot(&processor, &snapshot);
 		if (status == CP_PLAYOUT_OK)
 			cp_playout_print_meters(&snapshot);
 	}
 
 	Pa_StopStream(stream);
+#ifdef CP_WITH_TUI
+	cp_tui_close(&tui);
+#endif
 	Pa_CloseStream(stream);
 	Pa_Terminate();
 	free(input);
@@ -432,6 +497,7 @@ int
 cp_playout_run_playlist(const char *path,
 	const struct cp_playout_config *config)
 {
+	struct cp_playout_config file_config;
 	struct cp_playlist playlist;
 	const char *entry;
 	size_t index;
@@ -453,7 +519,14 @@ cp_playout_run_playlist(const char *path,
 		if (cp_playout_should_stop(config))
 			break;
 		entry = cp_playlist_get(&playlist, index);
-		status = cp_playout_run_file(entry, config);
+		file_config = *config;
+		file_config.playlist_index = index;
+		file_config.playlist_count = playlist.count;
+		status = cp_playout_run_file(entry, &file_config);
+		if (status == CP_PLAYOUT_NEXT) {
+			status = CP_PLAYOUT_OK;
+			continue;
+		}
 		if (status != CP_PLAYOUT_OK)
 			break;
 	}
@@ -466,6 +539,8 @@ const char *
 cp_playout_status_string(int status)
 {
 	switch (status) {
+	case CP_PLAYOUT_NEXT:
+		return "next playlist item";
 	case CP_PLAYOUT_OK:
 		return "ok";
 	case CP_PLAYOUT_ERR_NULL:

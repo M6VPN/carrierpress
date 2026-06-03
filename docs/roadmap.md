@@ -42,11 +42,15 @@ Implemented as a PortAudio device-selection improvement for laptop testing. Auto
 
 ## M6.8 WAV playout foundation
 
-Partially implemented. CarrierPress can play WAV files or simple text playlists through the current DSP chain and an output-only PortAudio stream when built with both libsndfile and PortAudio. MP3 decode, TUI playlist controls, web controls, gapless playback, and resampling are deferred.
+Partially implemented. CarrierPress can play WAV files or simple text playlists through the current DSP chain and an output-only PortAudio stream when built with both libsndfile and PortAudio. MP3 decode, web controls, gapless playback, and resampling are deferred.
 
 ## M6.9 play-mode live parity
 
 Partially implemented. Play mode now reports live-style meters, honors `--meter-interval-ms`, uses the same DSP flags as live mode, and stops cleanly between blocks on `Ctrl-C`. It remains WAV-only and output-only.
+
+## M6.10 playout TUI controls
+
+Implemented as a first ncurses monitor for `--play` and `--playlist`. The TUI shows file and playlist position, live-style meters, AM state, and multiband state. It can stop with `q`, skip to the next playlist item with `n`, and apply the same AM preset keys as live mode between processed blocks.
 
 ## M7 SSB chain
 
