@@ -37,6 +37,7 @@ cp_block_default_config(struct cp_block_config *config, size_t channels)
 	config->multiband_band_count = CP_MULTIBAND_DEFAULT_BANDS;
 	config->multiband_preset = CP_MULTIBAND_PRESET_SPEECH;
 	cp_am_default_config(&config->am_config);
+	cp_ssb_default_config(&config->ssb_config);
 	config->limiter_ceiling = CP_DEFAULT_CEILING;
 }
 
@@ -54,6 +55,8 @@ cp_block_init(struct cp_block_processor *processor,
 	if (config->channels != CP_CHANNELS_MONO &&
 	    config->channels != CP_CHANNELS_STEREO)
 		return CP_ERR_CHANNELS;
+	if (config->am_config.enabled && config->ssb_config.enabled)
+		return CP_ERR_RANGE;
 
 	processor->channels = config->channels;
 
@@ -106,6 +109,13 @@ cp_block_init(struct cp_block_processor *processor,
 	processor->am.config.channel_count = config->channels;
 	processor->am.config.sample_rate = config->sample_rate;
 	status = cp_am_init(&processor->am, &processor->am.config);
+	if (status != CP_OK)
+		return status;
+
+	processor->ssb.config = config->ssb_config;
+	processor->ssb.config.channel_count = config->channels;
+	processor->ssb.config.sample_rate = config->sample_rate;
+	status = cp_ssb_init(&processor->ssb, &processor->ssb.config);
 	if (status != CP_OK)
 		return status;
 
@@ -171,6 +181,10 @@ cp_block_process(struct cp_block_processor *processor,
 	if (status != CP_OK)
 		return status;
 
+	status = cp_ssb_process(&processor->ssb, output, output, frames);
+	if (status != CP_OK)
+		return status;
+
 	status = cp_limiter_process(&processor->limiter, output, output,
 	    frames);
 	if (status != CP_OK)
@@ -207,6 +221,10 @@ cp_block_reset(struct cp_block_processor *processor)
 		return status;
 
 	status = cp_am_reset(&processor->am);
+	if (status != CP_OK)
+		return status;
+
+	status = cp_ssb_reset(&processor->ssb);
 	if (status != CP_OK)
 		return status;
 

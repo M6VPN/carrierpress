@@ -39,6 +39,12 @@ struct cp_monitor_snapshot {
 	unsigned int am_asymmetry_enabled;
 	unsigned int am_asymmetry_ratio;
 	int am_preset;
+	unsigned int ssb_enabled;
+	unsigned int ssb_highpass_hz;
+	unsigned int ssb_lowpass_hz;
+	unsigned int ssb_peak_limit;
+	unsigned int ssb_phase_rotator_enabled;
+	int ssb_preset;
 	int control_command;
 	int control_status;
 	size_t band_count;

@@ -177,5 +177,21 @@ test_validate_config(void)
 		return 0;
 	}
 
+	cp_audio_default_config(&config);
+	config.am_config.enabled = 1;
+	config.ssb_config.enabled = 1;
+	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_SSB) {
+		printf("test_audio: AM and SSB together accepted\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&config);
+	config.ssb_config.enabled = 1;
+	config.ssb_config.lowpass_hz = config.ssb_config.sample_rate;
+	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_SSB) {
+		printf("test_audio: invalid SSB config accepted\n");
+		return 0;
+	}
+
 	return 1;
 }

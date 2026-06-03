@@ -54,7 +54,7 @@ Implemented as a first ncurses monitor for `--play` and `--playlist`. The TUI sh
 
 ## M7 SSB chain
 
-Add SSB-oriented filtering, asymmetry handling, and speech-focused processing.
+Partially implemented. CarrierPress now has an optional SSB output-chain foundation with speech-oriented high-pass and low-pass filtering, optional phase rotation, symmetric peak control, and conservative SSB presets. It is baseband audio-chain processing only, not an RF SSB modulator or compliance implementation.
 
 ## M8 auto EQ and bass modules
 

@@ -6,6 +6,7 @@
 
 #include "cp_am.h"
 #include "cp_multiband.h"
+#include "cp_ssb.h"
 #include "cp_types.h"
 
 #define CP_AUDIO_DEFAULT_DEVICE		(-1)
@@ -39,7 +40,8 @@ enum cp_audio_status {
 	CP_AUDIO_ERR_HUM     = -206,
 	CP_AUDIO_ERR_MB      = -207,
 	CP_AUDIO_ERR_AM      = -208,
-	CP_AUDIO_ERR_BACKEND = -209
+	CP_AUDIO_ERR_BACKEND = -209,
+	CP_AUDIO_ERR_SSB     = -210
 };
 
 struct cp_audio_device_candidate {
@@ -71,6 +73,7 @@ struct cp_audio_config {
 	size_t multiband_band_count;
 	enum cp_multiband_preset multiband_preset;
 	struct cp_am_config am_config;
+	struct cp_ssb_config ssb_config;
 	int tui_enabled;
 };
 

@@ -11,6 +11,7 @@
 
 #include "cp_agc.h"
 #include "cp_multiband.h"
+#include "cp_ssb.h"
 #include "cp_tui.h"
 
 #define CP_TUI_BAR_WIDTH	40
@@ -22,6 +23,7 @@ static void	cp_tui_draw_am(int, const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_flags(int, unsigned int);
 static void	cp_tui_draw_header(const struct cp_tui_view *);
 static void	cp_tui_draw_multiband(int, const struct cp_monitor_snapshot *);
+static void	cp_tui_draw_ssb(int, const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_keys(const struct cp_tui_view *);
 static int	cp_tui_level_columns(cp_sample_t, cp_sample_t);
 
@@ -104,6 +106,7 @@ cp_tui_update_view(struct cp_tui *tui, const struct cp_tui_view *view,
 	cp_tui_draw_multiband(12, snapshot);
 
 	cp_tui_draw_am(18, snapshot);
+	cp_tui_draw_ssb(19, snapshot);
 	cp_tui_draw_flags(20, snapshot->stream_flags);
 	mvprintw(22, 2, "DSP status %d  control %s status %d",
 	    snapshot->dsp_status,
@@ -147,6 +150,26 @@ cp_tui_draw_am(int row, const struct cp_monitor_snapshot *snapshot)
 	    cp_monitor_level_to_sample(snapshot->am_negative_peak),
 	    snapshot->am_asymmetry_enabled ? "on" : "off",
 	    cp_monitor_level_to_sample(snapshot->am_asymmetry_ratio));
+}
+
+static void
+cp_tui_draw_ssb(int row, const struct cp_monitor_snapshot *snapshot)
+{
+	const char *preset_name;
+
+	preset_name = cp_ssb_preset_string(
+	    (enum cp_ssb_preset)snapshot->ssb_preset);
+	if (preset_name == NULL)
+		preset_name = "unknown";
+
+	mvprintw(row, 2, "SSB %s preset %s HP %u Hz LP %u Hz peak %0.2f "
+	    "phase %s",
+	    snapshot->ssb_enabled ? "on" : "off",
+	    preset_name,
+	    snapshot->ssb_highpass_hz,
+	    snapshot->ssb_lowpass_hz,
+	    cp_monitor_level_to_sample(snapshot->ssb_peak_limit),
+	    snapshot->ssb_phase_rotator_enabled ? "on" : "off");
 }
 
 static void

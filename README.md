@@ -4,7 +4,7 @@ CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB a
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
-Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. MP3 playout, SSB shaping, and STM32H753 support are planned but are not part of v0.1.
+Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. MP3 playout and STM32H753 support are planned but are not part of v0.1.
 
 ## Table of Contents
 
@@ -115,6 +115,13 @@ Run the self-test with the M6 AM output chain enabled:
 ./carrierpress --self-test --am --am-preset am-safe
 ./carrierpress --self-test --am --am-preset am-shortwave
 ./carrierpress --self-test --dehummer --multiband --multiband-bands 3 --am --am-preset am-shortwave
+```
+
+Run the self-test with the M7 SSB output chain enabled:
+
+```sh
+./carrierpress --self-test --ssb --ssb-preset ssb-speech
+./carrierpress --self-test --dehummer --multiband --multiband-bands 3 --ssb --ssb-preset ssb-narrow
 ```
 
 Process a mono or stereo WAV file through the current chain:
@@ -431,6 +438,29 @@ AM presets:
 | `am-voice`     | Narrower voice-focused preset                |
 
 Use `--am-asymmetry FLOAT` only when positive asymmetry is explicitly wanted. The module allows up to 200 percent positive capability for experiments, but that is not a default and is not a compliance claim. Negative peaks remain strictly limited by `--am-negative-peak`.
+
+## SSB Mode
+
+The M7 SSB mode is audio-chain processing for legal SSB transmitters and dummy-load testing. It is not an RF exciter, USB/LSB modulator, transmitter controller, or certified compliance tool. Users must obey their licence terms, transmitter limits, occupied bandwidth limits, and local radio regulations.
+
+Enable SSB mode with `--ssb`. The SSB chain runs after AGC and the first multiband compressor, then before the final limiter. It provides speech-oriented high-pass filtering, low-pass bandwidth limiting, optional phase rotation, and symmetric peak control. AM and SSB modes are mutually exclusive.
+
+```sh
+./carrierpress --input input.wav --output output.wav --ssb --ssb-preset ssb-speech
+./carrierpress --input input.wav --output output.wav --ssb --ssb-preset ssb-narrow
+./carrierpress --input input.wav --output output.wav --ssb --ssb-lowpass 2800 --ssb-highpass 150
+```
+
+SSB presets:
+
+| Preset       | Purpose                                      |
+| ------------ | -------------------------------------------- |
+| `ssb-speech` | General voice intelligibility starting point |
+| `ssb-narrow` | Tighter voice bandwidth                      |
+| `ssb-wide`   | Wider lab and local testing preset           |
+| `ssb-gentle` | Lighter shaping for already processed files  |
+
+SSB mode does not add carrier generation, sideband modulation, VOX, CAT control, or transmitter keying. It shapes baseband audio only.
 
 | Area       | v0.1 status                          |
 | ---------- | ------------------------------------ |

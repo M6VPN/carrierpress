@@ -34,6 +34,7 @@ static int	parse_double_arg(const char *, double *);
 static int	parse_int_arg(const char *, int *);
 static int	parse_multiband_preset(const char *,
 		    enum cp_multiband_preset *);
+static int	parse_ssb_preset(struct cp_ssb_config *, const char *);
 static int	parse_size_arg(const char *, size_t *);
 static int	parse_uint_arg(const char *, unsigned int *);
 static int	run_list_devices(void);
@@ -266,6 +267,50 @@ main(int argc, char *argv[])
 			audio_config.am_config.asymmetry_enabled = 1;
 			audio_config.am_config.asymmetry_ratio =
 			    (cp_sample_t)parsed_double;
+		} else if (strcmp(argv[arg], "--ssb") == 0) {
+			block_config.ssb_config.enabled = 1;
+			audio_config.ssb_config.enabled = 1;
+		} else if (strcmp(argv[arg], "--ssb-preset") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_ssb_preset(&block_config.ssb_config,
+			    argv[++arg])) {
+				usage(argv[0]);
+				return 1;
+			}
+			audio_config.ssb_config = block_config.ssb_config;
+		} else if (strcmp(argv[arg], "--ssb-lowpass") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.ssb_config.lowpass_hz =
+			    (cp_sample_t)parsed_double;
+			audio_config.ssb_config.lowpass_hz =
+			    (cp_sample_t)parsed_double;
+		} else if (strcmp(argv[arg], "--ssb-highpass") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.ssb_config.highpass_hz =
+			    (cp_sample_t)parsed_double;
+			audio_config.ssb_config.highpass_hz =
+			    (cp_sample_t)parsed_double;
+		} else if (strcmp(argv[arg], "--ssb-phase-rotator") == 0) {
+			block_config.ssb_config.phase_rotator_enabled = 1;
+			audio_config.ssb_config.phase_rotator_enabled = 1;
+		} else if (strcmp(argv[arg], "--ssb-peak") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.ssb_config.peak_limit =
+			    (cp_sample_t)parsed_double;
+			audio_config.ssb_config.peak_limit =
+			    (cp_sample_t)parsed_double;
 		} else {
 			usage(argv[0]);
 			return 1;
@@ -274,6 +319,13 @@ main(int argc, char *argv[])
 
 	audio_config.am_config.channel_count = audio_config.channels;
 	audio_config.am_config.sample_rate = (cp_sample_t)audio_config.sample_rate;
+	audio_config.ssb_config.channel_count = audio_config.channels;
+	audio_config.ssb_config.sample_rate =
+	    (cp_sample_t)audio_config.sample_rate;
+	if (block_config.am_config.enabled && block_config.ssb_config.enabled) {
+		usage(argv[0]);
+		return 1;
+	}
 
 	if (self_test_mode) {
 		if (input_path != NULL || output_path != NULL ||
@@ -411,6 +463,17 @@ parse_multiband_preset(const char *text, enum cp_multiband_preset *preset)
 	}
 
 	return 0;
+}
+
+static int
+parse_ssb_preset(struct cp_ssb_config *config, const char *text)
+{
+	if (config == NULL || text == NULL)
+		return 0;
+	if (cp_ssb_apply_preset(config, text) != CP_OK)
+		return 0;
+
+	return 1;
 }
 
 static int
@@ -703,6 +766,14 @@ run_self_test(const struct cp_block_config *self_config)
 	    processor.am.config.negative_peak_limit,
 	    processor.am.config.asymmetry_enabled ? "on" : "off",
 	    processor.am.config.asymmetry_ratio);
+	printf("ssb=%s preset=%s highpass=%0.1f lowpass=%0.1f "
+	    "phase_rotator=%s peak=%0.2f\n",
+	    processor.ssb.config.enabled ? "on" : "off",
+	    processor.ssb.config.preset_name,
+	    processor.ssb.config.highpass_hz,
+	    processor.ssb.config.lowpass_hz,
+	    processor.ssb.config.phase_rotator_enabled ? "on" : "off",
+	    processor.ssb.config.peak_limit);
 	printf("output_peak=%0.6f output_rms=%0.6f gain=%0.6f "
 	    "gain_db=%0.2f agc_state=%s\n",
 	    processor.output_meter.peak[0], processor.output_meter.rms[0],
@@ -718,6 +789,8 @@ usage(const char *program)
 	printf("usage: %s --self-test\n", program);
 	printf("usage: %s --self-test --dehummer --hum-frequency 50 "
 	    "--hum-harmonics 4\n", program);
+	printf("usage: %s --self-test --ssb --ssb-preset ssb-speech\n",
+	    program);
 	printf("usage: %s --input input.wav --output output.wav\n", program);
 	printf("usage: %s --play input.wav [--output-device N]\n", program);
 	printf("usage: %s --playlist playlist.txt [--output-device N]\n",
@@ -740,4 +813,7 @@ usage(const char *program)
 	    "--am-lowpass HZ --am-highpass HZ --am-phase-rotator "
 	    "--am-positive-peak FLOAT --am-negative-peak FLOAT "
 	    "--am-asymmetry FLOAT\n");
+	printf("SSB options: --ssb --ssb-preset "
+	    "ssb-speech|ssb-narrow|ssb-wide|ssb-gentle --ssb-lowpass HZ "
+	    "--ssb-highpass HZ --ssb-phase-rotator --ssb-peak FLOAT\n");
 }

@@ -11,6 +11,7 @@
 #include "cp_limiter.h"
 #include "cp_meter.h"
 #include "cp_multiband.h"
+#include "cp_ssb.h"
 #include "cp_types.h"
 
 struct cp_block_config {
@@ -38,6 +39,7 @@ struct cp_block_config {
 	size_t multiband_band_count;
 	enum cp_multiband_preset multiband_preset;
 	struct cp_am_config am_config;
+	struct cp_ssb_config ssb_config;
 	cp_sample_t limiter_ceiling;
 };
 
@@ -48,6 +50,7 @@ struct cp_block_processor {
 	struct cp_agc agc;
 	struct cp_multiband multiband;
 	struct cp_am am;
+	struct cp_ssb ssb;
 	struct cp_limiter limiter;
 	struct cp_meter input_meter;
 	struct cp_meter output_meter;

@@ -124,6 +124,9 @@ cp_audio_default_config(struct cp_audio_config *config)
 	cp_am_default_config(&config->am_config);
 	config->am_config.channel_count = config->channels;
 	config->am_config.sample_rate = (cp_sample_t)config->sample_rate;
+	cp_ssb_default_config(&config->ssb_config);
+	config->ssb_config.channel_count = config->channels;
+	config->ssb_config.sample_rate = (cp_sample_t)config->sample_rate;
 	config->tui_enabled = 0;
 }
 
@@ -206,6 +209,8 @@ cp_audio_status_string(int status)
 		return "invalid AM settings";
 	case CP_AUDIO_ERR_BACKEND:
 		return "invalid audio backend";
+	case CP_AUDIO_ERR_SSB:
+		return "invalid SSB settings";
 	default:
 		return "unknown audio error";
 	}
@@ -215,6 +220,7 @@ int
 cp_audio_validate_config(const struct cp_audio_config *config)
 {
 	struct cp_am am;
+	struct cp_ssb ssb;
 
 	if (config == NULL)
 		return CP_AUDIO_ERR_NULL;
@@ -269,9 +275,19 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 		return CP_AUDIO_ERR_AM;
 	if (config->am_config.sample_rate != (cp_sample_t)config->sample_rate)
 		return CP_AUDIO_ERR_AM;
+	if (config->ssb_config.channel_count != config->channels)
+		return CP_AUDIO_ERR_SSB;
+	if (config->ssb_config.sample_rate != (cp_sample_t)config->sample_rate)
+		return CP_AUDIO_ERR_SSB;
+	if (config->am_config.enabled && config->ssb_config.enabled)
+		return CP_AUDIO_ERR_SSB;
 	if (config->am_config.enabled) {
 		if (cp_am_init(&am, &config->am_config) != CP_OK)
 			return CP_AUDIO_ERR_AM;
+	}
+	if (config->ssb_config.enabled) {
+		if (cp_ssb_init(&ssb, &config->ssb_config) != CP_OK)
+			return CP_AUDIO_ERR_SSB;
 	}
 
 	return CP_AUDIO_OK;

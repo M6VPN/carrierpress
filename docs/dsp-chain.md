@@ -20,7 +20,31 @@ final limiter / clipper
 output
 ```
 
-v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, first multiband compressor scaffold, AM output-chain foundation, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, first multiband compressor scaffold, AM output-chain foundation, SSB output-chain foundation, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+
+## M7 SSB Behavior
+
+The active M7 chain is:
+
+```text
+input
+DC blocker
+dehummer
+AGC
+multiband compressor 1
+SSB output chain
+limiter
+meter
+output
+```
+
+The SSB output chain is disabled by default and is mutually exclusive with the
+AM output chain. When enabled, it runs before the final limiter so speech
+bandwidth limiting, optional phase rotation, and symmetric peak control happen
+before the last safety clamp.
+
+M7 is baseband audio-chain processing only. It does not generate USB or LSB RF
+signals, key a transmitter, control CAT, or claim occupied-bandwidth compliance.
 
 ## M6 AM Behavior
 

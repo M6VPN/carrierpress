@@ -31,6 +31,7 @@ static int	cp_playout_read_line(FILE *, char *, size_t, int *);
 static int	cp_playout_select_output_device(
 		    const struct cp_audio_config *, size_t, PaDeviceIndex *);
 static int	cp_playout_should_stop(const struct cp_playout_config *);
+static int	cp_playout_ssb_preset_id(const struct cp_ssb_config *);
 static void	cp_playout_print_meters(const struct cp_monitor_snapshot *);
 static char	*cp_playout_trim_line(char *);
 
@@ -103,6 +104,16 @@ cp_playout_build_snapshot(const struct cp_block_processor *processor,
 	snapshot->am_asymmetry_ratio =
 	    cp_monitor_sample_to_level(processor->am.config.asymmetry_ratio);
 	snapshot->am_preset = cp_playout_am_preset_id(&processor->am.config);
+	snapshot->ssb_enabled = processor->ssb.config.enabled ? 1u : 0u;
+	snapshot->ssb_highpass_hz =
+	    (unsigned int)lrintf(processor->ssb.config.highpass_hz);
+	snapshot->ssb_lowpass_hz =
+	    (unsigned int)lrintf(processor->ssb.config.lowpass_hz);
+	snapshot->ssb_peak_limit =
+	    cp_monitor_sample_to_level(processor->ssb.config.peak_limit);
+	snapshot->ssb_phase_rotator_enabled =
+	    processor->ssb.config.phase_rotator_enabled ? 1u : 0u;
+	snapshot->ssb_preset = cp_playout_ssb_preset_id(&processor->ssb.config);
 	snapshot->band_count = processor->multiband.band_count;
 	if (snapshot->band_count > CP_MONITOR_MAX_BANDS)
 		snapshot->band_count = CP_MONITOR_MAX_BANDS;
@@ -297,6 +308,9 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	audio_config.am_config.sample_rate =
 	    (cp_sample_t)input_info.samplerate;
 	audio_config.am_config.channel_count = channels;
+	audio_config.ssb_config.sample_rate =
+	    (cp_sample_t)input_info.samplerate;
+	audio_config.ssb_config.channel_count = channels;
 	status = cp_audio_validate_config(&audio_config);
 	if (status != CP_AUDIO_OK) {
 		sf_close(input_file);
@@ -314,6 +328,7 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	block_config.multiband_band_count = audio_config.multiband_band_count;
 	block_config.multiband_preset = audio_config.multiband_preset;
 	block_config.am_config = audio_config.am_config;
+	block_config.ssb_config = audio_config.ssb_config;
 	status = cp_block_init(&processor, &block_config);
 	if (status != CP_OK) {
 		sf_close(input_file);
@@ -637,6 +652,19 @@ cp_playout_am_preset_id(const struct cp_am_config *config)
 	return (int)CP_AM_PRESET_SAFE;
 }
 
+static int
+cp_playout_ssb_preset_id(const struct cp_ssb_config *config)
+{
+	enum cp_ssb_preset preset;
+
+	if (config == NULL)
+		return (int)CP_SSB_PRESET_SPEECH;
+	if (cp_ssb_preset_from_string(config->preset_name, &preset) == CP_OK)
+		return (int)preset;
+
+	return (int)CP_SSB_PRESET_SPEECH;
+}
+
 static char *
 cp_playout_dup_range(const char *text, size_t length)
 {
@@ -802,6 +830,15 @@ cp_playout_print_meters(const struct cp_monitor_snapshot *snapshot)
 		    cp_monitor_level_to_sample(snapshot->am_negative_peak),
 		    snapshot->am_asymmetry_enabled ? "on" : "off",
 		    cp_monitor_level_to_sample(snapshot->am_asymmetry_ratio));
+	}
+	if (snapshot->ssb_enabled) {
+		printf("ssb=on preset=%s highpass=%u lowpass=%u "
+		    "peak=%0.2f phase_rotator=%s\n",
+		    cp_ssb_preset_string(
+		    (enum cp_ssb_preset)snapshot->ssb_preset),
+		    snapshot->ssb_highpass_hz, snapshot->ssb_lowpass_hz,
+		    cp_monitor_level_to_sample(snapshot->ssb_peak_limit),
+		    snapshot->ssb_phase_rotator_enabled ? "on" : "off");
 	}
 }
 

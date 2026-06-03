@@ -46,6 +46,12 @@ struct cp_portaudio_runtime {
 	atomic_uint am_asymmetry_enabled;
 	atomic_uint am_asymmetry_ratio;
 	atomic_int am_preset;
+	atomic_uint ssb_enabled;
+	atomic_uint ssb_highpass_hz;
+	atomic_uint ssb_lowpass_hz;
+	atomic_uint ssb_peak_limit;
+	atomic_uint ssb_phase_rotator_enabled;
+	atomic_int ssb_preset;
 	atomic_int pending_control_type;
 	atomic_int pending_am_preset;
 	atomic_int control_command;
@@ -483,6 +489,12 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	atomic_init(&runtime->am_asymmetry_enabled, 0u);
 	atomic_init(&runtime->am_asymmetry_ratio, 0u);
 	atomic_init(&runtime->am_preset, (int)CP_AM_PRESET_SAFE);
+	atomic_init(&runtime->ssb_enabled, 0u);
+	atomic_init(&runtime->ssb_highpass_hz, 0u);
+	atomic_init(&runtime->ssb_lowpass_hz, 0u);
+	atomic_init(&runtime->ssb_peak_limit, 0u);
+	atomic_init(&runtime->ssb_phase_rotator_enabled, 0u);
+	atomic_init(&runtime->ssb_preset, (int)CP_SSB_PRESET_SPEECH);
 	atomic_init(&runtime->pending_control_type,
 	    (int)CP_CONTROL_COMMAND_NONE);
 	atomic_init(&runtime->pending_am_preset, (int)CP_AM_PRESET_SAFE);
@@ -504,6 +516,9 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	block_config.am_config = config->am_config;
 	block_config.am_config.sample_rate = (cp_sample_t)sample_rate;
 	block_config.am_config.channel_count = config->channels;
+	block_config.ssb_config = config->ssb_config;
+	block_config.ssb_config.sample_rate = (cp_sample_t)sample_rate;
+	block_config.ssb_config.channel_count = config->channels;
 	status = cp_block_init(&runtime->processor, &block_config);
 	if (status != CP_OK) {
 		free(runtime->scratch);
@@ -544,6 +559,13 @@ cp_pa_load_snapshot(struct cp_portaudio_runtime *runtime,
 	snapshot->am_asymmetry_ratio =
 	    atomic_load(&runtime->am_asymmetry_ratio);
 	snapshot->am_preset = atomic_load(&runtime->am_preset);
+	snapshot->ssb_enabled = atomic_load(&runtime->ssb_enabled);
+	snapshot->ssb_highpass_hz = atomic_load(&runtime->ssb_highpass_hz);
+	snapshot->ssb_lowpass_hz = atomic_load(&runtime->ssb_lowpass_hz);
+	snapshot->ssb_peak_limit = atomic_load(&runtime->ssb_peak_limit);
+	snapshot->ssb_phase_rotator_enabled =
+	    atomic_load(&runtime->ssb_phase_rotator_enabled);
+	snapshot->ssb_preset = atomic_load(&runtime->ssb_preset);
 	snapshot->control_command = atomic_load(&runtime->control_command);
 	snapshot->control_status = atomic_load(&runtime->control_status);
 
@@ -715,6 +737,7 @@ cp_pa_store_meters(struct cp_portaudio_runtime *runtime)
 	size_t band;
 	size_t band_count;
 	enum cp_am_preset am_preset;
+	enum cp_ssb_preset ssb_preset;
 
 	atomic_store(&runtime->input_peak,
 	    cp_monitor_sample_to_level(runtime->processor.input_meter.peak[0]));
@@ -764,6 +787,20 @@ cp_pa_store_meters(struct cp_portaudio_runtime *runtime)
 	if (cp_am_preset_from_string(runtime->processor.am.config.preset_name,
 	    &am_preset) == CP_OK)
 		atomic_store(&runtime->am_preset, (int)am_preset);
+
+	atomic_store(&runtime->ssb_enabled,
+	    runtime->processor.ssb.config.enabled ? 1u : 0u);
+	atomic_store(&runtime->ssb_highpass_hz,
+	    cp_pa_hz_to_uint(runtime->processor.ssb.config.highpass_hz));
+	atomic_store(&runtime->ssb_lowpass_hz,
+	    cp_pa_hz_to_uint(runtime->processor.ssb.config.lowpass_hz));
+	atomic_store(&runtime->ssb_peak_limit,
+	    cp_monitor_sample_to_level(runtime->processor.ssb.config.peak_limit));
+	atomic_store(&runtime->ssb_phase_rotator_enabled,
+	    runtime->processor.ssb.config.phase_rotator_enabled ? 1u : 0u);
+	if (cp_ssb_preset_from_string(runtime->processor.ssb.config.preset_name,
+	    &ssb_preset) == CP_OK)
+		atomic_store(&runtime->ssb_preset, (int)ssb_preset);
 }
 
 static int
