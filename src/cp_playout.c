@@ -15,7 +15,9 @@
 
 #include "cp_playout.h"
 
+static size_t	cp_playout_interval_frames(double, unsigned int);
 static int	cp_playout_append_path(struct cp_playlist *, const char *);
+static int	cp_playout_am_preset_id(const struct cp_am_config *);
 static char	*cp_playout_dup_range(const char *, size_t);
 static int	cp_playout_name_contains(const char *, const char *);
 static int	cp_playout_output_device_contains(PaDeviceIndex, const char *);
@@ -24,7 +26,26 @@ static int	cp_playout_output_matches(const struct cp_audio_config *,
 static int	cp_playout_read_line(FILE *, char *, size_t, int *);
 static int	cp_playout_select_output_device(
 		    const struct cp_audio_config *, size_t, PaDeviceIndex *);
+static int	cp_playout_should_stop(const struct cp_playout_config *);
+static void	cp_playout_print_meters(const struct cp_monitor_snapshot *);
 static char	*cp_playout_trim_line(char *);
+
+static size_t
+cp_playout_interval_frames(double sample_rate, unsigned int meter_interval_ms)
+{
+	double frames;
+
+	if (!isfinite(sample_rate) || sample_rate < CP_AUDIO_MIN_SAMPLE_RATE)
+		return CP_AUDIO_DEFAULT_BLOCK_SIZE;
+
+	frames = sample_rate * (double)meter_interval_ms / 1000.0;
+	if (frames < 1.0)
+		return 1;
+	if (frames > (double)SIZE_MAX)
+		return SIZE_MAX;
+
+	return (size_t)frames;
+}
 
 void
 cp_playout_default_config(struct cp_playout_config *config)
@@ -35,6 +56,58 @@ cp_playout_default_config(struct cp_playout_config *config)
 	cp_audio_default_config(&config->audio_config);
 	cp_block_default_config(&config->block_config, CP_CHANNELS_STEREO);
 	config->block_frames = CP_PLAYOUT_DEFAULT_BLOCK_FRAMES;
+	config->meter_interval_ms = CP_AUDIO_DEFAULT_METER_MS;
+	config->stop_requested = NULL;
+}
+
+int
+cp_playout_build_snapshot(const struct cp_block_processor *processor,
+	struct cp_monitor_snapshot *snapshot)
+{
+	size_t band;
+
+	if (processor == NULL || snapshot == NULL)
+		return CP_PLAYOUT_ERR_NULL;
+
+	cp_monitor_snapshot_clear(snapshot);
+	snapshot->input_peak =
+	    cp_monitor_sample_to_level(processor->input_meter.peak[0]);
+	snapshot->input_rms =
+	    cp_monitor_sample_to_level(processor->input_meter.rms[0]);
+	snapshot->output_peak =
+	    cp_monitor_sample_to_level(processor->output_meter.peak[0]);
+	snapshot->output_rms =
+	    cp_monitor_sample_to_level(processor->output_meter.rms[0]);
+	snapshot->agc_gain = cp_monitor_sample_to_level(processor->agc.gain);
+	snapshot->agc_gain_db_centibel =
+	    cp_monitor_db_to_centibel(processor->agc.gain_db);
+	snapshot->agc_state = (int)processor->agc.gate_state;
+	snapshot->dsp_status = CP_OK;
+	snapshot->am_enabled = processor->am.config.enabled ? 1u : 0u;
+	snapshot->am_highpass_hz =
+	    (unsigned int)lrintf(processor->am.config.highpass_hz);
+	snapshot->am_lowpass_hz =
+	    (unsigned int)lrintf(processor->am.config.lowpass_hz);
+	snapshot->am_positive_peak =
+	    cp_monitor_sample_to_level(processor->am.config.positive_peak_limit);
+	snapshot->am_negative_peak =
+	    cp_monitor_sample_to_level(processor->am.config.negative_peak_limit);
+	snapshot->am_asymmetry_enabled =
+	    processor->am.config.asymmetry_enabled ? 1u : 0u;
+	snapshot->am_asymmetry_ratio =
+	    cp_monitor_sample_to_level(processor->am.config.asymmetry_ratio);
+	snapshot->am_preset = cp_playout_am_preset_id(&processor->am.config);
+	snapshot->band_count = processor->multiband.band_count;
+	if (snapshot->band_count > CP_MONITOR_MAX_BANDS)
+		snapshot->band_count = CP_MONITOR_MAX_BANDS;
+	for (band = 0; band < snapshot->band_count; band++) {
+		snapshot->band_rms[band] = cp_monitor_sample_to_level(
+		    processor->multiband.band_rms[band]);
+		snapshot->band_gr_db_centibel[band] = cp_monitor_db_to_centibel(
+		    processor->multiband.band_gain_reduction_db[band]);
+	}
+
+	return CP_PLAYOUT_OK;
 }
 
 void
@@ -141,6 +214,7 @@ cp_playout_path_is_wav(const char *path)
 int
 cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 {
+	struct cp_monitor_snapshot snapshot;
 	SF_INFO input_info;
 	SNDFILE *input_file;
 	PaStreamParameters output_params;
@@ -158,16 +232,18 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	size_t block_frames;
 	size_t block_samples;
 	size_t channels;
+	size_t frames_until_meter;
+	size_t meter_frames;
 	int result;
 	int status;
 
 	if (path == NULL || config == NULL)
 		return CP_PLAYOUT_ERR_NULL;
+	status = cp_playout_validate_config(config);
+	if (status != CP_PLAYOUT_OK)
+		return status;
 	if (!cp_playout_path_is_wav(path))
 		return CP_PLAYOUT_ERR_UNSUPPORTED;
-	if (config->block_frames == 0 ||
-	    config->block_frames > (SIZE_MAX / CP_CHANNELS_STEREO))
-		return CP_PLAYOUT_ERR_FORMAT;
 
 	memset(&input_info, 0, sizeof(input_info));
 	input_file = sf_open(path, SFM_READ, &input_info);
@@ -301,7 +377,11 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	    path, input_info.samplerate, channels, output_device);
 
 	result = CP_PLAYOUT_OK;
-	while ((frames_read = sf_readf_float(input_file, input,
+	meter_frames = cp_playout_interval_frames((double)input_info.samplerate,
+	    config->meter_interval_ms);
+	frames_until_meter = meter_frames;
+	while (!cp_playout_should_stop(config) &&
+	    (frames_read = sf_readf_float(input_file, input,
 	    (sf_count_t)block_frames)) > 0) {
 		status = cp_block_process(&processor, input, output, scratch,
 		    block_samples, (size_t)frames_read);
@@ -315,9 +395,27 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 			result = CP_PLAYOUT_ERR_WRITE;
 			break;
 		}
+		if ((size_t)frames_read >= frames_until_meter) {
+			status = cp_playout_build_snapshot(&processor,
+			    &snapshot);
+			if (status != CP_PLAYOUT_OK) {
+				result = status;
+				break;
+			}
+			cp_playout_print_meters(&snapshot);
+			frames_until_meter = meter_frames;
+		} else {
+			frames_until_meter -= (size_t)frames_read;
+		}
 	}
-	if (frames_read < 0 && result == CP_PLAYOUT_OK)
+	if (!cp_playout_should_stop(config) && frames_read < 0 &&
+	    result == CP_PLAYOUT_OK)
 		result = CP_PLAYOUT_ERR_READ;
+	if (result == CP_PLAYOUT_OK) {
+		status = cp_playout_build_snapshot(&processor, &snapshot);
+		if (status == CP_PLAYOUT_OK)
+			cp_playout_print_meters(&snapshot);
+	}
 
 	Pa_StopStream(stream);
 	Pa_CloseStream(stream);
@@ -352,6 +450,8 @@ cp_playout_run_playlist(const char *path,
 	}
 
 	for (index = 0; index < playlist.count; index++) {
+		if (cp_playout_should_stop(config))
+			break;
 		entry = cp_playlist_get(&playlist, index);
 		status = cp_playout_run_file(entry, config);
 		if (status != CP_PLAYOUT_OK)
@@ -392,9 +492,28 @@ cp_playout_status_string(int status)
 		return "could not write playout audio stream";
 	case CP_PLAYOUT_ERR_UNSUPPORTED:
 		return "unsupported playout format: use WAV in this milestone";
+	case CP_PLAYOUT_ERR_METER:
+		return "invalid playout meter interval";
 	default:
 		return "unknown playout error";
 	}
+}
+
+int
+cp_playout_validate_config(const struct cp_playout_config *config)
+{
+	if (config == NULL)
+		return CP_PLAYOUT_ERR_NULL;
+	if (config->block_frames < CP_AUDIO_MIN_BLOCK_SIZE ||
+	    config->block_frames > CP_AUDIO_MAX_BLOCK_SIZE)
+		return CP_PLAYOUT_ERR_FORMAT;
+	if (config->block_frames > (SIZE_MAX / CP_CHANNELS_STEREO))
+		return CP_PLAYOUT_ERR_FORMAT;
+	if (config->meter_interval_ms < CP_AUDIO_MIN_METER_MS ||
+	    config->meter_interval_ms > CP_AUDIO_MAX_METER_MS)
+		return CP_PLAYOUT_ERR_METER;
+
+	return CP_PLAYOUT_OK;
 }
 
 static int
@@ -428,6 +547,19 @@ cp_playout_append_path(struct cp_playlist *playlist, const char *path)
 
 	playlist->paths[playlist->count++] = copy;
 	return CP_PLAYOUT_OK;
+}
+
+static int
+cp_playout_am_preset_id(const struct cp_am_config *config)
+{
+	enum cp_am_preset preset;
+
+	if (config == NULL)
+		return (int)CP_AM_PRESET_SAFE;
+	if (cp_am_preset_from_string(config->preset_name, &preset) == CP_OK)
+		return (int)preset;
+
+	return (int)CP_AM_PRESET_SAFE;
 }
 
 static char *
@@ -558,6 +690,46 @@ cp_playout_read_line(FILE *file, char *buffer, size_t buffer_size,
 	return 1;
 }
 
+static void
+cp_playout_print_meters(const struct cp_monitor_snapshot *snapshot)
+{
+	size_t band;
+
+	if (snapshot == NULL)
+		return;
+
+	printf("input_peak=%0.6f input_rms=%0.6f output_peak=%0.6f "
+	    "output_rms=%0.6f gain=%0.6f gain_db=%0.2f agc_state=%s\n",
+	    cp_monitor_level_to_sample(snapshot->input_peak),
+	    cp_monitor_level_to_sample(snapshot->input_rms),
+	    cp_monitor_level_to_sample(snapshot->output_peak),
+	    cp_monitor_level_to_sample(snapshot->output_rms),
+	    cp_monitor_level_to_sample(snapshot->agc_gain),
+	    cp_monitor_centibel_to_db(snapshot->agc_gain_db_centibel),
+	    cp_agc_state_string((enum cp_agc_gate_state)snapshot->agc_state));
+	if (snapshot->band_count > 0) {
+		for (band = 0; band < snapshot->band_count; band++) {
+			printf("band%zu_rms=%0.6f band%zu_gr_db=%0.2f\n",
+			    band + 1,
+			    cp_monitor_level_to_sample(snapshot->band_rms[band]),
+			    band + 1,
+			    cp_monitor_centibel_to_db(
+			    snapshot->band_gr_db_centibel[band]));
+		}
+	}
+	if (snapshot->am_enabled) {
+		printf("am=on preset=%s highpass=%u lowpass=%u "
+		    "positive_peak=%0.2f negative_peak=%0.2f "
+		    "asymmetry=%s asymmetry_ratio=%0.2f\n",
+		    cp_am_preset_string((enum cp_am_preset)snapshot->am_preset),
+		    snapshot->am_highpass_hz, snapshot->am_lowpass_hz,
+		    cp_monitor_level_to_sample(snapshot->am_positive_peak),
+		    cp_monitor_level_to_sample(snapshot->am_negative_peak),
+		    snapshot->am_asymmetry_enabled ? "on" : "off",
+		    cp_monitor_level_to_sample(snapshot->am_asymmetry_ratio));
+	}
+}
+
 static int
 cp_playout_select_output_device(const struct cp_audio_config *config,
 	size_t channels, PaDeviceIndex *output_device)
@@ -628,6 +800,15 @@ cp_playout_select_output_device(const struct cp_audio_config *config,
 	}
 
 	return CP_PLAYOUT_ERR_AUDIO;
+}
+
+static int
+cp_playout_should_stop(const struct cp_playout_config *config)
+{
+	if (config == NULL || config->stop_requested == NULL)
+		return 0;
+
+	return *config->stop_requested != 0;
 }
 
 static char *

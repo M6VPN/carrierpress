@@ -24,9 +24,9 @@
 #define CP_TWO_PI		6.28318530717958647692f
 #define CP_WAV_BLOCK_FRAMES	512
 
-#ifdef CP_WITH_PORTAUDIO
 static volatile sig_atomic_t stop_requested = 0;
 
+#ifdef CP_WITH_PORTAUDIO
 static void	handle_signal(int);
 #endif
 static int	parse_am_preset(struct cp_am_config *, const char *);
@@ -39,9 +39,9 @@ static int	parse_uint_arg(const char *, unsigned int *);
 static int	run_list_devices(void);
 static int	run_live_audio(const struct cp_audio_config *);
 static int	run_playout_file(const char *, const struct cp_audio_config *,
-		    const struct cp_block_config *);
+		    const struct cp_block_config *, volatile sig_atomic_t *);
 static int	run_playout_playlist(const char *, const struct cp_audio_config *,
-		    const struct cp_block_config *);
+		    const struct cp_block_config *, volatile sig_atomic_t *);
 static int	run_wav_process(const char *, const char *,
 		    const struct cp_block_config *);
 static int	run_self_test(const struct cp_block_config *);
@@ -300,10 +300,10 @@ main(int argc, char *argv[])
 		}
 		if (play_path != NULL)
 			return run_playout_file(play_path, &audio_config,
-			    &block_config);
+			    &block_config, &stop_requested);
 
 		return run_playout_playlist(playlist_path, &audio_config,
-		    &block_config);
+		    &block_config, &stop_requested);
 	}
 
 	if (input_path != NULL || output_path != NULL) {
@@ -513,16 +513,26 @@ run_live_audio(const struct cp_audio_config *config)
 
 static int
 run_playout_file(const char *path, const struct cp_audio_config *audio_config,
-	const struct cp_block_config *block_config)
+	const struct cp_block_config *block_config,
+	volatile sig_atomic_t *stop_flag)
 {
 #ifdef CP_WITH_PLAYOUT
 	struct cp_playout_config config;
 	int status;
 
+	stop_requested = 0;
+	if (signal(SIGINT, handle_signal) == SIG_ERR ||
+	    signal(SIGTERM, handle_signal) == SIG_ERR) {
+		printf("carrierpress: could not install signal handler\n");
+		return 1;
+	}
+
 	cp_playout_default_config(&config);
 	config.audio_config = *audio_config;
 	config.block_config = *block_config;
 	config.block_frames = audio_config->block_size;
+	config.meter_interval_ms = audio_config->meter_interval_ms;
+	config.stop_requested = stop_flag;
 
 	status = cp_playout_run_file(path, &config);
 	if (status != CP_PLAYOUT_OK) {
@@ -536,6 +546,7 @@ run_playout_file(const char *path, const struct cp_audio_config *audio_config,
 	(void)path;
 	(void)audio_config;
 	(void)block_config;
+	(void)stop_flag;
 
 	printf("Playout support not enabled. Rebuild with WITH_SNDFILE=1 "
 	    "WITH_PORTAUDIO=1.\n");
@@ -546,16 +557,26 @@ run_playout_file(const char *path, const struct cp_audio_config *audio_config,
 static int
 run_playout_playlist(const char *path,
 	const struct cp_audio_config *audio_config,
-	const struct cp_block_config *block_config)
+	const struct cp_block_config *block_config,
+	volatile sig_atomic_t *stop_flag)
 {
 #ifdef CP_WITH_PLAYOUT
 	struct cp_playout_config config;
 	int status;
 
+	stop_requested = 0;
+	if (signal(SIGINT, handle_signal) == SIG_ERR ||
+	    signal(SIGTERM, handle_signal) == SIG_ERR) {
+		printf("carrierpress: could not install signal handler\n");
+		return 1;
+	}
+
 	cp_playout_default_config(&config);
 	config.audio_config = *audio_config;
 	config.block_config = *block_config;
 	config.block_frames = audio_config->block_size;
+	config.meter_interval_ms = audio_config->meter_interval_ms;
+	config.stop_requested = stop_flag;
 
 	status = cp_playout_run_playlist(path, &config);
 	if (status != CP_PLAYOUT_OK) {
@@ -569,6 +590,7 @@ run_playout_playlist(const char *path,
 	(void)path;
 	(void)audio_config;
 	(void)block_config;
+	(void)stop_flag;
 
 	printf("Playout support not enabled. Rebuild with WITH_SNDFILE=1 "
 	    "WITH_PORTAUDIO=1.\n");

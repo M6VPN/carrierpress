@@ -44,6 +44,10 @@ Implemented as a PortAudio device-selection improvement for laptop testing. Auto
 
 Partially implemented. CarrierPress can play WAV files or simple text playlists through the current DSP chain and an output-only PortAudio stream when built with both libsndfile and PortAudio. MP3 decode, TUI playlist controls, web controls, gapless playback, and resampling are deferred.
 
+## M6.9 play-mode live parity
+
+Partially implemented. Play mode now reports live-style meters, honors `--meter-interval-ms`, uses the same DSP flags as live mode, and stops cleanly between blocks on `Ctrl-C`. It remains WAV-only and output-only.
+
 ## M7 SSB chain
 
 Add SSB-oriented filtering, asymmetry handling, and speech-focused processing.

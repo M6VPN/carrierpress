@@ -9,6 +9,8 @@
 #include "cp_playout.h"
 
 static int	write_text_file(const char *, const char *);
+static int	test_config_validation(void);
+static int	test_meter_snapshot(void);
 static int	test_path_filter(void);
 static int	test_playlist_load(void);
 static int	test_playlist_rejects_mp3(void);
@@ -16,6 +18,10 @@ static int	test_playlist_rejects_mp3(void);
 int
 main(void)
 {
+	if (!test_config_validation())
+		return 1;
+	if (!test_meter_snapshot())
+		return 1;
 	if (!test_path_filter())
 		return 1;
 	if (!test_playlist_load())
@@ -39,6 +45,73 @@ write_text_file(const char *path, const char *text)
 		return 0;
 	}
 	fclose(file);
+
+	return 1;
+}
+
+static int
+test_config_validation(void)
+{
+	struct cp_playout_config config;
+
+	cp_playout_default_config(&config);
+	if (cp_playout_validate_config(&config) != CP_PLAYOUT_OK) {
+		printf("test_playout: default config rejected\n");
+		return 0;
+	}
+
+	config.meter_interval_ms = CP_AUDIO_MIN_METER_MS - 1;
+	if (cp_playout_validate_config(&config) != CP_PLAYOUT_ERR_METER) {
+		printf("test_playout: bad meter interval accepted\n");
+		return 0;
+	}
+
+	cp_playout_default_config(&config);
+	config.block_frames = CP_AUDIO_MAX_BLOCK_SIZE + 1;
+	if (cp_playout_validate_config(&config) != CP_PLAYOUT_ERR_FORMAT) {
+		printf("test_playout: bad block size accepted\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_meter_snapshot(void)
+{
+	cp_sample_t input[CP_PLAYOUT_DEFAULT_BLOCK_FRAMES];
+	cp_sample_t output[CP_PLAYOUT_DEFAULT_BLOCK_FRAMES];
+	cp_sample_t scratch[CP_PLAYOUT_DEFAULT_BLOCK_FRAMES];
+	struct cp_block_config config;
+	struct cp_block_processor processor;
+	struct cp_monitor_snapshot snapshot;
+	size_t frame;
+
+	cp_block_default_config(&config, CP_CHANNELS_MONO);
+	config.sample_rate = 48000.0f;
+	if (cp_block_init(&processor, &config) != CP_OK) {
+		printf("test_playout: block init failed\n");
+		return 0;
+	}
+	for (frame = 0; frame < CP_PLAYOUT_DEFAULT_BLOCK_FRAMES; frame++)
+		input[frame] = 0.10f;
+	if (cp_block_process(&processor, input, output, scratch,
+	    CP_PLAYOUT_DEFAULT_BLOCK_FRAMES,
+	    CP_PLAYOUT_DEFAULT_BLOCK_FRAMES) != CP_OK) {
+		printf("test_playout: block process failed\n");
+		return 0;
+	}
+	if (cp_playout_build_snapshot(&processor, &snapshot) !=
+	    CP_PLAYOUT_OK) {
+		printf("test_playout: snapshot failed\n");
+		return 0;
+	}
+	if (snapshot.input_peak == 0 || snapshot.input_rms == 0 ||
+	    snapshot.output_peak == 0 || snapshot.output_rms == 0 ||
+	    snapshot.agc_gain == 0) {
+		printf("test_playout: snapshot levels missing\n");
+		return 0;
+	}
 
 	return 1;
 }

@@ -33,9 +33,11 @@ Live device selection stays at the PortAudio boundary. Automatic mode prefers us
 WAV playout is a host feature, not a DSP core feature. It requires both
 libsndfile and PortAudio, reads WAV data in fixed-size blocks, processes those
 blocks through the normal CarrierPress chain, and writes them to an output-only
-PortAudio stream. M6.8 uses blocking PortAudio output for file playout. Callback
-playout and playlist control from a TUI or web interface are planned after the
-basic file path is proven.
+PortAudio stream. Play mode reports live-style meters from the same processor
+state used by the live monitor and stops cleanly between blocks when interrupted.
+M6.9 still uses blocking PortAudio output for file playout. Callback playout and
+playlist control from a TUI or web interface are planned after the basic file
+path is proven.
 
 Live TUI controls use a small command handoff. The foreground TUI validates key input into a preset command, stores one pending command atomically, and the callback applies it at the next block boundary. M6.6 only allows AM off and validated AM preset changes. Future sndio/OpenBSD work should keep the same boundary. The STM32H753 path should call the same block DSP model directly or through a CMSIS-DSP adapter.
 
