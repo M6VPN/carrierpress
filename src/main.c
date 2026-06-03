@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "carrierpress.h"
+#include "cp_playout.h"
 #include "cp_portaudio.h"
 #include "cp_wav.h"
 
@@ -37,6 +38,10 @@ static int	parse_size_arg(const char *, size_t *);
 static int	parse_uint_arg(const char *, unsigned int *);
 static int	run_list_devices(void);
 static int	run_live_audio(const struct cp_audio_config *);
+static int	run_playout_file(const char *, const struct cp_audio_config *,
+		    const struct cp_block_config *);
+static int	run_playout_playlist(const char *, const struct cp_audio_config *,
+		    const struct cp_block_config *);
 static int	run_wav_process(const char *, const char *,
 		    const struct cp_block_config *);
 static int	run_self_test(const struct cp_block_config *);
@@ -47,17 +52,23 @@ main(int argc, char *argv[])
 {
 	const char *input_path;
 	const char *output_path;
+	const char *play_path;
+	const char *playlist_path;
 	struct cp_audio_config audio_config;
 	struct cp_block_config block_config;
 	double parsed_double;
 	size_t parsed_size;
 	int arg;
+	int channels_explicit;
 	int live_mode;
 	int list_devices;
 	int self_test_mode;
 
 	input_path   = NULL;
 	output_path  = NULL;
+	play_path    = NULL;
+	playlist_path = NULL;
+	channels_explicit = 0;
 	live_mode    = 0;
 	list_devices = 0;
 	self_test_mode = 0;
@@ -73,6 +84,12 @@ main(int argc, char *argv[])
 		} else if (strcmp(argv[arg], "--output") == 0 &&
 		    arg + 1 < argc) {
 			output_path = argv[++arg];
+		} else if (strcmp(argv[arg], "--play") == 0 &&
+		    arg + 1 < argc) {
+			play_path = argv[++arg];
+		} else if (strcmp(argv[arg], "--playlist") == 0 &&
+		    arg + 1 < argc) {
+			playlist_path = argv[++arg];
 		} else if (strcmp(argv[arg], "--list-devices") == 0) {
 			list_devices = 1;
 		} else if (strcmp(argv[arg], "--live") == 0) {
@@ -121,6 +138,7 @@ main(int argc, char *argv[])
 				usage(argv[0]);
 				return 1;
 			}
+			channels_explicit = 1;
 		} else if (strcmp(argv[arg], "--block-size") == 0 &&
 		    arg + 1 < argc) {
 			if (!parse_size_arg(argv[++arg],
@@ -258,13 +276,34 @@ main(int argc, char *argv[])
 	audio_config.am_config.sample_rate = (cp_sample_t)audio_config.sample_rate;
 
 	if (self_test_mode) {
-		if (input_path != NULL || output_path != NULL || live_mode ||
-		    list_devices) {
+		if (input_path != NULL || output_path != NULL ||
+		    play_path != NULL || playlist_path != NULL ||
+		    live_mode || list_devices) {
 			usage(argv[0]);
 			return 1;
 		}
 
 		return run_self_test(&block_config);
+	}
+
+	if (play_path != NULL || playlist_path != NULL) {
+		if (input_path != NULL || output_path != NULL || live_mode ||
+		    list_devices ||
+		    (play_path != NULL && playlist_path != NULL)) {
+			usage(argv[0]);
+			return 1;
+		}
+		if (audio_config.input_device != CP_AUDIO_DEFAULT_DEVICE ||
+		    channels_explicit) {
+			usage(argv[0]);
+			return 1;
+		}
+		if (play_path != NULL)
+			return run_playout_file(play_path, &audio_config,
+			    &block_config);
+
+		return run_playout_playlist(playlist_path, &audio_config,
+		    &block_config);
 	}
 
 	if (input_path != NULL || output_path != NULL) {
@@ -473,6 +512,71 @@ run_live_audio(const struct cp_audio_config *config)
 }
 
 static int
+run_playout_file(const char *path, const struct cp_audio_config *audio_config,
+	const struct cp_block_config *block_config)
+{
+#ifdef CP_WITH_PLAYOUT
+	struct cp_playout_config config;
+	int status;
+
+	cp_playout_default_config(&config);
+	config.audio_config = *audio_config;
+	config.block_config = *block_config;
+	config.block_frames = audio_config->block_size;
+
+	status = cp_playout_run_file(path, &config);
+	if (status != CP_PLAYOUT_OK) {
+		printf("carrierpress: playout failed: %s\n",
+		    cp_playout_status_string(status));
+		return 1;
+	}
+
+	return 0;
+#else
+	(void)path;
+	(void)audio_config;
+	(void)block_config;
+
+	printf("Playout support not enabled. Rebuild with WITH_SNDFILE=1 "
+	    "WITH_PORTAUDIO=1.\n");
+	return 1;
+#endif
+}
+
+static int
+run_playout_playlist(const char *path,
+	const struct cp_audio_config *audio_config,
+	const struct cp_block_config *block_config)
+{
+#ifdef CP_WITH_PLAYOUT
+	struct cp_playout_config config;
+	int status;
+
+	cp_playout_default_config(&config);
+	config.audio_config = *audio_config;
+	config.block_config = *block_config;
+	config.block_frames = audio_config->block_size;
+
+	status = cp_playout_run_playlist(path, &config);
+	if (status != CP_PLAYOUT_OK) {
+		printf("carrierpress: playout failed: %s\n",
+		    cp_playout_status_string(status));
+		return 1;
+	}
+
+	return 0;
+#else
+	(void)path;
+	(void)audio_config;
+	(void)block_config;
+
+	printf("Playout support not enabled. Rebuild with WITH_SNDFILE=1 "
+	    "WITH_PORTAUDIO=1.\n");
+	return 1;
+#endif
+}
+
+static int
 run_wav_process(const char *input_path, const char *output_path,
 	const struct cp_block_config *config)
 {
@@ -593,6 +697,9 @@ usage(const char *program)
 	printf("usage: %s --self-test --dehummer --hum-frequency 50 "
 	    "--hum-harmonics 4\n", program);
 	printf("usage: %s --input input.wav --output output.wav\n", program);
+	printf("usage: %s --play input.wav [--output-device N]\n", program);
+	printf("usage: %s --playlist playlist.txt [--output-device N]\n",
+	    program);
 	printf("usage: %s --list-devices\n", program);
 	printf("usage: %s --live [--input-device N] [--output-device N]\n",
 	    program);

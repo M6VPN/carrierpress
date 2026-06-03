@@ -4,7 +4,7 @@ CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB a
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
-Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. AM output-chain shaping is available as an M6 foundation. SSB shaping and STM32H753 support are planned but are not part of v0.1.
+Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. MP3 playout, SSB shaping, and STM32H753 support are planned but are not part of v0.1.
 
 ## Table of Contents
 
@@ -69,10 +69,22 @@ Build with both optional WAV and PortAudio support:
 make WITH_SNDFILE=1 WITH_PORTAUDIO=1
 ```
 
+Build with optional WAV playout support:
+
+```sh
+make WITH_SNDFILE=1 WITH_PORTAUDIO=1
+```
+
 Build and run tests with optional WAV support:
 
 ```sh
 make WITH_SNDFILE=1 test
+```
+
+Build and run tests with optional WAV playout support:
+
+```sh
+make WITH_SNDFILE=1 WITH_PORTAUDIO=1 test
 ```
 
 ## Usage
@@ -122,6 +134,41 @@ WAV support requires a `WITH_SNDFILE=1` build. Without it, the command exits wit
 ```text
 WAV support not enabled. Rebuild with WITH_SNDFILE=1.
 ```
+
+Play a WAV file through CarrierPress and send the processed result to the default output device:
+
+```sh
+./carrierpress --play input.wav
+```
+
+Choose an output device for WAV playout:
+
+```sh
+./carrierpress --play input.wav --output-device 3
+./carrierpress --play input.wav --device pulse
+```
+
+Play a simple playlist:
+
+```sh
+./carrierpress --playlist playlist.txt --device pulse
+```
+
+Playlist files are plain text. Blank lines and lines beginning with `#` are ignored. Each other line is a WAV path:
+
+```text
+# playlist.txt
+first.wav
+second.wav
+```
+
+WAV playout requires a `WITH_SNDFILE=1 WITH_PORTAUDIO=1` build. Without it, `--play` and `--playlist` exit with:
+
+```text
+Playout support not enabled. Rebuild with WITH_SNDFILE=1 WITH_PORTAUDIO=1.
+```
+
+MP3 playout is not implemented in this milestone. Convert MP3 files to WAV with an external tool before using `--play` or `--playlist`.
 
 List PortAudio devices:
 
@@ -282,7 +329,9 @@ off or select one of the validated AM presets.
 
 ## Development
 
-The core library has no optional audio backend dependency. WAV support lives in `cp_wav.c`, PortAudio support lives in `cp_portaudio.c`, and the ncurses monitor lives in `cp_tui.c`. Optional files are compiled only when requested. Process functions use caller-owned buffers and explicit state structs so real-time callbacks can remain malloc-free and deterministic.
+The core library has no optional audio backend dependency. WAV support lives in `cp_wav.c`, PortAudio support lives in `cp_portaudio.c`, WAV playout lives in `cp_playout.c`, and the ncurses monitor lives in `cp_tui.c`. Optional files are compiled only when requested. Process functions use caller-owned buffers and explicit state structs so real-time callbacks can remain malloc-free and deterministic.
+
+WAV playout reads fixed-size blocks from libsndfile, processes them through the normal CarrierPress chain, and writes processed float32 blocks to a PortAudio output stream. It does not load the whole file into memory. This milestone uses blocking PortAudio output for file playout; live input mode still uses the callback backend.
 
 Live TUI control is preset-only in this milestone. It can switch the AM output
 chain between validated presets, but it does not expose arbitrary DSP parameter

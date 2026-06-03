@@ -13,6 +13,7 @@ The DSP core does not include PortAudio, libsndfile, sndio, or embedded platform
 - `cp_audio` owns live-audio defaults and config validation.
 - `cp_wav` owns optional offline WAV processing with libsndfile.
 - `cp_portaudio` owns optional live sound-card processing with PortAudio.
+- `cp_playout` owns optional WAV file playout through PortAudio output.
 - `cp_monitor` owns dependency-free monitor snapshots and scaling.
 - `cp_control` owns validated live control commands.
 - `cp_tui` owns optional ncurses live monitoring.
@@ -28,6 +29,13 @@ This split keeps the core library usable for offline tools, live hosts, and embe
 The PortAudio backend uses callback mode. Buffers and DSP state are allocated before stream start, the callback does not print, and meter/status values are handed to the foreground loop for reporting. Text meters and the optional ncurses TUI both read monitor snapshots outside the callback.
 
 Live device selection stays at the PortAudio boundary. Automatic mode prefers usable JACK devices, then PipeWire or Pulse-style full-duplex devices visible through PortAudio, then PortAudio defaults. CarrierPress does not include direct ALSA, JACK, or PipeWire code in the DSP core.
+
+WAV playout is a host feature, not a DSP core feature. It requires both
+libsndfile and PortAudio, reads WAV data in fixed-size blocks, processes those
+blocks through the normal CarrierPress chain, and writes them to an output-only
+PortAudio stream. M6.8 uses blocking PortAudio output for file playout. Callback
+playout and playlist control from a TUI or web interface are planned after the
+basic file path is proven.
 
 Live TUI controls use a small command handoff. The foreground TUI validates key input into a preset command, stores one pending command atomically, and the callback applies it at the next block boundary. M6.6 only allows AM off and validated AM preset changes. Future sndio/OpenBSD work should keep the same boundary. The STM32H753 path should call the same block DSP model directly or through a CMSIS-DSP adapter.
 

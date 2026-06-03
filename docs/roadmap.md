@@ -40,6 +40,10 @@ Implemented as a preset-only live control layer for the optional ncurses TUI. It
 
 Implemented as a PortAudio device-selection improvement for laptop testing. Automatic live mode now prefers usable JACK devices, then PipeWire or Pulse-style full-duplex devices visible through PortAudio, then PortAudio defaults. Device listing shows host APIs, default markers, live candidates, and a recommended command.
 
+## M6.8 WAV playout foundation
+
+Partially implemented. CarrierPress can play WAV files or simple text playlists through the current DSP chain and an output-only PortAudio stream when built with both libsndfile and PortAudio. MP3 decode, TUI playlist controls, web controls, gapless playback, and resampling are deferred.
+
 ## M7 SSB chain
 
 Add SSB-oriented filtering, asymmetry handling, and speech-focused processing.

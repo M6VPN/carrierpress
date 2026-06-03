@@ -66,6 +66,15 @@ CORE_SRCS += src/cp_portaudio.c
 PORTAUDIO_ORDER = check-portaudio
 endif
 
+ifeq ($(WITH_SNDFILE),1)
+ifeq ($(WITH_PORTAUDIO),1)
+CPPFLAGS += -DCP_WITH_PLAYOUT
+CORE_SRCS += src/cp_playout.c
+TEST_SRCS += tests/test_playout.c
+PLAYOUT_ENABLED = 1
+endif
+endif
+
 ifeq ($(WITH_TUI),1)
 FEATURE_DIR := $(FEATURE_DIR)-tui
 CPPFLAGS += -DCP_WITH_TUI
@@ -98,6 +107,10 @@ TEST_BINS = \
 
 ifeq ($(WITH_SNDFILE),1)
 TEST_BINS += $(TEST_BIN_DIR)/test_wav
+endif
+
+ifeq ($(PLAYOUT_ENABLED),1)
+TEST_BINS += $(TEST_BIN_DIR)/test_playout
 endif
 
 all: carrierpress
@@ -160,6 +173,10 @@ $(TEST_BIN_DIR)/test_multiband: $(TEST_OBJ_DIR)/tests/test_multiband.o $(TEST_CO
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_multiband.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_playout: $(TEST_OBJ_DIR)/tests/test_playout.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_playout.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_wav: $(TEST_OBJ_DIR)/tests/test_wav.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_wav.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -180,6 +197,9 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_multiband
 ifeq ($(WITH_SNDFILE),1)
 	./$(TEST_BIN_DIR)/test_wav
+endif
+ifeq ($(PLAYOUT_ENABLED),1)
+	./$(TEST_BIN_DIR)/test_playout
 endif
 
 check-sndfile:
@@ -218,6 +238,8 @@ clean:
 	rm -f tests/test_dc_blocker tests/test_dehummer
 	rm -f tests/test_limiter tests/test_meter
 	rm -f tests/test_monitor tests/test_multiband
-	rm -f tests/test_wav tests/wav_input.wav tests/wav_output.wav
+	rm -f tests/test_playout tests/test_wav
+	rm -f tests/playout_bad.txt tests/playout_good.txt
+	rm -f tests/wav_input.wav tests/wav_output.wav
 
 .PHONY: all check-portaudio check-sndfile check-tui clean test
