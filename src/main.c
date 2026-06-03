@@ -77,6 +77,16 @@ main(int argc, char *argv[])
 			list_devices = 1;
 		} else if (strcmp(argv[arg], "--live") == 0) {
 			live_mode = 1;
+		} else if (strcmp(argv[arg], "--audio-backend") == 0 &&
+		    arg + 1 < argc) {
+			if (cp_audio_backend_from_string(argv[++arg],
+			    &audio_config.backend) != CP_AUDIO_OK) {
+				usage(argv[0]);
+				return 1;
+			}
+		} else if (strcmp(argv[arg], "--device") == 0 &&
+		    arg + 1 < argc) {
+			audio_config.device_name = argv[++arg];
 		} else if (strcmp(argv[arg], "--tui") == 0) {
 #ifdef CP_WITH_TUI
 			audio_config.tui_enabled = 1;
@@ -104,6 +114,7 @@ main(int argc, char *argv[])
 				usage(argv[0]);
 				return 1;
 			}
+			audio_config.sample_rate_explicit = 1;
 		} else if (strcmp(argv[arg], "--channels") == 0 &&
 		    arg + 1 < argc) {
 			if (!parse_size_arg(argv[++arg], &audio_config.channels)) {
@@ -585,6 +596,9 @@ usage(const char *program)
 	printf("usage: %s --list-devices\n", program);
 	printf("usage: %s --live [--input-device N] [--output-device N]\n",
 	    program);
+	printf("usage: %s --live --audio-backend auto|jack|alsa|pulse|default\n",
+	    program);
+	printf("usage: %s --live --device NAME\n", program);
 	printf("usage: %s --live --sample-rate 48000 --channels 2 "
 	    "--block-size 256\n", program);
 	printf("usage: %s --live --meter-interval-ms 1000\n", program);

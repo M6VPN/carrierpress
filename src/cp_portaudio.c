@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <portaudio.h>
 
@@ -55,14 +56,28 @@ struct cp_portaudio_runtime {
 
 static void		cp_pa_apply_pending_control(
 			    struct cp_portaudio_runtime *);
+static int		cp_pa_build_candidates(
+			    struct cp_audio_device_candidate **,
+			    PaDeviceIndex *);
 static unsigned int	cp_pa_flags_from_status(PaStreamCallbackFlags);
+static const char	*cp_pa_host_api_name(PaDeviceIndex);
 static unsigned int	cp_pa_hz_to_uint(cp_sample_t);
 static int		cp_pa_init_processor(struct cp_portaudio_runtime *,
-			    const struct cp_audio_config *);
+			    const struct cp_audio_config *, double);
 static void		cp_pa_load_snapshot(struct cp_portaudio_runtime *,
 			    struct cp_monitor_snapshot *);
+static int		cp_pa_rate_supported(const PaStreamParameters *,
+			    const PaStreamParameters *, double);
+static int		cp_pa_select_sample_rate(
+			    const struct cp_audio_config *,
+			    const PaStreamParameters *,
+			    const PaStreamParameters *,
+			    const PaDeviceInfo *, const PaDeviceInfo *,
+			    double *);
 static void		cp_pa_print_flags(unsigned int);
 static void		cp_pa_print_meters(const struct cp_monitor_snapshot *);
+static void		cp_pa_print_recommendation(
+			    const struct cp_audio_device_candidate *, size_t);
 static int		cp_pa_select_devices(const struct cp_audio_config *,
 			    PaDeviceIndex *, PaDeviceIndex *);
 #ifdef CP_WITH_TUI
@@ -78,17 +93,18 @@ static int		cp_pa_stream_callback(const void *, void *,
 int
 cp_portaudio_list_devices(void)
 {
+	struct cp_audio_device_candidate *candidates;
 	const PaDeviceInfo *info;
 	PaDeviceIndex count;
 	PaDeviceIndex device;
 	PaError error;
 
+	candidates = NULL;
 	error = Pa_Initialize();
 	if (error != paNoError)
 		return CP_PORTAUDIO_ERR_INIT;
 
-	count = Pa_GetDeviceCount();
-	if (count < 0) {
+	if (cp_pa_build_candidates(&candidates, &count) != CP_PORTAUDIO_OK) {
 		Pa_Terminate();
 		return CP_PORTAUDIO_ERR_DEVICE;
 	}
@@ -98,11 +114,24 @@ cp_portaudio_list_devices(void)
 		if (info == NULL)
 			continue;
 
-		printf("%d: %s input=%d output=%d rate=%0.0f\n", device,
-		    info->name, info->maxInputChannels, info->maxOutputChannels,
+		printf("%d: [%s] %s input=%d output=%d rate=%0.0f",
+		    device, cp_pa_host_api_name(device), info->name,
+		    info->maxInputChannels, info->maxOutputChannels,
 		    info->defaultSampleRate);
+		if (device == Pa_GetDefaultInputDevice())
+			printf(" default_input");
+		if (device == Pa_GetDefaultOutputDevice())
+			printf(" default_output");
+		if (candidates[device].max_input_channels >=
+		    (int)CP_AUDIO_DEFAULT_CHANNELS &&
+		    candidates[device].max_output_channels >=
+		    (int)CP_AUDIO_DEFAULT_CHANNELS)
+			printf(" live_candidate");
+		printf("\n");
 	}
 
+	cp_pa_print_recommendation(candidates, (size_t)count);
+	free(candidates);
 	Pa_Terminate();
 	return CP_PORTAUDIO_OK;
 }
@@ -117,8 +146,11 @@ cp_portaudio_run(const struct cp_audio_config *config,
 	PaDeviceIndex input_device;
 	PaDeviceIndex output_device;
 	PaError error;
+	const PaDeviceInfo *input_info;
+	const PaDeviceInfo *output_info;
 	struct cp_portaudio_runtime runtime;
 	struct cp_monitor_snapshot snapshot;
+	double stream_rate;
 #ifdef CP_WITH_TUI
 	struct cp_control_command command;
 	struct cp_tui tui;
@@ -145,29 +177,41 @@ cp_portaudio_run(const struct cp_audio_config *config,
 		return status;
 	}
 
-	status = cp_pa_init_processor(&runtime, config);
-	if (status != CP_PORTAUDIO_OK) {
+	input_info = Pa_GetDeviceInfo(input_device);
+	output_info = Pa_GetDeviceInfo(output_device);
+	if (input_info == NULL || output_info == NULL) {
 		Pa_Terminate();
-		return status;
+		return CP_PORTAUDIO_ERR_DEVICE;
 	}
 
 	input_params.device                    = input_device;
 	input_params.channelCount              = (int)config->channels;
 	input_params.sampleFormat              = paFloat32;
-	input_params.suggestedLatency          =
-	    Pa_GetDeviceInfo(input_device)->defaultLowInputLatency;
+	input_params.suggestedLatency          = input_info->defaultLowInputLatency;
 	input_params.hostApiSpecificStreamInfo = NULL;
 
 	output_params.device                    = output_device;
 	output_params.channelCount              = (int)config->channels;
 	output_params.sampleFormat              = paFloat32;
-	output_params.suggestedLatency          =
-	    Pa_GetDeviceInfo(output_device)->defaultLowOutputLatency;
+	output_params.suggestedLatency          = output_info->defaultLowOutputLatency;
 	output_params.hostApiSpecificStreamInfo = NULL;
+
+	status = cp_pa_select_sample_rate(config, &input_params, &output_params,
+	    input_info, output_info, &stream_rate);
+	if (status != CP_PORTAUDIO_OK) {
+		Pa_Terminate();
+		return status;
+	}
+
+	status = cp_pa_init_processor(&runtime, config, stream_rate);
+	if (status != CP_PORTAUDIO_OK) {
+		Pa_Terminate();
+		return status;
+	}
 
 	stream = NULL;
 	error = Pa_OpenStream(&stream, &input_params, &output_params,
-	    config->sample_rate, (unsigned long)config->block_size, paNoFlag,
+	    stream_rate, (unsigned long)config->block_size, paNoFlag,
 	    cp_pa_stream_callback, &runtime);
 	if (error != paNoError) {
 		free(runtime.scratch);
@@ -200,7 +244,10 @@ cp_portaudio_run(const struct cp_audio_config *config,
 	}
 
 	if (!config->tui_enabled)
-		printf("live audio started. press Ctrl-C to stop.\n");
+		printf("live audio started. input_device=%d output_device=%d "
+		    "rate=%0.0f backend=%s. press Ctrl-C to stop.\n",
+		    input_device, output_device, stream_rate,
+		    cp_audio_backend_string(config->backend));
 	while (!*stop_requested && Pa_IsStreamActive(stream) == 1) {
 		Pa_Sleep(config->tui_enabled ? CP_PA_SLEEP_MS :
 		    (long)config->meter_interval_ms);
@@ -271,6 +318,49 @@ cp_portaudio_status_string(int status)
 	}
 }
 
+static int
+cp_pa_build_candidates(struct cp_audio_device_candidate **candidates,
+	PaDeviceIndex *count)
+{
+	struct cp_audio_device_candidate *list;
+	const PaDeviceInfo *info;
+	PaDeviceIndex device;
+	PaDeviceIndex devices;
+
+	if (candidates == NULL || count == NULL)
+		return CP_PORTAUDIO_ERR_DEVICE;
+
+	devices = Pa_GetDeviceCount();
+	if (devices < 0)
+		return CP_PORTAUDIO_ERR_DEVICE;
+
+	list = calloc((size_t)devices, sizeof(*list));
+	if (list == NULL)
+		return CP_PORTAUDIO_ERR_ALLOC;
+
+	for (device = 0; device < devices; device++) {
+		info = Pa_GetDeviceInfo(device);
+		list[device].index = device;
+		list[device].name = "";
+		list[device].host_api = "";
+		if (info == NULL)
+			continue;
+		list[device].name = info->name;
+		list[device].host_api = cp_pa_host_api_name(device);
+		list[device].max_input_channels = info->maxInputChannels;
+		list[device].max_output_channels = info->maxOutputChannels;
+		list[device].default_sample_rate = info->defaultSampleRate;
+		list[device].default_input =
+		    (device == Pa_GetDefaultInputDevice());
+		list[device].default_output =
+		    (device == Pa_GetDefaultOutputDevice());
+	}
+
+	*candidates = list;
+	*count = devices;
+	return CP_PORTAUDIO_OK;
+}
+
 static void
 cp_pa_apply_pending_control(struct cp_portaudio_runtime *runtime)
 {
@@ -311,6 +401,23 @@ cp_pa_flags_from_status(PaStreamCallbackFlags status_flags)
 	return flags;
 }
 
+static const char *
+cp_pa_host_api_name(PaDeviceIndex device)
+{
+	const PaDeviceInfo *device_info;
+	const PaHostApiInfo *host_info;
+
+	device_info = Pa_GetDeviceInfo(device);
+	if (device_info == NULL)
+		return "unknown";
+
+	host_info = Pa_GetHostApiInfo(device_info->hostApi);
+	if (host_info == NULL || host_info->name == NULL)
+		return "unknown";
+
+	return host_info->name;
+}
+
 static unsigned int
 cp_pa_hz_to_uint(cp_sample_t frequency)
 {
@@ -323,8 +430,18 @@ cp_pa_hz_to_uint(cp_sample_t frequency)
 }
 
 static int
+cp_pa_rate_supported(const PaStreamParameters *input_params,
+	const PaStreamParameters *output_params, double sample_rate)
+{
+	PaError error;
+
+	error = Pa_IsFormatSupported(input_params, output_params, sample_rate);
+	return error == paFormatIsSupported;
+}
+
+static int
 cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
-	const struct cp_audio_config *config)
+	const struct cp_audio_config *config, double sample_rate)
 {
 	struct cp_block_config block_config;
 	size_t samples;
@@ -376,7 +493,7 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	atomic_init(&runtime->dsp_status, CP_OK);
 
 	cp_block_default_config(&block_config, config->channels);
-	block_config.sample_rate = (cp_sample_t)config->sample_rate;
+	block_config.sample_rate = (cp_sample_t)sample_rate;
 	block_config.dehummer_enabled = config->dehummer_enabled;
 	block_config.hum_base_frequency = config->hum_base_frequency;
 	block_config.hum_harmonic_count = config->hum_harmonic_count;
@@ -385,6 +502,8 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	block_config.multiband_band_count = config->multiband_band_count;
 	block_config.multiband_preset = config->multiband_preset;
 	block_config.am_config = config->am_config;
+	block_config.am_config.sample_rate = (cp_sample_t)sample_rate;
+	block_config.am_config.channel_count = config->channels;
 	status = cp_block_init(&runtime->processor, &block_config);
 	if (status != CP_OK) {
 		free(runtime->scratch);
@@ -470,23 +589,96 @@ cp_pa_print_meters(const struct cp_monitor_snapshot *snapshot)
 	    cp_monitor_level_to_sample(snapshot->output_rms));
 }
 
+static void
+cp_pa_print_recommendation(const struct cp_audio_device_candidate *candidates,
+	size_t count)
+{
+	struct cp_audio_config config;
+	int device;
+
+	cp_audio_default_config(&config);
+	if (cp_audio_select_device_candidate(&config, candidates, count,
+	    &device) != CP_AUDIO_OK || device == CP_AUDIO_DEFAULT_DEVICE)
+		return;
+
+	printf("recommended: ./carrierpress --live --device \"%s\" "
+	    "--channels %zu\n", candidates[device].name, config.channels);
+}
+
+static int
+cp_pa_select_sample_rate(const struct cp_audio_config *config,
+	const PaStreamParameters *input_params,
+	const PaStreamParameters *output_params,
+	const PaDeviceInfo *input_info, const PaDeviceInfo *output_info,
+	double *sample_rate)
+{
+	int input_rate_supported;
+	int output_rate_supported;
+	int requested_supported;
+	int status;
+
+	if (config == NULL || input_params == NULL || output_params == NULL ||
+	    input_info == NULL || output_info == NULL || sample_rate == NULL)
+		return CP_PORTAUDIO_ERR_CONFIG;
+
+	requested_supported = cp_pa_rate_supported(input_params, output_params,
+	    config->sample_rate);
+	input_rate_supported = cp_pa_rate_supported(input_params, output_params,
+	    input_info->defaultSampleRate);
+	output_rate_supported = cp_pa_rate_supported(input_params, output_params,
+	    output_info->defaultSampleRate);
+
+	status = cp_audio_choose_sample_rate(config,
+	    input_info->defaultSampleRate, output_info->defaultSampleRate,
+	    requested_supported, input_rate_supported, output_rate_supported,
+	    sample_rate);
+	if (status != CP_AUDIO_OK)
+		return CP_PORTAUDIO_ERR_STREAM;
+
+	return CP_PORTAUDIO_OK;
+}
+
 static int
 cp_pa_select_devices(const struct cp_audio_config *config,
 	PaDeviceIndex *input_device, PaDeviceIndex *output_device)
 {
+	struct cp_audio_device_candidate *candidates;
 	const PaDeviceInfo *input_info;
 	const PaDeviceInfo *output_info;
 	PaDeviceIndex count;
+	int selected_device;
+	int status;
 
+	candidates = NULL;
 	count = Pa_GetDeviceCount();
 	if (count < 0)
 		return CP_PORTAUDIO_ERR_DEVICE;
 
-	*input_device = (config->input_device == CP_AUDIO_DEFAULT_DEVICE) ?
-	    Pa_GetDefaultInputDevice() : (PaDeviceIndex)config->input_device;
-	*output_device = (config->output_device == CP_AUDIO_DEFAULT_DEVICE) ?
-	    Pa_GetDefaultOutputDevice() : (PaDeviceIndex)config->output_device;
+	status = cp_pa_build_candidates(&candidates, &count);
+	if (status != CP_PORTAUDIO_OK)
+		return status;
 
+	status = cp_audio_select_device_candidate(config, candidates,
+	    (size_t)count, &selected_device);
+	if (status != CP_AUDIO_OK) {
+		free(candidates);
+		return CP_PORTAUDIO_ERR_DEVICE;
+	}
+
+	if (selected_device != CP_AUDIO_DEFAULT_DEVICE) {
+		*input_device = (PaDeviceIndex)selected_device;
+		*output_device = (PaDeviceIndex)selected_device;
+	} else {
+		*input_device = (config->input_device == CP_AUDIO_DEFAULT_DEVICE) ?
+		    Pa_GetDefaultInputDevice() :
+		    (PaDeviceIndex)config->input_device;
+		*output_device =
+		    (config->output_device == CP_AUDIO_DEFAULT_DEVICE) ?
+		    Pa_GetDefaultOutputDevice() :
+		    (PaDeviceIndex)config->output_device;
+	}
+
+	free(candidates);
 	if (*input_device == paNoDevice || *output_device == paNoDevice)
 		return CP_PORTAUDIO_ERR_DEVICE;
 	if (*input_device < 0 || *input_device >= count ||

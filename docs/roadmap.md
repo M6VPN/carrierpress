@@ -36,6 +36,10 @@ Implemented as an optional ncurses TUI for PortAudio live mode. It shows input/o
 
 Implemented as a preset-only live control layer for the optional ncurses TUI. It can switch AM off or select validated AM presets while live audio is running. Commands are handed from the foreground UI to the PortAudio callback and applied at audio block boundaries. Full parameter editing and web control are deferred.
 
+## M6.7 laptop live audio selection
+
+Implemented as a PortAudio device-selection improvement for laptop testing. Automatic live mode now prefers usable JACK devices, then PipeWire or Pulse-style full-duplex devices visible through PortAudio, then PortAudio defaults. Device listing shows host APIs, default markers, live candidates, and a recommended command.
+
 ## M7 SSB chain
 
 Add SSB-oriented filtering, asymmetry handling, and speech-focused processing.

@@ -129,10 +129,31 @@ List PortAudio devices:
 ./carrierpress --list-devices
 ```
 
-Run experimental live processing with default devices:
+Run experimental live processing with automatic backend selection:
 
 ```sh
 ./carrierpress --live
+```
+
+On Linux, automatic selection prefers usable JACK devices, then PipeWire or
+Pulse-compatible full-duplex devices visible through PortAudio, then PortAudio
+defaults.
+
+Choose a backend policy:
+
+```sh
+./carrierpress --live --audio-backend auto
+./carrierpress --live --audio-backend jack
+./carrierpress --live --audio-backend alsa
+./carrierpress --live --audio-backend pulse
+./carrierpress --live --audio-backend default
+```
+
+Choose a full-duplex device by name substring:
+
+```sh
+./carrierpress --live --device pulse --channels 2
+./carrierpress --live --device default --channels 2
 ```
 
 Run live processing with selected USB sound-card devices:
@@ -200,7 +221,11 @@ TUI support requires a `WITH_TUI=1` build. Without it, `--tui` exits with:
 TUI support not enabled. Rebuild with WITH_TUI=1.
 ```
 
-Live mode is experimental. It is a USB sound-card backend for testing the existing DC blocker, AGC, limiter, and metering chain. It is not a broadcast-quality processor.
+Live mode is experimental. It is a sound-card backend for testing the existing DC blocker, AGC, limiter, and metering chain. It is not a broadcast-quality processor.
+
+PortAudio may print ALSA or JACK probe warnings while listing or opening devices.
+Those warnings are not always fatal. Use the final CarrierPress status line and
+meter output to confirm whether a stream opened.
 
 ## Manual Live-Audio Test
 
@@ -222,6 +247,16 @@ List devices:
 ./carrierpress --list-devices
 ```
 
+The listing shows host API names, default markers, live candidates, and a
+recommended command when a full-duplex device is found.
+
+For a laptop using PipeWire or pipewire-pulse, try:
+
+```sh
+./carrierpress --live --device pulse --sample-rate 44100 --channels 2
+./carrierpress --live --device default --sample-rate 44100 --channels 2
+```
+
 Run live passthrough processing with the chosen devices:
 
 ```sh
@@ -229,6 +264,10 @@ Run live passthrough processing with the chosen devices:
 ```
 
 Check that meter lines update while audio is present. Stop with `Ctrl-C`.
+
+If input meters stay at zero, select the correct capture source in a PipeWire or
+Pulse mixer, unmute the microphone, and check that the capture level is raised.
+For monitor-source testing, select the monitor of the output sink in the mixer.
 
 Run the TUI monitor:
 

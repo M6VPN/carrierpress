@@ -7,56 +7,166 @@
 
 #include "cp_audio.h"
 
+static int	test_backend_parse(void);
+static int	test_device_selection(void);
+static int	test_sample_rate_choice(void);
+static int	test_validate_config(void);
+
 int
 main(void)
+{
+	if (!test_validate_config())
+		return 1;
+	if (!test_backend_parse())
+		return 1;
+	if (!test_device_selection())
+		return 1;
+	if (!test_sample_rate_choice())
+		return 1;
+
+	return 0;
+}
+
+static int
+test_backend_parse(void)
+{
+	enum cp_audio_backend backend;
+
+	if (cp_audio_backend_from_string("jack", &backend) != CP_AUDIO_OK ||
+	    backend != CP_AUDIO_BACKEND_JACK)
+		return 0;
+	if (cp_audio_backend_from_string("bad", &backend) !=
+	    CP_AUDIO_ERR_BACKEND)
+		return 0;
+
+	return 1;
+}
+
+static int
+test_device_selection(void)
+{
+	struct cp_audio_device_candidate candidates[] = {
+		{ 0, "hw:0,0", "ALSA", 2, 0, 44100.0, 1, 0 },
+		{ 1, "system", "JACK", 2, 2, 48000.0, 0, 0 },
+		{ 2, "pulse", "ALSA", 32, 32, 44100.0, 0, 0 },
+		{ 3, "default", "ALSA", 32, 32, 44100.0, 0, 1 }
+	};
+	struct cp_audio_config config;
+	int device;
+
+	cp_audio_default_config(&config);
+	if (cp_audio_select_device_candidate(&config, candidates, 4,
+	    &device) != CP_AUDIO_OK || device != 1) {
+		printf("test_audio: auto did not prefer JACK\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&config);
+	config.device_name = "default";
+	if (cp_audio_select_device_candidate(&config, candidates, 4,
+	    &device) != CP_AUDIO_OK || device != 3) {
+		printf("test_audio: named device selection failed\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&config);
+	config.backend = CP_AUDIO_BACKEND_PULSE;
+	if (cp_audio_select_device_candidate(&config, candidates, 4,
+	    &device) != CP_AUDIO_OK || device != 2) {
+		printf("test_audio: pulse selection failed\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&config);
+	config.device_name = "pulse";
+	config.input_device = 2;
+	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_DEVICE) {
+		printf("test_audio: device name conflict accepted\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_sample_rate_choice(void)
+{
+	struct cp_audio_config config;
+	double sample_rate;
+
+	cp_audio_default_config(&config);
+	if (cp_audio_choose_sample_rate(&config, 44100.0, 48000.0, 1, 0, 0,
+	    &sample_rate) != CP_AUDIO_OK || sample_rate != 48000.0)
+		return 0;
+
+	cp_audio_default_config(&config);
+	if (cp_audio_choose_sample_rate(&config, 44100.0, 48000.0, 0, 1, 0,
+	    &sample_rate) != CP_AUDIO_OK || sample_rate != 44100.0) {
+		printf("test_audio: implicit rate fallback failed\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&config);
+	config.sample_rate_explicit = 1;
+	if (cp_audio_choose_sample_rate(&config, 44100.0, 48000.0, 0, 1, 1,
+	    &sample_rate) != CP_AUDIO_ERR_RATE) {
+		printf("test_audio: explicit rate fallback accepted\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_validate_config(void)
 {
 	struct cp_audio_config config;
 
 	cp_audio_default_config(&config);
 	if (cp_audio_validate_config(&config) != CP_AUDIO_OK) {
 		printf("test_audio: default config rejected\n");
-		return 1;
+		return 0;
 	}
 
 	config.sample_rate = CP_AUDIO_MIN_SAMPLE_RATE - 1.0;
 	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_RATE) {
 		printf("test_audio: invalid sample rate accepted\n");
-		return 1;
+		return 0;
 	}
 
 	cp_audio_default_config(&config);
 	config.channels = 3;
 	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_CHANNEL) {
 		printf("test_audio: invalid channel count accepted\n");
-		return 1;
+		return 0;
 	}
 
 	cp_audio_default_config(&config);
 	config.block_size = CP_AUDIO_MAX_BLOCK_SIZE + 1;
 	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_BLOCK) {
 		printf("test_audio: invalid block size accepted\n");
-		return 1;
+		return 0;
 	}
 
 	cp_audio_default_config(&config);
 	config.input_device = -2;
 	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_DEVICE) {
 		printf("test_audio: invalid device accepted\n");
-		return 1;
+		return 0;
 	}
 
 	cp_audio_default_config(&config);
 	config.meter_interval_ms = CP_AUDIO_MIN_METER_MS - 1;
 	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_METER) {
 		printf("test_audio: invalid meter interval accepted\n");
-		return 1;
+		return 0;
 	}
 
 	cp_audio_default_config(&config);
 	config.multiband_band_count = CP_MULTIBAND_M5_MAX_BANDS + 1;
 	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_MB) {
 		printf("test_audio: invalid multiband band count accepted\n");
-		return 1;
+		return 0;
 	}
 
 	cp_audio_default_config(&config);
@@ -64,8 +174,8 @@ main(void)
 	config.am_config.lowpass_hz = config.am_config.sample_rate;
 	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_AM) {
 		printf("test_audio: invalid AM config accepted\n");
-		return 1;
+		return 0;
 	}
 
-	return 0;
+	return 1;
 }

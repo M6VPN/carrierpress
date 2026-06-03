@@ -27,6 +27,8 @@ This split keeps the core library usable for offline tools, live hosts, and embe
 
 The PortAudio backend uses callback mode. Buffers and DSP state are allocated before stream start, the callback does not print, and meter/status values are handed to the foreground loop for reporting. Text meters and the optional ncurses TUI both read monitor snapshots outside the callback.
 
+Live device selection stays at the PortAudio boundary. Automatic mode prefers usable JACK devices, then PipeWire or Pulse-style full-duplex devices visible through PortAudio, then PortAudio defaults. CarrierPress does not include direct ALSA, JACK, or PipeWire code in the DSP core.
+
 Live TUI controls use a small command handoff. The foreground TUI validates key input into a preset command, stores one pending command atomically, and the callback applies it at the next block boundary. M6.6 only allows AM off and validated AM preset changes. Future sndio/OpenBSD work should keep the same boundary. The STM32H753 path should call the same block DSP model directly or through a CMSIS-DSP adapter.
 
 ## State Ownership
