@@ -14,6 +14,8 @@
 #include "cp_ssb.h"
 #include "cp_types.h"
 
+struct cp_audio_config;
+
 struct cp_block_config {
 	size_t channels;
 	cp_sample_t dc_coefficient;
@@ -57,6 +59,8 @@ struct cp_block_processor {
 };
 
 void	cp_block_default_config(struct cp_block_config *, size_t);
+int	cp_block_config_from_audio(struct cp_block_config *,
+	    const struct cp_audio_config *, size_t, cp_sample_t);
 int	cp_block_init(struct cp_block_processor *, const struct cp_block_config *);
 int	cp_block_process(struct cp_block_processor *, const cp_sample_t *,
 	    cp_sample_t *, cp_sample_t *, size_t, size_t);

@@ -13,6 +13,8 @@
 #define CP_MONITOR_MIN_DB		(-9600)
 #define CP_MONITOR_MAX_BANDS		CP_MULTIBAND_M5_MAX_BANDS
 
+struct cp_block_processor;
+
 enum cp_monitor_stream_flag {
 	CP_MONITOR_INPUT_UNDERFLOW  = 1u << 0,
 	CP_MONITOR_INPUT_OVERFLOW   = 1u << 1,
@@ -62,5 +64,8 @@ cp_sample_t	cp_monitor_centibel_to_db(int);
 cp_sample_t	cp_monitor_level_to_sample(unsigned int);
 unsigned int	cp_monitor_sample_to_level(cp_sample_t);
 void		cp_monitor_snapshot_clear(struct cp_monitor_snapshot *);
+int		cp_monitor_snapshot_from_processor(
+		    const struct cp_block_processor *,
+		    struct cp_monitor_snapshot *);
 
 #endif

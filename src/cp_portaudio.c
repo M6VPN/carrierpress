@@ -3,7 +3,6 @@
 
 #include <sys/types.h>
 
-#include <math.h>
 #include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -73,7 +72,6 @@ static int		cp_pa_build_candidates(
 			    PaDeviceIndex *);
 static unsigned int	cp_pa_flags_from_status(PaStreamCallbackFlags);
 static const char	*cp_pa_host_api_name(PaDeviceIndex);
-static unsigned int	cp_pa_hz_to_uint(cp_sample_t);
 static int		cp_pa_init_processor(struct cp_portaudio_runtime *,
 			    const struct cp_audio_config *, double);
 static void		cp_pa_load_snapshot(struct cp_portaudio_runtime *,
@@ -435,17 +433,6 @@ cp_pa_host_api_name(PaDeviceIndex device)
 	return host_info->name;
 }
 
-static unsigned int
-cp_pa_hz_to_uint(cp_sample_t frequency)
-{
-	if (!isfinite(frequency) || frequency <= 0.0f)
-		return 0u;
-	if (frequency >= (cp_sample_t)UINT32_MAX)
-		return UINT32_MAX;
-
-	return (unsigned int)lrintf(frequency);
-}
-
 static int
 cp_pa_rate_supported(const PaStreamParameters *input_params,
 	const PaStreamParameters *output_params, double sample_rate)
@@ -523,21 +510,13 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	atomic_init(&runtime->status_flags, 0u);
 	atomic_init(&runtime->dsp_status, CP_OK);
 
-	cp_block_default_config(&block_config, config->channels);
-	block_config.sample_rate = (cp_sample_t)sample_rate;
-	block_config.dehummer_enabled = config->dehummer_enabled;
-	block_config.hum_base_frequency = config->hum_base_frequency;
-	block_config.hum_harmonic_count = config->hum_harmonic_count;
-	block_config.hum_q_factor = config->hum_q_factor;
-	block_config.multiband_enabled = config->multiband_enabled;
-	block_config.multiband_band_count = config->multiband_band_count;
-	block_config.multiband_preset = config->multiband_preset;
-	block_config.am_config = config->am_config;
-	block_config.am_config.sample_rate = (cp_sample_t)sample_rate;
-	block_config.am_config.channel_count = config->channels;
-	block_config.ssb_config = config->ssb_config;
-	block_config.ssb_config.sample_rate = (cp_sample_t)sample_rate;
-	block_config.ssb_config.channel_count = config->channels;
+	status = cp_block_config_from_audio(&block_config, config,
+	    config->channels, (cp_sample_t)sample_rate);
+	if (status != CP_OK) {
+		free(runtime->scratch);
+		free(runtime->zero_input);
+		return CP_PORTAUDIO_ERR_CONFIG;
+	}
 	status = cp_block_init(&runtime->processor, &block_config);
 	if (status != CP_OK) {
 		free(runtime->scratch);
@@ -765,84 +744,72 @@ cp_pa_store_control_request(struct cp_portaudio_runtime *runtime,
 static void
 cp_pa_store_meters(struct cp_portaudio_runtime *runtime)
 {
+	struct cp_monitor_snapshot snapshot;
 	size_t band;
-	size_t band_count;
-	enum cp_am_preset am_preset;
-	enum cp_ssb_preset ssb_preset;
+	int status;
+
+	status = cp_monitor_snapshot_from_processor(&runtime->processor,
+	    &snapshot);
+	if (status != CP_OK) {
+		atomic_store(&runtime->dsp_status, status);
+		return;
+	}
 
 	atomic_store(&runtime->input_peak,
-	    cp_monitor_sample_to_level(runtime->processor.input_meter.peak[0]));
-	atomic_store(&runtime->input_rms,
-	    cp_monitor_sample_to_level(runtime->processor.input_meter.rms[0]));
+	    snapshot.input_peak);
+	atomic_store(&runtime->input_rms, snapshot.input_rms);
 	atomic_store(&runtime->output_peak,
-	    cp_monitor_sample_to_level(runtime->processor.output_meter.peak[0]));
-	atomic_store(&runtime->output_rms,
-	    cp_monitor_sample_to_level(runtime->processor.output_meter.rms[0]));
-	atomic_store(&runtime->agc_gain,
-	    cp_monitor_sample_to_level(runtime->processor.agc.gain));
+	    snapshot.output_peak);
+	atomic_store(&runtime->output_rms, snapshot.output_rms);
+	atomic_store(&runtime->agc_gain, snapshot.agc_gain);
 	atomic_store(&runtime->agc_gain_db_centibel,
-	    cp_monitor_db_to_centibel(runtime->processor.agc.gain_db));
-	atomic_store(&runtime->agc_state,
-	    (int)runtime->processor.agc.gate_state);
+	    snapshot.agc_gain_db_centibel);
+	atomic_store(&runtime->agc_state, snapshot.agc_state);
 
 	atomic_store(&runtime->dehummer_enabled,
-	    runtime->processor.dehummer.config.enabled ? 1u : 0u);
+	    snapshot.dehummer_enabled);
 	atomic_store(&runtime->dehummer_base_hz,
-	    cp_pa_hz_to_uint(runtime->processor.dehummer.config.base_frequency));
+	    snapshot.dehummer_base_hz);
 	atomic_store(&runtime->dehummer_harmonic_count,
-	    (unsigned int)runtime->processor.dehummer.config.harmonic_count);
+	    snapshot.dehummer_harmonic_count);
 	atomic_store(&runtime->multiband_enabled,
-	    runtime->processor.multiband.config.enabled ? 1u : 0u);
+	    snapshot.multiband_enabled);
 	atomic_store(&runtime->multiband_preset,
-	    (int)runtime->processor.multiband.config.preset);
+	    snapshot.multiband_preset);
 
-	band_count = runtime->processor.multiband.band_count;
-	if (band_count > CP_MONITOR_MAX_BANDS)
-		band_count = CP_MONITOR_MAX_BANDS;
-	atomic_store(&runtime->band_count, (unsigned int)band_count);
-	for (band = 0; band < band_count; band++) {
+	atomic_store(&runtime->band_count, (unsigned int)snapshot.band_count);
+	for (band = 0; band < snapshot.band_count; band++) {
 		atomic_store(&runtime->band_rms[band],
-		    cp_monitor_sample_to_level(
-		    runtime->processor.multiband.band_rms[band]));
+		    snapshot.band_rms[band]);
 		atomic_store(&runtime->band_gr_db_centibel[band],
-		    cp_monitor_db_to_centibel(
-		    runtime->processor.multiband.band_gain_reduction_db[band]));
+		    snapshot.band_gr_db_centibel[band]);
 	}
 
 	atomic_store(&runtime->am_enabled,
-	    runtime->processor.am.config.enabled ? 1u : 0u);
+	    snapshot.am_enabled);
 	atomic_store(&runtime->am_highpass_hz,
-	    cp_pa_hz_to_uint(runtime->processor.am.config.highpass_hz));
-	atomic_store(&runtime->am_lowpass_hz,
-	    cp_pa_hz_to_uint(runtime->processor.am.config.lowpass_hz));
+	    snapshot.am_highpass_hz);
+	atomic_store(&runtime->am_lowpass_hz, snapshot.am_lowpass_hz);
 	atomic_store(&runtime->am_positive_peak,
-	    cp_monitor_sample_to_level(
-	    runtime->processor.am.config.positive_peak_limit));
+	    snapshot.am_positive_peak);
 	atomic_store(&runtime->am_negative_peak,
-	    cp_monitor_sample_to_level(
-	    runtime->processor.am.config.negative_peak_limit));
+	    snapshot.am_negative_peak);
 	atomic_store(&runtime->am_asymmetry_enabled,
-	    runtime->processor.am.config.asymmetry_enabled ? 1u : 0u);
+	    snapshot.am_asymmetry_enabled);
 	atomic_store(&runtime->am_asymmetry_ratio,
-	    cp_monitor_sample_to_level(
-	    runtime->processor.am.config.asymmetry_ratio));
-	if (cp_am_preset_from_string(runtime->processor.am.config.preset_name,
-	    &am_preset) == CP_OK)
-		atomic_store(&runtime->am_preset, (int)am_preset);
+	    snapshot.am_asymmetry_ratio);
+	atomic_store(&runtime->am_preset, snapshot.am_preset);
 
 	atomic_store(&runtime->ssb_enabled,
-	    runtime->processor.ssb.config.enabled ? 1u : 0u);
+	    snapshot.ssb_enabled);
 	atomic_store(&runtime->ssb_highpass_hz,
-	    cp_pa_hz_to_uint(runtime->processor.ssb.config.highpass_hz));
-	atomic_store(&runtime->ssb_lowpass_hz,
-	    cp_pa_hz_to_uint(runtime->processor.ssb.config.lowpass_hz));
+	    snapshot.ssb_highpass_hz);
+	atomic_store(&runtime->ssb_lowpass_hz, snapshot.ssb_lowpass_hz);
 	atomic_store(&runtime->ssb_peak_limit,
-	    cp_monitor_sample_to_level(runtime->processor.ssb.config.peak_limit));
+	    snapshot.ssb_peak_limit);
 	atomic_store(&runtime->ssb_phase_rotator_enabled,
-	    runtime->processor.ssb.config.phase_rotator_enabled ? 1u : 0u);
-	if (cp_ssb_preset_from_string(runtime->processor.ssb.config.preset_name,
-	    &ssb_preset) == CP_OK)
-		atomic_store(&runtime->ssb_preset, (int)ssb_preset);
+	    snapshot.ssb_phase_rotator_enabled);
+	atomic_store(&runtime->ssb_preset, snapshot.ssb_preset);
 }
 
 static int

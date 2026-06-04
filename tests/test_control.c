@@ -15,6 +15,7 @@ static int	test_apply_multiband_cycle(void);
 static int	test_apply_mutual_exclusion(void);
 static int	test_apply_ssb_off(void);
 static int	test_apply_ssb_preset(void);
+static int	test_bank_locked_apply(void);
 static int	test_command_keys(void);
 
 int
@@ -35,6 +36,8 @@ main(void)
 	if (!test_apply_ssb_off())
 		return 1;
 	if (!test_apply_mutual_exclusion())
+		return 1;
+	if (!test_bank_locked_apply())
 		return 1;
 
 	return 0;
@@ -244,6 +247,55 @@ test_apply_ssb_preset(void)
 	if (!processor.ssb.config.enabled ||
 	    strcmp(processor.ssb.config.preset_name, "ssb-narrow") != 0) {
 		printf("test_control: SSB preset command failed\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_bank_locked_apply(void)
+{
+	struct cp_block_config config;
+	struct cp_block_processor processor;
+	struct cp_control_command command;
+
+	cp_block_default_config(&config, CP_CHANNELS_MONO);
+	if (cp_block_init(&processor, &config) != CP_OK)
+		return 0;
+
+	if (cp_control_command_from_key('1', CP_CONTROL_BANK_SSB,
+	    &command) != CP_OK)
+		return 0;
+	if (cp_control_apply(&processor, &command) != CP_OK)
+		return 0;
+	if (processor.am.config.enabled || processor.am.enabled ||
+	    !processor.ssb.config.enabled || !processor.ssb.enabled) {
+		printf("test_control: SSB bank changed AM mode\n");
+		return 0;
+	}
+
+	if (cp_control_command_from_key('2', CP_CONTROL_BANK_SSB,
+	    &command) != CP_OK)
+		return 0;
+	if (cp_control_apply(&processor, &command) != CP_OK)
+		return 0;
+	if (processor.am.config.enabled || processor.am.enabled ||
+	    !processor.ssb.config.enabled || !processor.ssb.enabled ||
+	    strcmp(processor.ssb.config.preset_name, "ssb-narrow") != 0) {
+		printf("test_control: SSB bank preset was not locked\n");
+		return 0;
+	}
+
+	if (cp_control_command_from_key('1', CP_CONTROL_BANK_AM,
+	    &command) != CP_OK)
+		return 0;
+	if (cp_control_apply(&processor, &command) != CP_OK)
+		return 0;
+	if (!processor.am.config.enabled || !processor.am.enabled ||
+	    processor.ssb.config.enabled || processor.ssb.enabled ||
+	    strcmp(processor.am.config.preset_name, "am-safe") != 0) {
+		printf("test_control: AM bank preset was not locked\n");
 		return 0;
 	}
 

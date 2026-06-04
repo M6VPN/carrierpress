@@ -6,7 +6,6 @@
 #include <ctype.h>
 #include <limits.h>
 #include <math.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,7 +22,6 @@
 
 static size_t	cp_playout_interval_frames(double, unsigned int);
 static int	cp_playout_append_path(struct cp_playlist *, const char *);
-static int	cp_playout_am_preset_id(const struct cp_am_config *);
 static char	*cp_playout_dup_range(const char *, size_t);
 static void	cp_playout_error_clear(struct cp_playlist_error *);
 static void	cp_playout_error_set(struct cp_playlist_error *, size_t,
@@ -40,7 +38,6 @@ static int	cp_playout_read_line(FILE *, char *, size_t, int *);
 static int	cp_playout_select_output_device(
 		    const struct cp_audio_config *, size_t, PaDeviceIndex *);
 static int	cp_playout_should_stop(const struct cp_playout_config *);
-static int	cp_playout_ssb_preset_id(const struct cp_ssb_config *);
 static void	cp_playout_print_meters(const struct cp_monitor_snapshot *);
 static char	*cp_playout_trim_line(char *);
 
@@ -80,67 +77,14 @@ int
 cp_playout_build_snapshot(const struct cp_block_processor *processor,
 	struct cp_monitor_snapshot *snapshot)
 {
-	size_t band;
+	int status;
 
 	if (processor == NULL || snapshot == NULL)
 		return CP_PLAYOUT_ERR_NULL;
 
-	cp_monitor_snapshot_clear(snapshot);
-	snapshot->input_peak =
-	    cp_monitor_sample_to_level(processor->input_meter.peak[0]);
-	snapshot->input_rms =
-	    cp_monitor_sample_to_level(processor->input_meter.rms[0]);
-	snapshot->output_peak =
-	    cp_monitor_sample_to_level(processor->output_meter.peak[0]);
-	snapshot->output_rms =
-	    cp_monitor_sample_to_level(processor->output_meter.rms[0]);
-	snapshot->agc_gain = cp_monitor_sample_to_level(processor->agc.gain);
-	snapshot->agc_gain_db_centibel =
-	    cp_monitor_db_to_centibel(processor->agc.gain_db);
-	snapshot->agc_state = (int)processor->agc.gate_state;
-	snapshot->dsp_status = CP_OK;
-	snapshot->dehummer_enabled =
-	    processor->dehummer.config.enabled ? 1u : 0u;
-	snapshot->dehummer_base_hz =
-	    (unsigned int)lrintf(processor->dehummer.config.base_frequency);
-	snapshot->dehummer_harmonic_count =
-	    (unsigned int)processor->dehummer.config.harmonic_count;
-	snapshot->multiband_enabled =
-	    processor->multiband.config.enabled ? 1u : 0u;
-	snapshot->multiband_preset = processor->multiband.config.preset;
-	snapshot->am_enabled = processor->am.config.enabled ? 1u : 0u;
-	snapshot->am_highpass_hz =
-	    (unsigned int)lrintf(processor->am.config.highpass_hz);
-	snapshot->am_lowpass_hz =
-	    (unsigned int)lrintf(processor->am.config.lowpass_hz);
-	snapshot->am_positive_peak =
-	    cp_monitor_sample_to_level(processor->am.config.positive_peak_limit);
-	snapshot->am_negative_peak =
-	    cp_monitor_sample_to_level(processor->am.config.negative_peak_limit);
-	snapshot->am_asymmetry_enabled =
-	    processor->am.config.asymmetry_enabled ? 1u : 0u;
-	snapshot->am_asymmetry_ratio =
-	    cp_monitor_sample_to_level(processor->am.config.asymmetry_ratio);
-	snapshot->am_preset = cp_playout_am_preset_id(&processor->am.config);
-	snapshot->ssb_enabled = processor->ssb.config.enabled ? 1u : 0u;
-	snapshot->ssb_highpass_hz =
-	    (unsigned int)lrintf(processor->ssb.config.highpass_hz);
-	snapshot->ssb_lowpass_hz =
-	    (unsigned int)lrintf(processor->ssb.config.lowpass_hz);
-	snapshot->ssb_peak_limit =
-	    cp_monitor_sample_to_level(processor->ssb.config.peak_limit);
-	snapshot->ssb_phase_rotator_enabled =
-	    processor->ssb.config.phase_rotator_enabled ? 1u : 0u;
-	snapshot->ssb_preset = cp_playout_ssb_preset_id(&processor->ssb.config);
-	snapshot->band_count = processor->multiband.band_count;
-	if (snapshot->band_count > CP_MONITOR_MAX_BANDS)
-		snapshot->band_count = CP_MONITOR_MAX_BANDS;
-	for (band = 0; band < snapshot->band_count; band++) {
-		snapshot->band_rms[band] = cp_monitor_sample_to_level(
-		    processor->multiband.band_rms[band]);
-		snapshot->band_gr_db_centibel[band] = cp_monitor_db_to_centibel(
-		    processor->multiband.band_gain_reduction_db[band]);
-	}
+	status = cp_monitor_snapshot_from_processor(processor, snapshot);
+	if (status != CP_OK)
+		return CP_PLAYOUT_ERR_NULL;
 
 	return CP_PLAYOUT_OK;
 }
@@ -431,18 +375,14 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	}
 	output_block_samples = output_block_frames * channels;
 
-	block_config = config->block_config;
-	block_config.channels = channels;
-	block_config.sample_rate = (cp_sample_t)output_rate;
-	block_config.dehummer_enabled = audio_config.dehummer_enabled;
-	block_config.hum_base_frequency = audio_config.hum_base_frequency;
-	block_config.hum_harmonic_count = audio_config.hum_harmonic_count;
-	block_config.hum_q_factor = audio_config.hum_q_factor;
-	block_config.multiband_enabled = audio_config.multiband_enabled;
-	block_config.multiband_band_count = audio_config.multiband_band_count;
-	block_config.multiband_preset = audio_config.multiband_preset;
-	block_config.am_config = audio_config.am_config;
-	block_config.ssb_config = audio_config.ssb_config;
+	status = cp_block_config_from_audio(&block_config, &audio_config,
+	    channels, (cp_sample_t)output_rate);
+	if (status != CP_OK) {
+		Pa_CloseStream(stream);
+		Pa_Terminate();
+		sf_close(input_file);
+		return CP_PLAYOUT_ERR_PROCESS;
+	}
 	status = cp_block_init(&processor, &block_config);
 	if (status != CP_OK) {
 		Pa_CloseStream(stream);
@@ -717,6 +657,8 @@ cp_playout_status_string(int status)
 int
 cp_playout_validate_config(const struct cp_playout_config *config)
 {
+	int status;
+
 	if (config == NULL)
 		return CP_PLAYOUT_ERR_NULL;
 	if (config->block_frames < CP_AUDIO_MIN_BLOCK_SIZE ||
@@ -727,6 +669,9 @@ cp_playout_validate_config(const struct cp_playout_config *config)
 	if (config->meter_interval_ms < CP_AUDIO_MIN_METER_MS ||
 	    config->meter_interval_ms > CP_AUDIO_MAX_METER_MS)
 		return CP_PLAYOUT_ERR_METER;
+	status = cp_audio_validate_config(&config->audio_config);
+	if (status != CP_AUDIO_OK)
+		return CP_PLAYOUT_ERR_AUDIO;
 
 	return CP_PLAYOUT_OK;
 }
@@ -762,32 +707,6 @@ cp_playout_append_path(struct cp_playlist *playlist, const char *path)
 
 	playlist->paths[playlist->count++] = copy;
 	return CP_PLAYOUT_OK;
-}
-
-static int
-cp_playout_am_preset_id(const struct cp_am_config *config)
-{
-	enum cp_am_preset preset;
-
-	if (config == NULL)
-		return (int)CP_AM_PRESET_SAFE;
-	if (cp_am_preset_from_string(config->preset_name, &preset) == CP_OK)
-		return (int)preset;
-
-	return (int)CP_AM_PRESET_SAFE;
-}
-
-static int
-cp_playout_ssb_preset_id(const struct cp_ssb_config *config)
-{
-	enum cp_ssb_preset preset;
-
-	if (config == NULL)
-		return (int)CP_SSB_PRESET_SPEECH;
-	if (cp_ssb_preset_from_string(config->preset_name, &preset) == CP_OK)
-		return (int)preset;
-
-	return (int)CP_SSB_PRESET_SPEECH;
 }
 
 static char *

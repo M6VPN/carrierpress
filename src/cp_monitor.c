@@ -4,7 +4,13 @@
 #include <math.h>
 #include <string.h>
 
+#include "cp_am.h"
+#include "cp_block.h"
 #include "cp_monitor.h"
+#include "cp_ssb.h"
+
+static int	cp_monitor_am_preset_id(const struct cp_am_config *);
+static int	cp_monitor_ssb_preset_id(const struct cp_ssb_config *);
 
 int
 cp_monitor_db_to_centibel(cp_sample_t db)
@@ -58,4 +64,101 @@ cp_monitor_snapshot_clear(struct cp_monitor_snapshot *snapshot)
 		return;
 
 	(void)memset(snapshot, 0, sizeof(*snapshot));
+}
+
+int
+cp_monitor_snapshot_from_processor(const struct cp_block_processor *processor,
+	struct cp_monitor_snapshot *snapshot)
+{
+	size_t band;
+
+	if (processor == NULL || snapshot == NULL)
+		return CP_ERR_NULL;
+
+	cp_monitor_snapshot_clear(snapshot);
+	snapshot->input_peak =
+	    cp_monitor_sample_to_level(processor->input_meter.peak[0]);
+	snapshot->input_rms =
+	    cp_monitor_sample_to_level(processor->input_meter.rms[0]);
+	snapshot->output_peak =
+	    cp_monitor_sample_to_level(processor->output_meter.peak[0]);
+	snapshot->output_rms =
+	    cp_monitor_sample_to_level(processor->output_meter.rms[0]);
+	snapshot->agc_gain = cp_monitor_sample_to_level(processor->agc.gain);
+	snapshot->agc_gain_db_centibel =
+	    cp_monitor_db_to_centibel(processor->agc.gain_db);
+	snapshot->agc_state = (int)processor->agc.gate_state;
+	snapshot->dsp_status = CP_OK;
+	snapshot->dehummer_enabled =
+	    processor->dehummer.config.enabled ? 1u : 0u;
+	snapshot->dehummer_base_hz =
+	    (unsigned int)lrintf(processor->dehummer.config.base_frequency);
+	snapshot->dehummer_harmonic_count =
+	    (unsigned int)processor->dehummer.config.harmonic_count;
+	snapshot->multiband_enabled =
+	    processor->multiband.config.enabled ? 1u : 0u;
+	snapshot->multiband_preset = processor->multiband.config.preset;
+	snapshot->am_enabled = processor->am.config.enabled ? 1u : 0u;
+	snapshot->am_highpass_hz =
+	    (unsigned int)lrintf(processor->am.config.highpass_hz);
+	snapshot->am_lowpass_hz =
+	    (unsigned int)lrintf(processor->am.config.lowpass_hz);
+	snapshot->am_positive_peak =
+	    cp_monitor_sample_to_level(processor->am.config.positive_peak_limit);
+	snapshot->am_negative_peak =
+	    cp_monitor_sample_to_level(processor->am.config.negative_peak_limit);
+	snapshot->am_asymmetry_enabled =
+	    processor->am.config.asymmetry_enabled ? 1u : 0u;
+	snapshot->am_asymmetry_ratio =
+	    cp_monitor_sample_to_level(processor->am.config.asymmetry_ratio);
+	snapshot->am_preset = cp_monitor_am_preset_id(&processor->am.config);
+	snapshot->ssb_enabled = processor->ssb.config.enabled ? 1u : 0u;
+	snapshot->ssb_highpass_hz =
+	    (unsigned int)lrintf(processor->ssb.config.highpass_hz);
+	snapshot->ssb_lowpass_hz =
+	    (unsigned int)lrintf(processor->ssb.config.lowpass_hz);
+	snapshot->ssb_peak_limit =
+	    cp_monitor_sample_to_level(processor->ssb.config.peak_limit);
+	snapshot->ssb_phase_rotator_enabled =
+	    processor->ssb.config.phase_rotator_enabled ? 1u : 0u;
+	snapshot->ssb_preset = cp_monitor_ssb_preset_id(
+	    &processor->ssb.config);
+	snapshot->band_count = processor->multiband.band_count;
+	if (snapshot->band_count > CP_MONITOR_MAX_BANDS)
+		snapshot->band_count = CP_MONITOR_MAX_BANDS;
+	for (band = 0; band < snapshot->band_count; band++) {
+		snapshot->band_rms[band] = cp_monitor_sample_to_level(
+		    processor->multiband.band_rms[band]);
+		snapshot->band_gr_db_centibel[band] =
+		    cp_monitor_db_to_centibel(
+		    processor->multiband.band_gain_reduction_db[band]);
+	}
+
+	return CP_OK;
+}
+
+static int
+cp_monitor_am_preset_id(const struct cp_am_config *config)
+{
+	enum cp_am_preset preset;
+
+	if (config == NULL)
+		return (int)CP_AM_PRESET_SAFE;
+	if (cp_am_preset_from_string(config->preset_name, &preset) == CP_OK)
+		return (int)preset;
+
+	return (int)CP_AM_PRESET_SAFE;
+}
+
+static int
+cp_monitor_ssb_preset_id(const struct cp_ssb_config *config)
+{
+	enum cp_ssb_preset preset;
+
+	if (config == NULL)
+		return (int)CP_SSB_PRESET_SPEECH;
+	if (cp_ssb_preset_from_string(config->preset_name, &preset) == CP_OK)
+		return (int)preset;
+
+	return (int)CP_SSB_PRESET_SPEECH;
 }

@@ -39,6 +39,10 @@ The unit test suite also covers the M7.3 linear playout resampler for same-rate
 copying, upsampling, downsampling, invalid configuration, stereo stability, and
 non-finite input rejection.
 
+M7.4 adds unit coverage for live/playout config parity, shared monitor snapshot
+fields, and AM/SSB TUI bank locking. These tests verify command routing and
+state reporting, not hardware audio behavior.
+
 Validation does not prove regulatory compliance, occupied bandwidth compliance,
 sample-rate conversion quality, or broadcast-processor quality. Live hardware
 tests, off-air monitoring, spectrum measurements, and transmitter-limit checks

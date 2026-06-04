@@ -3,8 +3,10 @@
 
 #include <sys/types.h>
 
+#include <math.h>
 #include <stdint.h>
 
+#include "cp_audio.h"
 #include "cp_block.h"
 
 void
@@ -39,6 +41,44 @@ cp_block_default_config(struct cp_block_config *config, size_t channels)
 	cp_am_default_config(&config->am_config);
 	cp_ssb_default_config(&config->ssb_config);
 	config->limiter_ceiling = CP_DEFAULT_CEILING;
+}
+
+int
+cp_block_config_from_audio(struct cp_block_config *block_config,
+	const struct cp_audio_config *audio_config, size_t channels,
+	cp_sample_t sample_rate)
+{
+	if (block_config == NULL || audio_config == NULL)
+		return CP_ERR_NULL;
+	if (channels != CP_CHANNELS_MONO && channels != CP_CHANNELS_STEREO)
+		return CP_ERR_CHANNELS;
+	if (!isfinite(sample_rate) ||
+	    sample_rate < (cp_sample_t)CP_AUDIO_MIN_SAMPLE_RATE ||
+	    sample_rate > (cp_sample_t)CP_AUDIO_MAX_SAMPLE_RATE)
+		return CP_ERR_RANGE;
+
+	cp_block_default_config(block_config, channels);
+	block_config->sample_rate = sample_rate;
+	block_config->dehummer_enabled = audio_config->dehummer_enabled;
+	block_config->hum_base_frequency = audio_config->hum_base_frequency;
+	block_config->hum_harmonic_count = audio_config->hum_harmonic_count;
+	block_config->hum_q_factor = audio_config->hum_q_factor;
+	block_config->multiband_enabled = audio_config->multiband_enabled;
+	block_config->multiband_band_count =
+	    audio_config->multiband_band_count;
+	block_config->multiband_preset = audio_config->multiband_preset;
+	block_config->am_config = audio_config->am_config;
+	block_config->am_config.channel_count = channels;
+	block_config->am_config.sample_rate = sample_rate;
+	block_config->ssb_config = audio_config->ssb_config;
+	block_config->ssb_config.channel_count = channels;
+	block_config->ssb_config.sample_rate = sample_rate;
+
+	if (block_config->am_config.enabled &&
+	    block_config->ssb_config.enabled)
+		return CP_ERR_RANGE;
+
+	return CP_OK;
 }
 
 int

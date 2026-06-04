@@ -6,8 +6,10 @@
 #include <stdio.h>
 
 #include "cp_audio.h"
+#include "cp_block.h"
 
 static int	test_backend_parse(void);
+static int	test_block_config_from_audio(void);
 static int	test_device_selection(void);
 static int	test_sample_rate_choice(void);
 static int	test_validate_config(void);
@@ -18,6 +20,8 @@ main(void)
 	if (!test_validate_config())
 		return 1;
 	if (!test_backend_parse())
+		return 1;
+	if (!test_block_config_from_audio())
 		return 1;
 	if (!test_device_selection())
 		return 1;
@@ -38,6 +42,59 @@ test_backend_parse(void)
 	if (cp_audio_backend_from_string("bad", &backend) !=
 	    CP_AUDIO_ERR_BACKEND)
 		return 0;
+
+	return 1;
+}
+
+static int
+test_block_config_from_audio(void)
+{
+	struct cp_audio_config audio_config;
+	struct cp_block_config block_config;
+
+	cp_audio_default_config(&audio_config);
+	audio_config.channels = CP_CHANNELS_MONO;
+	audio_config.sample_rate = 44100.0;
+	audio_config.dehummer_enabled = 1;
+	audio_config.hum_base_frequency = 60.0f;
+	audio_config.hum_harmonic_count = 3;
+	audio_config.multiband_enabled = 1;
+	audio_config.multiband_band_count = 3;
+	audio_config.multiband_preset = CP_MULTIBAND_PRESET_MUSIC;
+	cp_am_apply_preset(&audio_config.am_config, "am-shortwave");
+	audio_config.am_config.enabled = 1;
+
+	if (cp_block_config_from_audio(&block_config, &audio_config,
+	    audio_config.channels,
+	    (cp_sample_t)audio_config.sample_rate) != CP_OK) {
+		printf("test_audio: block config conversion failed\n");
+		return 0;
+	}
+	if (block_config.channels != CP_CHANNELS_MONO ||
+	    block_config.sample_rate != 44100.0f ||
+	    !block_config.dehummer_enabled ||
+	    block_config.hum_base_frequency != 60.0f ||
+	    block_config.hum_harmonic_count != 3 ||
+	    !block_config.multiband_enabled ||
+	    block_config.multiband_band_count != 3 ||
+	    block_config.multiband_preset != CP_MULTIBAND_PRESET_MUSIC ||
+	    !block_config.am_config.enabled ||
+	    block_config.am_config.channel_count != CP_CHANNELS_MONO ||
+	    block_config.ssb_config.enabled) {
+		printf("test_audio: block config parity mismatch\n");
+		return 0;
+	}
+	if (cp_block_config_from_audio(&block_config, &audio_config, 3,
+	    48000.0f) != CP_ERR_CHANNELS) {
+		printf("test_audio: invalid block config channel accepted\n");
+		return 0;
+	}
+	audio_config.ssb_config.enabled = 1;
+	if (cp_block_config_from_audio(&block_config, &audio_config,
+	    CP_CHANNELS_MONO, 48000.0f) != CP_ERR_RANGE) {
+		printf("test_audio: AM and SSB block config accepted\n");
+		return 0;
+	}
 
 	return 1;
 }

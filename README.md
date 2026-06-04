@@ -405,6 +405,10 @@ The core library has no optional audio backend dependency. WAV support lives in 
 
 WAV playout reads fixed-size blocks from libsndfile, processes them through the normal CarrierPress chain, reports live-style meters from the processor state, and writes processed float32 blocks to a PortAudio output stream. It does not load the whole file into memory. This milestone uses blocking PortAudio output for file playout; live input mode still uses the callback backend.
 
+Live mode and playout use the same host-to-DSP config mapping for dehummer,
+multiband, AM, SSB, and sample-rate-dependent settings. Their monitor views use
+the same processor snapshot fields before live mode hands them to atomics.
+
 When playout resampling is active, CarrierPress runs the DSP chain at the output
 stream rate so AGC and filter timing match playback. Offline `--input` and
 `--output` WAV processing still preserves the input file sample rate.
@@ -419,8 +423,8 @@ TUI control is preset-only for DSP changes in this milestone. It can switch the
 dehummer on or off, cycle multiband between off, speech, and music, switch the
 AM and SSB output chains between validated presets, and skip to the next track
 during playlist playout. AM and SSB controls are split into explicit banks so AM
-preset keys do not change AM while SSB is selected. It does not expose arbitrary
-DSP parameter editing.
+preset keys do not affect SSB mode, and SSB preset keys do not affect AM mode.
+It does not expose arbitrary DSP parameter editing.
 
 ## AGC Controls
 

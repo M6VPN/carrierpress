@@ -84,6 +84,19 @@ test_config_validation(void)
 		printf("test_playout: bad block size accepted\n");
 		return 0;
 	}
+	cp_playout_default_config(&config);
+	config.audio_config.sample_rate = CP_AUDIO_MIN_SAMPLE_RATE - 1.0;
+	if (cp_playout_validate_config(&config) != CP_PLAYOUT_ERR_AUDIO) {
+		printf("test_playout: bad audio config accepted\n");
+		return 0;
+	}
+	cp_playout_default_config(&config);
+	config.audio_config.am_config.enabled = 1;
+	config.audio_config.ssb_config.enabled = 1;
+	if (cp_playout_validate_config(&config) != CP_PLAYOUT_ERR_AUDIO) {
+		printf("test_playout: AM and SSB config accepted\n");
+		return 0;
+	}
 
 	return 1;
 }

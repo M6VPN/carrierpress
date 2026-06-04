@@ -70,7 +70,7 @@ Partially implemented. WAV playout can use a dependency-free linear resampler wh
 
 ## M7.4 live/playout parity pass
 
-Planned. Keep live and playout aligned for DSP flags, TUI controls, meters, AM/SSB behavior, and config validation.
+Implemented as a host-path parity pass. Live mode and WAV playout now share host-to-DSP block config mapping, monitor snapshot extraction, AM/SSB mode-lock behavior, and config validation coverage. Hardware behavior still needs real device testing.
 
 ## M8 auto EQ and bass modules
 
