@@ -62,7 +62,7 @@ Implemented as a preset-only operator-control pass for live and playout TUI mode
 
 ## M7.2 playout format bridge
 
-Planned. Keep CarrierPress WAV/PCM-native internally, document external decode workflows for MP3/FLAC/OGG, and improve unsupported playlist entry reporting without linking an MP3 library.
+Partially implemented. CarrierPress stays WAV/PCM-native internally, documents external decode workflows for MP3/FLAC/OGG, reports unsupported playlist entries with line details, and adds deterministic validation fixtures for default, AM, and SSB chains. Native compressed-audio decoding remains deferred.
 
 ## M7.3 sample-rate handling
 

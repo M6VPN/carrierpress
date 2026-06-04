@@ -23,6 +23,9 @@ static size_t	cp_playout_interval_frames(double, unsigned int);
 static int	cp_playout_append_path(struct cp_playlist *, const char *);
 static int	cp_playout_am_preset_id(const struct cp_am_config *);
 static char	*cp_playout_dup_range(const char *, size_t);
+static void	cp_playout_error_clear(struct cp_playlist_error *);
+static void	cp_playout_error_set(struct cp_playlist_error *, size_t,
+		    const char *, const char *);
 static int	cp_playout_name_contains(const char *, const char *);
 static int	cp_playout_output_device_contains(PaDeviceIndex, const char *);
 static int	cp_playout_output_matches(const struct cp_audio_config *,
@@ -164,23 +167,38 @@ cp_playlist_get(const struct cp_playlist *playlist, size_t index)
 int
 cp_playlist_load(const char *path, struct cp_playlist *playlist)
 {
+	return cp_playlist_load_report(path, playlist, NULL);
+}
+
+int
+cp_playlist_load_report(const char *path, struct cp_playlist *playlist,
+	struct cp_playlist_error *error)
+{
 	FILE *file;
 	char line[CP_PLAYOUT_MAX_LINE];
 	char *entry;
+	size_t line_number;
 	int truncated;
 	int status;
 
 	if (path == NULL || playlist == NULL)
 		return CP_PLAYOUT_ERR_NULL;
 
+	cp_playout_error_clear(error);
 	memset(playlist, 0, sizeof(*playlist));
 	file = fopen(path, "r");
-	if (file == NULL)
+	if (file == NULL) {
+		cp_playout_error_set(error, 0, path, "could not open playlist");
 		return CP_PLAYOUT_ERR_PLAYLIST;
+	}
 
 	status = CP_PLAYOUT_OK;
+	line_number = 0;
 	while (cp_playout_read_line(file, line, sizeof(line), &truncated)) {
+		line_number++;
 		if (truncated) {
+			cp_playout_error_set(error, line_number, "",
+			    "playlist line is too long");
 			status = CP_PLAYOUT_ERR_PLAYLIST;
 			break;
 		}
@@ -188,12 +206,17 @@ cp_playlist_load(const char *path, struct cp_playlist *playlist)
 		if (entry[0] == '\0' || entry[0] == '#')
 			continue;
 		if (!cp_playout_path_is_wav(entry)) {
+			cp_playout_error_set(error, line_number, entry,
+			    "unsupported format: convert to WAV first");
 			status = CP_PLAYOUT_ERR_UNSUPPORTED;
 			break;
 		}
 		status = cp_playout_append_path(playlist, entry);
-		if (status != CP_PLAYOUT_OK)
+		if (status != CP_PLAYOUT_OK) {
+			cp_playout_error_set(error, line_number, entry,
+			    cp_playout_status_string(status));
 			break;
+		}
 	}
 
 	fclose(file);
@@ -522,6 +545,7 @@ cp_playout_run_playlist(const char *path,
 	const struct cp_playout_config *config)
 {
 	struct cp_playout_config file_config;
+	struct cp_playlist_error error;
 	struct cp_playlist playlist;
 	const char *entry;
 	size_t index;
@@ -530,9 +554,18 @@ cp_playout_run_playlist(const char *path,
 	if (path == NULL || config == NULL)
 		return CP_PLAYOUT_ERR_NULL;
 
-	status = cp_playlist_load(path, &playlist);
-	if (status != CP_PLAYOUT_OK)
+	status = cp_playlist_load_report(path, &playlist, &error);
+	if (status != CP_PLAYOUT_OK) {
+		if (error.line > 0) {
+			fprintf(stderr, "playlist error: line=%zu path=%s "
+			    "reason=%s\n", error.line, error.path,
+			    error.reason);
+		} else if (error.reason[0] != '\0') {
+			fprintf(stderr, "playlist error: path=%s reason=%s\n",
+			    error.path, error.reason);
+		}
 		return status;
+	}
 
 	if (playlist.count == 0) {
 		cp_playlist_free(&playlist);
@@ -691,6 +724,39 @@ cp_playout_dup_range(const char *text, size_t length)
 	copy[length] = '\0';
 
 	return copy;
+}
+
+static void
+cp_playout_error_clear(struct cp_playlist_error *error)
+{
+	if (error == NULL)
+		return;
+
+	memset(error, 0, sizeof(*error));
+}
+
+static void
+cp_playout_error_set(struct cp_playlist_error *error, size_t line,
+	const char *path, const char *reason)
+{
+	int written;
+
+	if (error == NULL)
+		return;
+
+	error->line = line;
+	if (path != NULL) {
+		written = snprintf(error->path, sizeof(error->path), "%s",
+		    path);
+		if (written < 0 || (size_t)written >= sizeof(error->path))
+			error->path[sizeof(error->path) - 1] = '\0';
+	}
+	if (reason != NULL) {
+		written = snprintf(error->reason, sizeof(error->reason), "%s",
+		    reason);
+		if (written < 0 || (size_t)written >= sizeof(error->reason))
+			error->reason[sizeof(error->reason) - 1] = '\0';
+	}
 }
 
 static int

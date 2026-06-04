@@ -14,6 +14,7 @@
 
 #define CP_PLAYOUT_DEFAULT_BLOCK_FRAMES	512
 #define CP_PLAYOUT_MAX_LINE		4096
+#define CP_PLAYOUT_ERROR_TEXT		128
 
 enum cp_playout_status {
 	CP_PLAYOUT_NEXT           = 1,
@@ -39,6 +40,12 @@ struct cp_playlist {
 	size_t capacity;
 };
 
+struct cp_playlist_error {
+	size_t line;
+	char path[CP_PLAYOUT_MAX_LINE];
+	char reason[CP_PLAYOUT_ERROR_TEXT];
+};
+
 struct cp_playout_config {
 	struct cp_audio_config audio_config;
 	struct cp_block_config block_config;
@@ -55,6 +62,8 @@ int		cp_playout_build_snapshot(const struct cp_block_processor *,
 void		cp_playlist_free(struct cp_playlist *);
 const char	*cp_playlist_get(const struct cp_playlist *, size_t);
 int		cp_playlist_load(const char *, struct cp_playlist *);
+int		cp_playlist_load_report(const char *, struct cp_playlist *,
+		    struct cp_playlist_error *);
 size_t		cp_playlist_count(const struct cp_playlist *);
 int		cp_playout_path_is_wav(const char *);
 int		cp_playout_run_file(const char *,

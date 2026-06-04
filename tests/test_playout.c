@@ -13,6 +13,7 @@ static int	test_config_validation(void);
 static int	test_meter_snapshot(void);
 static int	test_path_filter(void);
 static int	test_playlist_load(void);
+static int	test_playlist_report(void);
 static int	test_playlist_rejects_mp3(void);
 
 int
@@ -25,6 +26,8 @@ main(void)
 	if (!test_path_filter())
 		return 1;
 	if (!test_playlist_load())
+		return 1;
+	if (!test_playlist_report())
 		return 1;
 	if (!test_playlist_rejects_mp3())
 		return 1;
@@ -172,6 +175,41 @@ test_playlist_load(void)
 	}
 
 	cp_playlist_free(&playlist);
+	return 1;
+}
+
+static int
+test_playlist_report(void)
+{
+	struct cp_playlist_error error;
+	struct cp_playlist playlist;
+	const char *path;
+	int status;
+
+	path = "build/tests/playout_report.txt";
+	if (!write_text_file(path, "# comment\none.wav\nbad.mp3\n")) {
+		printf("test_playout: fixture write failed\n");
+		return 0;
+	}
+
+	status = cp_playlist_load_report(path, &playlist, &error);
+	if (status != CP_PLAYOUT_ERR_UNSUPPORTED) {
+		printf("test_playout: report unsupported status mismatch\n");
+		return 0;
+	}
+	if (error.line != 3) {
+		printf("test_playout: report line mismatch\n");
+		return 0;
+	}
+	if (strcmp(error.path, "bad.mp3") != 0) {
+		printf("test_playout: report path mismatch\n");
+		return 0;
+	}
+	if (strstr(error.reason, "unsupported") == NULL) {
+		printf("test_playout: report reason mismatch\n");
+		return 0;
+	}
+
 	return 1;
 }
 

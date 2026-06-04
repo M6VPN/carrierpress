@@ -4,7 +4,7 @@ CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB a
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
-Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. MP3 playout and STM32H753 support are planned but are not part of v0.1.
+Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
 
 ## Table of Contents
 
@@ -43,6 +43,12 @@ Run the test target with parallel jobs:
 
 ```sh
 make -j test
+```
+
+Run deterministic DSP validation fixtures and print a compact report:
+
+```sh
+make validate
 ```
 
 Build with optional WAV support:
@@ -200,7 +206,22 @@ WAV playout requires a `WITH_SNDFILE=1 WITH_PORTAUDIO=1` build. Without it, `--p
 Playout support not enabled. Rebuild with WITH_SNDFILE=1 WITH_PORTAUDIO=1.
 ```
 
-MP3 playout is not implemented in this milestone. Convert MP3 files to WAV with an external tool before using `--play` or `--playlist`.
+MP3, FLAC, and OGG playout are not implemented in this milestone. Convert them
+to WAV with an external tool before using `--play` or `--playlist`.
+
+Example external decode commands:
+
+```sh
+ffmpeg -i input.mp3 -ar 48000 -ac 2 output.wav
+ffmpeg -i input.flac -ar 48000 -ac 2 output.wav
+ffmpeg -i input.ogg -ar 48000 -ac 2 output.wav
+```
+
+Then play the converted WAV:
+
+```sh
+./carrierpress --play output.wav
+```
 
 List PortAudio devices:
 
@@ -371,6 +392,12 @@ through `4` to switch SSB off or select one of the validated SSB presets.
 The core library has no optional audio backend dependency. WAV support lives in `cp_wav.c`, PortAudio support lives in `cp_portaudio.c`, WAV playout lives in `cp_playout.c`, and the ncurses monitor lives in `cp_tui.c`. Optional files are compiled only when requested. Process functions use caller-owned buffers and explicit state structs so real-time callbacks can remain malloc-free and deterministic.
 
 WAV playout reads fixed-size blocks from libsndfile, processes them through the normal CarrierPress chain, reports live-style meters from the processor state, and writes processed float32 blocks to a PortAudio output stream. It does not load the whole file into memory. This milestone uses blocking PortAudio output for file playout; live input mode still uses the callback backend.
+
+`make validate` runs deterministic synthetic fixtures through default, AM, and
+SSB chains. It checks finite output, bounded peaks, AM negative peak protection,
+and SSB peak limits, then prints report lines that can be archived during
+tuning. This is an engineering gate for regressions, not a claim of broadcast
+processor quality. See [docs/validation.md](docs/validation.md).
 
 TUI control is preset-only for DSP changes in this milestone. It can switch the
 dehummer on or off, cycle multiband between off, speech, and music, switch the
