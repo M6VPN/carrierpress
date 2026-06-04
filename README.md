@@ -189,8 +189,20 @@ Print live-style meters once per second while playing:
 ```
 
 Stop play mode with `Ctrl-C`. CarrierPress stops cleanly between processed
-blocks. WAV playout opens the sound-card output at the WAV file sample rate and
-fails clearly if the selected output device cannot support that rate.
+blocks. WAV playout tries the WAV file sample rate first. If the selected output
+device cannot open that rate and no explicit sample rate was requested,
+CarrierPress retries the output device default rate and uses the internal linear
+resampler.
+
+Force a playout output rate:
+
+```sh
+./carrierpress --play input.wav --sample-rate 48000
+./carrierpress --playlist playlist.txt --device pulse --sample-rate 48000
+```
+
+The M7.3 resampler is a utility-quality linear converter for playout
+compatibility. It is not a mastering-grade sample-rate converter.
 
 Playlist files are plain text. Blank lines and lines beginning with `#` are ignored. Each other line is a WAV path:
 
@@ -392,6 +404,10 @@ through `4` to switch SSB off or select one of the validated SSB presets.
 The core library has no optional audio backend dependency. WAV support lives in `cp_wav.c`, PortAudio support lives in `cp_portaudio.c`, WAV playout lives in `cp_playout.c`, and the ncurses monitor lives in `cp_tui.c`. Optional files are compiled only when requested. Process functions use caller-owned buffers and explicit state structs so real-time callbacks can remain malloc-free and deterministic.
 
 WAV playout reads fixed-size blocks from libsndfile, processes them through the normal CarrierPress chain, reports live-style meters from the processor state, and writes processed float32 blocks to a PortAudio output stream. It does not load the whole file into memory. This milestone uses blocking PortAudio output for file playout; live input mode still uses the callback backend.
+
+When playout resampling is active, CarrierPress runs the DSP chain at the output
+stream rate so AGC and filter timing match playback. Offline `--input` and
+`--output` WAV processing still preserves the input file sample rate.
 
 `make validate` runs deterministic synthetic fixtures through default, AM, and
 SSB chains. It checks finite output, bounded peaks, AM negative peak protection,

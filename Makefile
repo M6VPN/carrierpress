@@ -31,6 +31,7 @@ CORE_SRCS = \
 	src/cp_meter.c \
 	src/cp_monitor.c \
 	src/cp_multiband.c \
+	src/cp_resampler.c \
 	src/cp_ssb.c
 
 APP_SRCS = src/main.c
@@ -49,6 +50,7 @@ TEST_SRCS = \
 	tests/test_meter.c \
 	tests/test_monitor.c \
 	tests/test_multiband.c \
+	tests/test_resampler.c \
 	tests/test_ssb.c
 
 ifeq ($(WITH_SNDFILE),1)
@@ -107,6 +109,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_meter \
 	$(TEST_BIN_DIR)/test_monitor \
 	$(TEST_BIN_DIR)/test_multiband \
+	$(TEST_BIN_DIR)/test_resampler \
 	$(TEST_BIN_DIR)/test_ssb
 
 ifeq ($(WITH_SNDFILE),1)
@@ -177,6 +180,10 @@ $(TEST_BIN_DIR)/test_multiband: $(TEST_OBJ_DIR)/tests/test_multiband.o $(TEST_CO
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_multiband.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_resampler: $(TEST_OBJ_DIR)/tests/test_resampler.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_resampler.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_ssb: $(TEST_OBJ_DIR)/tests/test_ssb.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_ssb.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -207,6 +214,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_meter
 	./$(TEST_BIN_DIR)/test_monitor
 	./$(TEST_BIN_DIR)/test_multiband
+	./$(TEST_BIN_DIR)/test_resampler
 	./$(TEST_BIN_DIR)/test_ssb
 ifeq ($(WITH_SNDFILE),1)
 	./$(TEST_BIN_DIR)/test_wav
@@ -254,7 +262,7 @@ clean:
 	rm -f tests/test_dc_blocker tests/test_dehummer
 	rm -f tests/test_limiter tests/test_meter
 	rm -f tests/test_monitor tests/test_multiband
-	rm -f tests/test_ssb
+	rm -f tests/test_resampler tests/test_ssb
 	rm -f tests/test_playout tests/test_validation tests/test_wav
 	rm -f tests/playout_bad.txt tests/playout_good.txt
 	rm -f tests/playout_report.txt

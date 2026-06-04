@@ -35,7 +35,11 @@ The report checks:
 - AM negative peaks stay under the AM negative peak limit
 - SSB output stays under the SSB peak limit
 
+The unit test suite also covers the M7.3 linear playout resampler for same-rate
+copying, upsampling, downsampling, invalid configuration, stereo stability, and
+non-finite input rejection.
+
 Validation does not prove regulatory compliance, occupied bandwidth compliance,
-or broadcast-processor quality. Live hardware tests, off-air monitoring,
-spectrum measurements, and transmitter-limit checks are still required before
-using CarrierPress with any transmitter.
+sample-rate conversion quality, or broadcast-processor quality. Live hardware
+tests, off-air monitoring, spectrum measurements, and transmitter-limit checks
+are still required before using CarrierPress with any transmitter.

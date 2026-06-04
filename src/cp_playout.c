@@ -4,6 +4,7 @@
 #include <sys/types.h>
 
 #include <ctype.h>
+#include <limits.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -15,6 +16,7 @@
 
 #include "cp_control.h"
 #include "cp_playout.h"
+#include "cp_resampler.h"
 #ifdef CP_WITH_TUI
 #include "cp_tui.h"
 #endif
@@ -27,9 +29,13 @@ static void	cp_playout_error_clear(struct cp_playlist_error *);
 static void	cp_playout_error_set(struct cp_playlist_error *, size_t,
 		    const char *, const char *);
 static int	cp_playout_name_contains(const char *, const char *);
+static int	cp_playout_open_output_stream(PaStream **,
+		    const PaStreamParameters *, double, size_t);
 static int	cp_playout_output_device_contains(PaDeviceIndex, const char *);
 static int	cp_playout_output_matches(const struct cp_audio_config *,
 		    PaDeviceIndex, size_t);
+static int	cp_playout_rate_valid(double);
+static int	cp_playout_rates_equal(double, double);
 static int	cp_playout_read_line(FILE *, char *, size_t, int *);
 static int	cp_playout_select_output_device(
 		    const struct cp_audio_config *, size_t, PaDeviceIndex *);
@@ -273,10 +279,14 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	const PaDeviceInfo *output_info;
 	cp_sample_t *input;
 	cp_sample_t *output;
+	cp_sample_t *process_input;
+	cp_sample_t *resampled;
 	cp_sample_t *scratch;
 	struct cp_audio_config audio_config;
 	struct cp_block_config block_config;
 	struct cp_block_processor processor;
+	struct cp_resampler resampler;
+	struct cp_resampler_config resampler_config;
 #ifdef CP_WITH_TUI
 	struct cp_control_command command;
 	struct cp_tui tui;
@@ -288,7 +298,14 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	size_t channels;
 	size_t frames_until_meter;
 	size_t meter_frames;
+	size_t output_block_frames;
+	size_t output_block_samples;
+	size_t process_frames;
+	size_t resampled_frames;
+	double input_rate;
+	double output_rate;
 	int result;
+	int resampling;
 	int status;
 
 	if (path == NULL || config == NULL)
@@ -326,22 +343,23 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	}
 	block_samples = block_frames * channels;
 
-	if (config->audio_config.sample_rate_explicit &&
-	    fabs(config->audio_config.sample_rate -
-	    (double)input_info.samplerate) > 0.5) {
-		sf_close(input_file);
-		return CP_PLAYOUT_ERR_FORMAT;
-	}
+	input = NULL;
+	output = NULL;
+	process_input = NULL;
+	resampled = NULL;
+	scratch = NULL;
+	stream = NULL;
+	input_rate = (double)input_info.samplerate;
+	output_rate = config->audio_config.sample_rate_explicit ?
+	    config->audio_config.sample_rate : input_rate;
 
 	audio_config = config->audio_config;
-	audio_config.sample_rate = (double)input_info.samplerate;
+	audio_config.sample_rate = output_rate;
 	audio_config.sample_rate_explicit = 1;
 	audio_config.channels = channels;
-	audio_config.am_config.sample_rate =
-	    (cp_sample_t)input_info.samplerate;
+	audio_config.am_config.sample_rate = (cp_sample_t)output_rate;
 	audio_config.am_config.channel_count = channels;
-	audio_config.ssb_config.sample_rate =
-	    (cp_sample_t)input_info.samplerate;
+	audio_config.ssb_config.sample_rate = (cp_sample_t)output_rate;
 	audio_config.ssb_config.channel_count = channels;
 	status = cp_audio_validate_config(&audio_config);
 	if (status != CP_AUDIO_OK) {
@@ -349,9 +367,73 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 		return CP_PLAYOUT_ERR_AUDIO;
 	}
 
+	error = Pa_Initialize();
+	if (error != paNoError) {
+		sf_close(input_file);
+		return CP_PLAYOUT_ERR_AUDIO;
+	}
+	status = cp_playout_select_output_device(&audio_config, channels,
+	    &output_device);
+	if (status != CP_PLAYOUT_OK) {
+		Pa_Terminate();
+		sf_close(input_file);
+		return status;
+	}
+
+	output_info = Pa_GetDeviceInfo(output_device);
+	if (output_info == NULL) {
+		Pa_Terminate();
+		sf_close(input_file);
+		return CP_PLAYOUT_ERR_AUDIO;
+	}
+
+	output_params.device = output_device;
+	output_params.channelCount = (int)channels;
+	output_params.sampleFormat = paFloat32;
+	output_params.suggestedLatency = output_info->defaultLowOutputLatency;
+	output_params.hostApiSpecificStreamInfo = NULL;
+
+	status = cp_playout_open_output_stream(&stream, &output_params,
+	    output_rate, block_frames);
+	if (status != CP_PLAYOUT_OK &&
+	    !config->audio_config.sample_rate_explicit &&
+	    cp_playout_rate_valid(output_info->defaultSampleRate) &&
+	    !cp_playout_rates_equal(output_rate,
+	    output_info->defaultSampleRate)) {
+		output_rate = output_info->defaultSampleRate;
+		audio_config.sample_rate = output_rate;
+		audio_config.am_config.sample_rate = (cp_sample_t)output_rate;
+		audio_config.ssb_config.sample_rate = (cp_sample_t)output_rate;
+		if (cp_audio_validate_config(&audio_config) != CP_AUDIO_OK) {
+			Pa_Terminate();
+			sf_close(input_file);
+			return CP_PLAYOUT_ERR_AUDIO;
+		}
+		status = cp_playout_open_output_stream(&stream,
+		    &output_params, output_rate, block_frames);
+	}
+	if (status != CP_PLAYOUT_OK) {
+		Pa_Terminate();
+		sf_close(input_file);
+		return status;
+	}
+
+	resampling = !cp_playout_rates_equal(input_rate, output_rate);
+	output_block_frames = resampling ?
+	    cp_resampler_output_capacity(block_frames, input_rate,
+	    output_rate) : block_frames;
+	if (output_block_frames == 0 ||
+	    output_block_frames > (SIZE_MAX / channels)) {
+		Pa_CloseStream(stream);
+		Pa_Terminate();
+		sf_close(input_file);
+		return CP_PLAYOUT_ERR_FORMAT;
+	}
+	output_block_samples = output_block_frames * channels;
+
 	block_config = config->block_config;
 	block_config.channels = channels;
-	block_config.sample_rate = (cp_sample_t)input_info.samplerate;
+	block_config.sample_rate = (cp_sample_t)output_rate;
 	block_config.dehummer_enabled = audio_config.dehummer_enabled;
 	block_config.hum_base_frequency = audio_config.hum_base_frequency;
 	block_config.hum_harmonic_count = audio_config.hum_harmonic_count;
@@ -363,66 +445,40 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	block_config.ssb_config = audio_config.ssb_config;
 	status = cp_block_init(&processor, &block_config);
 	if (status != CP_OK) {
+		Pa_CloseStream(stream);
+		Pa_Terminate();
+		sf_close(input_file);
+		return CP_PLAYOUT_ERR_PROCESS;
+	}
+
+	cp_resampler_default_config(&resampler_config);
+	resampler_config.input_rate = input_rate;
+	resampler_config.output_rate = output_rate;
+	resampler_config.channel_count = channels;
+	resampler_config.enabled = resampling;
+	status = cp_resampler_init(&resampler, &resampler_config);
+	if (status != CP_OK) {
+		Pa_CloseStream(stream);
+		Pa_Terminate();
 		sf_close(input_file);
 		return CP_PLAYOUT_ERR_PROCESS;
 	}
 
 	input = calloc(block_samples, sizeof(*input));
-	output = calloc(block_samples, sizeof(*output));
-	scratch = calloc(block_samples, sizeof(*scratch));
-	if (input == NULL || output == NULL || scratch == NULL) {
+	if (resampling)
+		resampled = calloc(output_block_samples, sizeof(*resampled));
+	output = calloc(output_block_samples, sizeof(*output));
+	scratch = calloc(output_block_samples, sizeof(*scratch));
+	if (input == NULL || output == NULL || scratch == NULL ||
+	    (resampling && resampled == NULL)) {
+		Pa_CloseStream(stream);
+		Pa_Terminate();
 		free(input);
 		free(output);
+		free(resampled);
 		free(scratch);
 		sf_close(input_file);
 		return CP_PLAYOUT_ERR_ALLOC;
-	}
-
-	error = Pa_Initialize();
-	if (error != paNoError) {
-		free(input);
-		free(output);
-		free(scratch);
-		sf_close(input_file);
-		return CP_PLAYOUT_ERR_AUDIO;
-	}
-	status = cp_playout_select_output_device(&audio_config, channels,
-	    &output_device);
-	if (status != CP_PLAYOUT_OK) {
-		Pa_Terminate();
-		free(input);
-		free(output);
-		free(scratch);
-		sf_close(input_file);
-		return status;
-	}
-
-	output_info = Pa_GetDeviceInfo(output_device);
-	if (output_info == NULL) {
-		Pa_Terminate();
-		free(input);
-		free(output);
-		free(scratch);
-		sf_close(input_file);
-		return CP_PLAYOUT_ERR_AUDIO;
-	}
-
-	output_params.device = output_device;
-	output_params.channelCount = (int)channels;
-	output_params.sampleFormat = paFloat32;
-	output_params.suggestedLatency = output_info->defaultLowOutputLatency;
-	output_params.hostApiSpecificStreamInfo = NULL;
-
-	error = Pa_OpenStream(&stream, NULL, &output_params,
-	    (double)input_info.samplerate, (unsigned long)block_frames,
-	    paNoFlag, NULL, NULL);
-	if (error != paNoError) {
-		Pa_Terminate();
-		free(input);
-		free(output);
-		free(scratch);
-		sf_close(input_file);
-		return CP_PLAYOUT_ERR_STREAM;
 	}
 #ifdef CP_WITH_TUI
 	tui.active = 0;
@@ -431,6 +487,7 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 		Pa_Terminate();
 		free(input);
 		free(output);
+		free(resampled);
 		free(scratch);
 		sf_close(input_file);
 		return CP_PLAYOUT_ERR_AUDIO;
@@ -445,31 +502,56 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 		Pa_Terminate();
 		free(input);
 		free(output);
+		free(resampled);
 		free(scratch);
 		sf_close(input_file);
 		return CP_PLAYOUT_ERR_STREAM;
 	}
 
 	if (!audio_config.tui_enabled) {
-		printf("playing: %s rate=%d channels=%zu output_device=%d\n",
-		    path, input_info.samplerate, channels, output_device);
+		if (resampling) {
+			printf("playing: %s input_rate=%0.0f output_rate=%0.0f "
+			    "channels=%zu output_device=%d resampler=linear\n",
+			    path, input_rate, output_rate, channels,
+			    output_device);
+		} else {
+			printf("playing: %s rate=%0.0f channels=%zu "
+			    "output_device=%d\n", path, output_rate, channels,
+			    output_device);
+		}
 	}
 
 	result = CP_PLAYOUT_OK;
-	meter_frames = cp_playout_interval_frames((double)input_info.samplerate,
+	meter_frames = cp_playout_interval_frames(output_rate,
 	    config->meter_interval_ms);
 	frames_until_meter = meter_frames;
 	while (!cp_playout_should_stop(config) &&
 	    (frames_read = sf_readf_float(input_file, input,
 	    (sf_count_t)block_frames)) > 0) {
-		status = cp_block_process(&processor, input, output, scratch,
-		    block_samples, (size_t)frames_read);
+		if (resampling) {
+			status = cp_resampler_process(&resampler, input,
+			    (size_t)frames_read, resampled,
+			    output_block_frames, &resampled_frames);
+			if (status != CP_OK) {
+				result = CP_PLAYOUT_ERR_PROCESS;
+				break;
+			}
+			process_input = resampled;
+			process_frames = resampled_frames;
+		} else {
+			process_input = input;
+			process_frames = (size_t)frames_read;
+		}
+		if (process_frames == 0)
+			continue;
+		status = cp_block_process(&processor, process_input, output,
+		    scratch, output_block_samples, process_frames);
 		if (status != CP_OK) {
 			result = CP_PLAYOUT_ERR_PROCESS;
 			break;
 		}
 		error = Pa_WriteStream(stream, output,
-		    (unsigned long)frames_read);
+		    (unsigned long)process_frames);
 		if (error != paNoError) {
 			result = CP_PLAYOUT_ERR_WRITE;
 			break;
@@ -510,11 +592,11 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 			continue;
 		}
 #endif
-		if ((size_t)frames_read >= frames_until_meter) {
+		if (process_frames >= frames_until_meter) {
 			cp_playout_print_meters(&snapshot);
 			frames_until_meter = meter_frames;
 		} else {
-			frames_until_meter -= (size_t)frames_read;
+			frames_until_meter -= process_frames;
 		}
 	}
 	if (!cp_playout_should_stop(config) && frames_read < 0 &&
@@ -534,6 +616,7 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	Pa_Terminate();
 	free(input);
 	free(output);
+	free(resampled);
 	free(scratch);
 	sf_close(input_file);
 
@@ -784,6 +867,29 @@ cp_playout_name_contains(const char *text, const char *needle)
 }
 
 static int
+cp_playout_open_output_stream(PaStream **stream,
+	const PaStreamParameters *output_params, double sample_rate,
+	size_t block_frames)
+{
+	PaError error;
+
+	if (stream == NULL || output_params == NULL)
+		return CP_PLAYOUT_ERR_NULL;
+	if (!cp_playout_rate_valid(sample_rate))
+		return CP_PLAYOUT_ERR_FORMAT;
+	if (block_frames == 0 || block_frames > (size_t)ULONG_MAX)
+		return CP_PLAYOUT_ERR_FORMAT;
+
+	*stream = NULL;
+	error = Pa_OpenStream(stream, NULL, output_params, sample_rate,
+	    (unsigned long)block_frames, paNoFlag, NULL, NULL);
+	if (error != paNoError)
+		return CP_PLAYOUT_ERR_STREAM;
+
+	return CP_PLAYOUT_OK;
+}
+
+static int
 cp_playout_output_matches(const struct cp_audio_config *config,
 	PaDeviceIndex device, size_t channels)
 {
@@ -837,6 +943,26 @@ cp_playout_output_device_contains(PaDeviceIndex device, const char *needle)
 		return 1;
 
 	return 0;
+}
+
+static int
+cp_playout_rate_valid(double sample_rate)
+{
+	return isfinite(sample_rate) &&
+	    sample_rate >= CP_AUDIO_MIN_SAMPLE_RATE &&
+	    sample_rate <= CP_AUDIO_MAX_SAMPLE_RATE;
+}
+
+static int
+cp_playout_rates_equal(double left, double right)
+{
+	double difference;
+
+	difference = left - right;
+	if (difference < 0.0)
+		difference = -difference;
+
+	return difference <= 0.5;
 }
 
 static int

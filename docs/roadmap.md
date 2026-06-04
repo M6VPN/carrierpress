@@ -42,7 +42,7 @@ Implemented as a PortAudio device-selection improvement for laptop testing. Auto
 
 ## M6.8 WAV playout foundation
 
-Partially implemented. CarrierPress can play WAV files or simple text playlists through the current DSP chain and an output-only PortAudio stream when built with both libsndfile and PortAudio. MP3 decode, web controls, gapless playback, and resampling are deferred.
+Partially implemented. CarrierPress can play WAV files or simple text playlists through the current DSP chain and an output-only PortAudio stream when built with both libsndfile and PortAudio. MP3 decode, web controls, and gapless playback are deferred.
 
 ## M6.9 play-mode live parity
 
@@ -66,7 +66,7 @@ Partially implemented. CarrierPress stays WAV/PCM-native internally, documents e
 
 ## M7.3 sample-rate handling
 
-Planned. Add utility-quality sample-rate conversion for playout when file rate does not match the selected output device. High-quality resampling remains optional and deferred.
+Partially implemented. WAV playout can use a dependency-free linear resampler when the requested or selected output rate differs from the file rate. The DSP chain runs at the output stream rate during resampled playout. High-quality resampling remains optional and deferred.
 
 ## M7.4 live/playout parity pass
 
