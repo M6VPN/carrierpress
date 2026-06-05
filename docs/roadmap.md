@@ -86,7 +86,21 @@ Implemented as a deterministic measurement pass for the current chain. `make qua
 
 ## M9 declipper and delossifier research
 
-Research restoration stages for clipped or lossy source material. Add only validated clean-room designs.
+Partially implemented. M9.1 adds an analysis-only restoration detector for
+clipping indicators and high-frequency-loss indicators. It does not modify
+audio or implement declipping, delossifying, codec repair, or source
+reconstruction.
+
+## M9.1 restoration analysis foundation
+
+Implemented as a real-time-safe analysis tap after DC blocking and dehumming.
+It reports clipped-sample ratio, repeated flat near-peak runs, peak repeats,
+high-frequency activity ratio, clipping confidence, and high-frequency-loss
+confidence. Metrics are available in self-test, offline WAV mode, live text
+meters, play mode, playlist mode, TUI snapshots, and `make quality`.
+
+The detector is conservative and diagnostic. Later M9 work must validate any
+actual declipper or delossifier design before adding a processing stage.
 
 ## M10 sndio backend
 

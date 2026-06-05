@@ -48,6 +48,7 @@ static int	run_playout_playlist(const char *, const struct cp_audio_config *,
 static int	run_wav_process(const char *, const char *,
 		    const struct cp_block_config *);
 static int	run_self_test(const struct cp_block_config *);
+static void	print_restoration_metrics(const struct cp_restoration_metrics *);
 static void	usage(const char *);
 
 int
@@ -97,6 +98,9 @@ main(int argc, char *argv[])
 			list_devices = 1;
 		} else if (strcmp(argv[arg], "--live") == 0) {
 			live_mode = 1;
+		} else if (strcmp(argv[arg], "--analyze") == 0) {
+			block_config.restoration_config.enabled = 1;
+			audio_config.restoration_config.enabled = 1;
 		} else if (strcmp(argv[arg], "--audio-backend") == 0 &&
 		    arg + 1 < argc) {
 			if (cp_audio_backend_from_string(argv[++arg],
@@ -366,6 +370,9 @@ main(int argc, char *argv[])
 	    (cp_sample_t)audio_config.sample_rate;
 	audio_config.am_config.channel_count = audio_config.channels;
 	audio_config.am_config.sample_rate = (cp_sample_t)audio_config.sample_rate;
+	audio_config.restoration_config.channel_count = audio_config.channels;
+	audio_config.restoration_config.sample_rate =
+	    (cp_sample_t)audio_config.sample_rate;
 	audio_config.ssb_config.channel_count = audio_config.channels;
 	audio_config.ssb_config.sample_rate =
 	    (cp_sample_t)audio_config.sample_rate;
@@ -724,15 +731,18 @@ run_wav_process(const char *input_path, const char *output_path,
 	const struct cp_block_config *config)
 {
 #ifdef CP_WITH_SNDFILE
+	struct cp_restoration_metrics metrics;
 	int status;
 
-	status = cp_wav_process_file_config(input_path, output_path,
-	    CP_WAV_BLOCK_FRAMES, config);
+	status = cp_wav_process_file_config_report(input_path, output_path,
+	    CP_WAV_BLOCK_FRAMES, config, &metrics);
 	if (status != CP_WAV_OK) {
 		printf("carrierpress: WAV processing failed: %s\n",
 		    cp_wav_status_string(status));
 		return 1;
 	}
+	if (config != NULL && config->restoration_config.enabled)
+		print_restoration_metrics(&metrics);
 
 	return 0;
 #else
@@ -845,8 +855,29 @@ run_self_test(const struct cp_block_config *self_config)
 	    processor.output_meter.peak[0], processor.output_meter.rms[0],
 	    processor.agc.gain, processor.agc.gain_db,
 	    cp_agc_state_string(processor.agc.gate_state));
+	if (processor.restoration.config.enabled)
+		print_restoration_metrics(&processor.restoration.metrics);
 
 	return 0;
+}
+
+static void
+print_restoration_metrics(const struct cp_restoration_metrics *metrics)
+{
+	if (metrics == NULL)
+		return;
+
+	printf("analysis_clip_ratio=%0.6f analysis_hf_ratio=%0.6f "
+	    "analysis_clip_confidence=%0.6f "
+	    "analysis_lossy_confidence=%0.6f flat_runs=%zu "
+	    "peak_repeats=%zu finite=%s\n",
+	    metrics->clipped_sample_ratio,
+	    metrics->high_frequency_ratio,
+	    metrics->clipping_confidence,
+	    metrics->lossy_confidence,
+	    metrics->flat_run_count,
+	    metrics->peak_repeat_count,
+	    metrics->finite ? "yes" : "no");
 }
 
 static void
@@ -871,6 +902,7 @@ usage(const char *program)
 	    "--block-size 256\n", program);
 	printf("usage: %s --live --meter-interval-ms 1000\n", program);
 	printf("usage: %s --live --tui\n", program);
+	printf("analysis option: --analyze\n");
 	printf("dehummer options: --dehummer --hum-frequency 50|60 "
 	    "--hum-harmonics N --hum-q Q\n");
 	printf("multiband options: --multiband --multiband-bands 2|3|4 "

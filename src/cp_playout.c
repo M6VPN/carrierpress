@@ -955,6 +955,21 @@ cp_playout_print_meters(const struct cp_monitor_snapshot *snapshot)
 		    snapshot->am_asymmetry_enabled ? "on" : "off",
 		    cp_monitor_level_to_sample(snapshot->am_asymmetry_ratio));
 	}
+	if (snapshot->restoration_enabled) {
+		printf("analysis_clip_ratio=%0.6f analysis_hf_ratio=%0.6f "
+		    "analysis_clip_confidence=%0.6f "
+		    "analysis_lossy_confidence=%0.6f flat_runs=%u "
+		    "peak_repeats=%u\n",
+		    cp_monitor_level_to_sample(
+		    snapshot->restoration_clipped_ratio),
+		    cp_monitor_level_to_sample(snapshot->restoration_hf_ratio),
+		    cp_monitor_level_to_sample(
+		    snapshot->restoration_clipping_confidence),
+		    cp_monitor_level_to_sample(
+		    snapshot->restoration_lossy_confidence),
+		    snapshot->restoration_flat_runs,
+		    snapshot->restoration_peak_repeats);
+	}
 	if (snapshot->ssb_enabled) {
 		printf("ssb=on preset=%s highpass=%u lowpass=%u "
 		    "peak=%0.2f phase_rotator=%s\n",

@@ -30,6 +30,7 @@ The active M8.1 chain is:
 input
 DC blocker
 dehummer
+restoration analysis tap
 AGC
 multiband compressor 1
 bass EQ
@@ -44,6 +45,33 @@ low-shelf and high-shelf filters after the first multiband compressor and before
 AM or SSB shaping. This gives later AM/SSB presets a simple tone-shaping stage
 without adding automatic EQ, subharmonic synthesis, immersive bass, or true bass
 processing yet.
+
+## M9.1 Restoration Analysis Behavior
+
+The active M9.1 chain adds an analysis tap:
+
+```text
+input
+DC blocker
+dehummer
+restoration analysis tap
+AGC
+multiband compressor 1
+bass EQ
+AM or SSB output chain
+limiter
+meter
+output
+```
+
+The restoration analyzer is disabled by default. When enabled with `--analyze`,
+it observes the signal after DC blocking and dehumming, before AGC gain riding.
+It reports clipping indicators, repeated near-peak flat runs, peak repeats, and
+a simple high-frequency activity ratio. It does not change samples.
+
+This placement keeps source-condition analysis ahead of level riding and
+compression. It is a research foundation for later declipper and delossifier
+work, not a restoration processor.
 
 ## M7 SSB Behavior
 

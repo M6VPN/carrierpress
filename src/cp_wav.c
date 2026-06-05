@@ -24,6 +24,16 @@ int
 cp_wav_process_file_config(const char *input_path, const char *output_path,
 	size_t block_frames, const struct cp_block_config *block_config)
 {
+	return cp_wav_process_file_config_report(input_path, output_path,
+	    block_frames, block_config, NULL);
+}
+
+int
+cp_wav_process_file_config_report(const char *input_path,
+	const char *output_path, size_t block_frames,
+	const struct cp_block_config *block_config,
+	struct cp_restoration_metrics *restoration_metrics)
+{
 	SF_INFO input_info;
 	SF_INFO output_info;
 	SNDFILE *input_file;
@@ -121,6 +131,8 @@ cp_wav_process_file_config(const char *input_path, const char *output_path,
 
 	if (frames_read < 0 && result == CP_WAV_OK)
 		result = CP_WAV_ERR_READ;
+	if (restoration_metrics != NULL)
+		*restoration_metrics = processor.restoration.metrics;
 
 	sf_close(output_file);
 	sf_close(input_file);

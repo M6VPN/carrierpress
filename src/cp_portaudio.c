@@ -39,6 +39,13 @@ struct cp_portaudio_runtime {
 	atomic_uint dehummer_harmonic_count;
 	atomic_uint multiband_enabled;
 	atomic_int multiband_preset;
+	atomic_uint restoration_enabled;
+	atomic_uint restoration_clipped_ratio;
+	atomic_uint restoration_hf_ratio;
+	atomic_uint restoration_clipping_confidence;
+	atomic_uint restoration_lossy_confidence;
+	atomic_uint restoration_flat_runs;
+	atomic_uint restoration_peak_repeats;
 	atomic_uint bass_eq_enabled;
 	atomic_uint bass_eq_low_hz;
 	atomic_int bass_eq_low_gain_db_centibel;
@@ -486,6 +493,13 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	atomic_init(&runtime->multiband_enabled, 0u);
 	atomic_init(&runtime->multiband_preset,
 	    (int)CP_MULTIBAND_PRESET_SPEECH);
+	atomic_init(&runtime->restoration_enabled, 0u);
+	atomic_init(&runtime->restoration_clipped_ratio, 0u);
+	atomic_init(&runtime->restoration_hf_ratio, 0u);
+	atomic_init(&runtime->restoration_clipping_confidence, 0u);
+	atomic_init(&runtime->restoration_lossy_confidence, 0u);
+	atomic_init(&runtime->restoration_flat_runs, 0u);
+	atomic_init(&runtime->restoration_peak_repeats, 0u);
 	atomic_init(&runtime->bass_eq_enabled, 0u);
 	atomic_init(&runtime->bass_eq_low_hz, 0u);
 	atomic_init(&runtime->bass_eq_low_gain_db_centibel, 0);
@@ -569,6 +583,20 @@ cp_pa_load_snapshot(struct cp_portaudio_runtime *runtime,
 	    atomic_load(&runtime->multiband_enabled);
 	snapshot->multiband_preset =
 	    atomic_load(&runtime->multiband_preset);
+	snapshot->restoration_enabled =
+	    atomic_load(&runtime->restoration_enabled);
+	snapshot->restoration_clipped_ratio =
+	    atomic_load(&runtime->restoration_clipped_ratio);
+	snapshot->restoration_hf_ratio =
+	    atomic_load(&runtime->restoration_hf_ratio);
+	snapshot->restoration_clipping_confidence =
+	    atomic_load(&runtime->restoration_clipping_confidence);
+	snapshot->restoration_lossy_confidence =
+	    atomic_load(&runtime->restoration_lossy_confidence);
+	snapshot->restoration_flat_runs =
+	    atomic_load(&runtime->restoration_flat_runs);
+	snapshot->restoration_peak_repeats =
+	    atomic_load(&runtime->restoration_peak_repeats);
 	snapshot->bass_eq_enabled =
 	    atomic_load(&runtime->bass_eq_enabled);
 	snapshot->bass_eq_low_hz = atomic_load(&runtime->bass_eq_low_hz);
@@ -639,6 +667,21 @@ cp_pa_print_meters(const struct cp_monitor_snapshot *snapshot)
 	    cp_monitor_level_to_sample(snapshot->input_rms),
 	    cp_monitor_level_to_sample(snapshot->output_peak),
 	    cp_monitor_level_to_sample(snapshot->output_rms));
+	if (snapshot->restoration_enabled) {
+		printf("analysis_clip_ratio=%0.6f analysis_hf_ratio=%0.6f "
+		    "analysis_clip_confidence=%0.6f "
+		    "analysis_lossy_confidence=%0.6f flat_runs=%u "
+		    "peak_repeats=%u\n",
+		    cp_monitor_level_to_sample(
+		    snapshot->restoration_clipped_ratio),
+		    cp_monitor_level_to_sample(snapshot->restoration_hf_ratio),
+		    cp_monitor_level_to_sample(
+		    snapshot->restoration_clipping_confidence),
+		    cp_monitor_level_to_sample(
+		    snapshot->restoration_lossy_confidence),
+		    snapshot->restoration_flat_runs,
+		    snapshot->restoration_peak_repeats);
+	}
 }
 
 static void
@@ -798,6 +841,20 @@ cp_pa_store_meters(struct cp_portaudio_runtime *runtime)
 	    snapshot.multiband_enabled);
 	atomic_store(&runtime->multiband_preset,
 	    snapshot.multiband_preset);
+	atomic_store(&runtime->restoration_enabled,
+	    snapshot.restoration_enabled);
+	atomic_store(&runtime->restoration_clipped_ratio,
+	    snapshot.restoration_clipped_ratio);
+	atomic_store(&runtime->restoration_hf_ratio,
+	    snapshot.restoration_hf_ratio);
+	atomic_store(&runtime->restoration_clipping_confidence,
+	    snapshot.restoration_clipping_confidence);
+	atomic_store(&runtime->restoration_lossy_confidence,
+	    snapshot.restoration_lossy_confidence);
+	atomic_store(&runtime->restoration_flat_runs,
+	    snapshot.restoration_flat_runs);
+	atomic_store(&runtime->restoration_peak_repeats,
+	    snapshot.restoration_peak_repeats);
 	atomic_store(&runtime->bass_eq_enabled,
 	    snapshot.bass_eq_enabled);
 	atomic_store(&runtime->bass_eq_low_hz,

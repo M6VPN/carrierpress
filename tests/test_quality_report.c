@@ -64,6 +64,10 @@ struct qr_metrics {
 	cp_sample_t output_peak;
 	cp_sample_t output_min;
 	cp_sample_t output_max;
+	cp_sample_t analysis_clip_ratio;
+	cp_sample_t analysis_hf_ratio;
+	cp_sample_t analysis_clip_confidence;
+	cp_sample_t analysis_lossy_confidence;
 	int finite;
 };
 
@@ -175,6 +179,8 @@ qr_config(struct cp_block_config *config, enum qr_profile profile)
 	cp_block_default_config(config, CP_CHANNELS_STEREO);
 	config->sample_rate = QR_RATE;
 	config->limiter_ceiling = CP_DEFAULT_CEILING;
+	config->restoration_config.enabled = 1;
+	config->restoration_config.analysis_window_frames = QR_TOTAL_FRAMES;
 
 	switch (profile) {
 	case QR_PROFILE_DEFAULT:
@@ -291,11 +297,11 @@ qr_generate(enum qr_fixture fixture, cp_sample_t *buffer, size_t offset,
 			right = left;
 			break;
 		case QR_FIXTURE_CLIPPED:
-			value = 1.3f * sinf(phase * 700.0f);
-			if (value > 0.45f)
-				value = 0.45f;
-			if (value < -0.45f)
-				value = -0.45f;
+			value = 1.4f * sinf(phase * 700.0f);
+			if (value > 0.98f)
+				value = 0.98f;
+			if (value < -0.98f)
+				value = -0.98f;
 			left = value;
 			right = value;
 			break;
@@ -477,6 +483,10 @@ qr_run_case(const struct qr_case *test)
 	metrics.output_peak = 0.0f;
 	metrics.output_min = 0.0f;
 	metrics.output_max = 0.0f;
+	metrics.analysis_clip_ratio = 0.0f;
+	metrics.analysis_hf_ratio = 0.0f;
+	metrics.analysis_clip_confidence = 0.0f;
+	metrics.analysis_lossy_confidence = 0.0f;
 	metrics.finite = 1;
 
 	for (offset = 0; offset < QR_TOTAL_FRAMES; offset += QR_BLOCK_FRAMES) {
@@ -514,6 +524,14 @@ qr_run_case(const struct qr_case *test)
 	    (double)QR_TOTAL_FRAMES);
 	metrics.output_right_square = sqrt(metrics.output_right_square /
 	    (double)QR_TOTAL_FRAMES);
+	metrics.analysis_clip_ratio =
+	    processor.restoration.metrics.clipped_sample_ratio;
+	metrics.analysis_hf_ratio =
+	    processor.restoration.metrics.high_frequency_ratio;
+	metrics.analysis_clip_confidence =
+	    processor.restoration.metrics.clipping_confidence;
+	metrics.analysis_lossy_confidence =
+	    processor.restoration.metrics.lossy_confidence;
 	pass = qr_check_case(test, &metrics);
 
 	printf("quality profile=%s fixture=%s check=%s input_rms=%0.6f "
@@ -522,7 +540,9 @@ qr_run_case(const struct qr_case *test)
 	    "output_crest=%0.6f input_dc=%0.6f output_dc=%0.6f "
 	    "input_hum50=%0.6f output_hum50=%0.6f input_hum60=%0.6f "
 	    "output_hum60=%0.6f output_left_rms=%0.6f "
-	    "output_right_rms=%0.6f status=%s\n",
+	    "output_right_rms=%0.6f analysis_clip_ratio=%0.6f "
+	    "analysis_hf_ratio=%0.6f analysis_clip_confidence=%0.6f "
+	    "analysis_lossy_confidence=%0.6f status=%s\n",
 	    qr_profile_name(test->profile), qr_fixture_name(test->fixture),
 	    test->check, metrics.input_square, metrics.output_square,
 	    metrics.input_peak, metrics.output_peak, metrics.output_min,
@@ -532,6 +552,8 @@ qr_run_case(const struct qr_case *test)
 	    qr_hum_amp(&metrics, 50, 1), qr_hum_amp(&metrics, 50, 0),
 	    qr_hum_amp(&metrics, 60, 1), qr_hum_amp(&metrics, 60, 0),
 	    metrics.output_left_square, metrics.output_right_square,
+	    metrics.analysis_clip_ratio, metrics.analysis_hf_ratio,
+	    metrics.analysis_clip_confidence, metrics.analysis_lossy_confidence,
 	    pass ? "pass" : "fail");
 
 	return pass;

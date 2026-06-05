@@ -10,6 +10,7 @@
 #include "cp_audio.h"
 #include "cp_bass_eq.h"
 #include "cp_dehummer.h"
+#include "cp_restoration.h"
 
 static int	cp_audio_candidate_full_duplex(
 		    const struct cp_audio_config *,
@@ -128,6 +129,10 @@ cp_audio_default_config(struct cp_audio_config *config)
 	cp_am_default_config(&config->am_config);
 	config->am_config.channel_count = config->channels;
 	config->am_config.sample_rate = (cp_sample_t)config->sample_rate;
+	cp_restoration_default_config(&config->restoration_config);
+	config->restoration_config.channel_count = config->channels;
+	config->restoration_config.sample_rate =
+	    (cp_sample_t)config->sample_rate;
 	cp_ssb_default_config(&config->ssb_config);
 	config->ssb_config.channel_count = config->channels;
 	config->ssb_config.sample_rate = (cp_sample_t)config->sample_rate;
@@ -217,6 +222,8 @@ cp_audio_status_string(int status)
 		return "invalid SSB settings";
 	case CP_AUDIO_ERR_BASS_EQ:
 		return "invalid bass EQ settings";
+	case CP_AUDIO_ERR_RESTORATION:
+		return "invalid restoration analysis settings";
 	default:
 		return "unknown audio error";
 	}
@@ -227,6 +234,7 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 {
 	struct cp_am am;
 	struct cp_bass_eq bass_eq;
+	struct cp_restoration restoration;
 	struct cp_ssb ssb;
 
 	if (config == NULL)
@@ -291,6 +299,11 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 		return CP_AUDIO_ERR_SSB;
 	if (config->ssb_config.sample_rate != (cp_sample_t)config->sample_rate)
 		return CP_AUDIO_ERR_SSB;
+	if (config->restoration_config.channel_count != config->channels)
+		return CP_AUDIO_ERR_RESTORATION;
+	if (config->restoration_config.sample_rate !=
+	    (cp_sample_t)config->sample_rate)
+		return CP_AUDIO_ERR_RESTORATION;
 	if (config->am_config.enabled && config->ssb_config.enabled)
 		return CP_AUDIO_ERR_SSB;
 	if (config->am_config.enabled) {
@@ -305,6 +318,11 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 	if (config->ssb_config.enabled) {
 		if (cp_ssb_init(&ssb, &config->ssb_config) != CP_OK)
 			return CP_AUDIO_ERR_SSB;
+	}
+	if (config->restoration_config.enabled) {
+		if (cp_restoration_init(&restoration,
+		    &config->restoration_config) != CP_OK)
+			return CP_AUDIO_ERR_RESTORATION;
 	}
 
 	return CP_AUDIO_OK;

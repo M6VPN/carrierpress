@@ -40,6 +40,9 @@ cp_block_default_config(struct cp_block_config *config, size_t channels)
 	config->multiband_preset = CP_MULTIBAND_PRESET_SPEECH;
 	cp_bass_eq_default_config(&config->bass_eq_config);
 	cp_am_default_config(&config->am_config);
+	cp_restoration_default_config(&config->restoration_config);
+	config->restoration_config.channel_count = channels;
+	config->restoration_config.sample_rate = config->sample_rate;
 	cp_ssb_default_config(&config->ssb_config);
 	config->limiter_ceiling = CP_DEFAULT_CEILING;
 }
@@ -74,6 +77,9 @@ cp_block_config_from_audio(struct cp_block_config *block_config,
 	block_config->am_config = audio_config->am_config;
 	block_config->am_config.channel_count = channels;
 	block_config->am_config.sample_rate = sample_rate;
+	block_config->restoration_config = audio_config->restoration_config;
+	block_config->restoration_config.channel_count = channels;
+	block_config->restoration_config.sample_rate = sample_rate;
 	block_config->ssb_config = audio_config->ssb_config;
 	block_config->ssb_config.channel_count = channels;
 	block_config->ssb_config.sample_rate = sample_rate;
@@ -93,6 +99,7 @@ cp_block_init(struct cp_block_processor *processor,
 	struct cp_bass_eq_config bass_eq_config;
 	struct cp_dehummer_config dehummer_config;
 	struct cp_multiband_config multiband_config;
+	struct cp_restoration_config restoration_config;
 	int status;
 
 	if (processor == NULL || config == NULL)
@@ -119,6 +126,14 @@ cp_block_init(struct cp_block_processor *processor,
 	dehummer_config.q_factor       = config->hum_q_factor;
 
 	status = cp_dehummer_init(&processor->dehummer, &dehummer_config);
+	if (status != CP_OK)
+		return status;
+
+	restoration_config = config->restoration_config;
+	restoration_config.channel_count = config->channels;
+	restoration_config.sample_rate = config->sample_rate;
+	status = cp_restoration_init(&processor->restoration,
+	    &restoration_config);
 	if (status != CP_OK)
 		return status;
 
@@ -220,6 +235,11 @@ cp_block_process(struct cp_block_processor *processor,
 	if (status != CP_OK)
 		return status;
 
+	status = cp_restoration_process(&processor->restoration, scratch,
+	    frames);
+	if (status != CP_OK)
+		return status;
+
 	status = cp_agc_process(&processor->agc, scratch, output, frames);
 	if (status != CP_OK)
 		return status;
@@ -266,6 +286,10 @@ cp_block_reset(struct cp_block_processor *processor)
 		return status;
 
 	status = cp_dehummer_reset(&processor->dehummer);
+	if (status != CP_OK)
+		return status;
+
+	status = cp_restoration_reset(&processor->restoration);
 	if (status != CP_OK)
 		return status;
 

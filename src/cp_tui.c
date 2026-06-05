@@ -28,6 +28,8 @@ static void	cp_tui_draw_dehummer(int,
 static void	cp_tui_draw_flags(int, unsigned int);
 static void	cp_tui_draw_header(const struct cp_tui_view *);
 static void	cp_tui_draw_multiband(int, const struct cp_monitor_snapshot *);
+static void	cp_tui_draw_restoration(int,
+		    const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_ssb(int, const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_keys(const struct cp_tui_view *,
 		    enum cp_control_bank);
@@ -123,10 +125,11 @@ cp_tui_update_view(struct cp_tui *tui, const struct cp_tui_view *view,
 
 	cp_tui_draw_am(18, snapshot);
 	cp_tui_draw_ssb(19, snapshot);
-	cp_tui_draw_flags(20, snapshot->stream_flags);
-	mvprintw(21, 2, "Control bank %s",
+	cp_tui_draw_restoration(20, snapshot);
+	cp_tui_draw_flags(21, snapshot->stream_flags);
+	mvprintw(22, 2, "Control bank %s",
 	    cp_control_bank_string(tui->control_bank));
-	mvprintw(22, 2, "DSP status %d  control %s status %d",
+	mvprintw(23, 2, "DSP status %d  control %s status %d",
 	    snapshot->dsp_status,
 	    cp_control_command_string(
 	    (enum cp_control_command_type)snapshot->control_command),
@@ -217,6 +220,25 @@ cp_tui_draw_ssb(int row, const struct cp_monitor_snapshot *snapshot)
 	    snapshot->ssb_lowpass_hz,
 	    cp_monitor_level_to_sample(snapshot->ssb_peak_limit),
 	    snapshot->ssb_phase_rotator_enabled ? "on" : "off");
+}
+
+static void
+cp_tui_draw_restoration(int row, const struct cp_monitor_snapshot *snapshot)
+{
+	if (!snapshot->restoration_enabled) {
+		mvprintw(row, 2, "Analysis off");
+		return;
+	}
+
+	mvprintw(row, 2, "Analysis clip %0.4f HF %0.4f clip_conf %0.3f "
+	    "loss_conf %0.3f flat %u repeat %u",
+	    cp_monitor_level_to_sample(snapshot->restoration_clipped_ratio),
+	    cp_monitor_level_to_sample(snapshot->restoration_hf_ratio),
+	    cp_monitor_level_to_sample(
+	    snapshot->restoration_clipping_confidence),
+	    cp_monitor_level_to_sample(snapshot->restoration_lossy_confidence),
+	    snapshot->restoration_flat_runs,
+	    snapshot->restoration_peak_repeats);
 }
 
 static void

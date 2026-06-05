@@ -19,6 +19,7 @@
 #include "cp_meter.h"
 #include "cp_monitor.h"
 #include "cp_multiband.h"
+#include "cp_restoration.h"
 #include "cp_resampler.h"
 #include "cp_ssb.h"
 #include "cp_types.h"

@@ -99,6 +99,22 @@ cp_monitor_snapshot_from_processor(const struct cp_block_processor *processor,
 	snapshot->multiband_enabled =
 	    processor->multiband.config.enabled ? 1u : 0u;
 	snapshot->multiband_preset = processor->multiband.config.preset;
+	snapshot->restoration_enabled =
+	    processor->restoration.config.enabled ? 1u : 0u;
+	snapshot->restoration_clipped_ratio = cp_monitor_sample_to_level(
+	    processor->restoration.metrics.clipped_sample_ratio);
+	snapshot->restoration_hf_ratio = cp_monitor_sample_to_level(
+	    processor->restoration.metrics.high_frequency_ratio);
+	snapshot->restoration_clipping_confidence =
+	    cp_monitor_sample_to_level(
+	    processor->restoration.metrics.clipping_confidence);
+	snapshot->restoration_lossy_confidence =
+	    cp_monitor_sample_to_level(
+	    processor->restoration.metrics.lossy_confidence);
+	snapshot->restoration_flat_runs =
+	    (unsigned int)processor->restoration.metrics.flat_run_count;
+	snapshot->restoration_peak_repeats =
+	    (unsigned int)processor->restoration.metrics.peak_repeat_count;
 	snapshot->bass_eq_enabled =
 	    processor->bass_eq.config.enabled ? 1u : 0u;
 	snapshot->bass_eq_low_hz =

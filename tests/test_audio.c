@@ -61,6 +61,8 @@ test_block_config_from_audio(void)
 	audio_config.multiband_enabled = 1;
 	audio_config.multiband_band_count = 3;
 	audio_config.multiband_preset = CP_MULTIBAND_PRESET_MUSIC;
+	audio_config.restoration_config.enabled = 1;
+	audio_config.restoration_config.clip_threshold = 0.97f;
 	audio_config.bass_eq_config.enabled = 1;
 	(void)cp_bass_eq_apply_preset(&audio_config.bass_eq_config, "warm");
 	cp_am_apply_preset(&audio_config.am_config, "am-shortwave");
@@ -80,6 +82,9 @@ test_block_config_from_audio(void)
 	    !block_config.multiband_enabled ||
 	    block_config.multiband_band_count != 3 ||
 	    block_config.multiband_preset != CP_MULTIBAND_PRESET_MUSIC ||
+	    !block_config.restoration_config.enabled ||
+	    block_config.restoration_config.clip_threshold != 0.97f ||
+	    block_config.restoration_config.channel_count != CP_CHANNELS_MONO ||
 	    !block_config.bass_eq_config.enabled ||
 	    block_config.bass_eq_config.preset != CP_BASS_EQ_PRESET_WARM ||
 	    block_config.bass_eq_config.channel_count != CP_CHANNELS_MONO ||
@@ -260,6 +265,14 @@ test_validate_config(void)
 	config.ssb_config.lowpass_hz = config.ssb_config.sample_rate;
 	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_SSB) {
 		printf("test_audio: invalid SSB config accepted\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&config);
+	config.restoration_config.enabled = 1;
+	config.restoration_config.clip_threshold = 2.0f;
+	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_RESTORATION) {
+		printf("test_audio: invalid analysis config accepted\n");
 		return 0;
 	}
 

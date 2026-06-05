@@ -1,10 +1,10 @@
 # CarrierPress
 
-CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.1 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, an optional dehummer, a simple optional multiband compressor foundation, optional static bass EQ, and a safe peak limiter.
+CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.1 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, an optional dehummer, a simple optional multiband compressor foundation, optional static bass EQ, an optional restoration analysis tap, and a safe peak limiter.
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
-Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
+Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.1 adds analysis-only clipping and high-frequency-loss indicators. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
 
 ## Table of Contents
 
@@ -109,6 +109,15 @@ Run the built-in synthetic tone through the v0.1 chain:
 
 The command prints input and output meter values plus AGC gain, gain dB, and gate state.
 
+Run the same self-test with the M9.1 restoration analyzer enabled:
+
+```sh
+./carrierpress --self-test --analyze
+```
+
+The analyzer reports clipping and high-frequency-loss indicators only. It does
+not repair audio, declip samples, or replace missing detail.
+
 Run the same self-test with the dehummer enabled:
 
 ```sh
@@ -147,6 +156,12 @@ Process a mono or stereo WAV file through the current chain:
 
 ```sh
 ./carrierpress --input input.wav --output output.wav
+```
+
+Process a WAV file and print source analysis metrics:
+
+```sh
+./carrierpress --input input.wav --output output.wav --analyze
 ```
 
 Process a WAV file with 60 Hz hum notches and four harmonics:
@@ -205,6 +220,12 @@ Print live-style meters once per second while playing:
 
 ```sh
 ./carrierpress --play input.wav --meter-interval-ms 1000
+```
+
+Print analysis metrics while playing:
+
+```sh
+./carrierpress --play input.wav --analyze --meter-interval-ms 1000
 ```
 
 Run playout through static bass EQ:
@@ -323,6 +344,12 @@ Run live processing with static bass EQ:
 ./carrierpress --live --bass-eq --bass-eq-preset music
 ```
 
+Run live processing with analysis metrics:
+
+```sh
+./carrierpress --live --analyze --meter-interval-ms 1000
+```
+
 Run live processing with AM-safe output shaping:
 
 ```sh
@@ -422,7 +449,7 @@ Run the TUI monitor:
 ./carrierpress --live --tui --input-device 2 --output-device 3 --sample-rate 48000 --channels 2 --block-size 256
 ```
 
-Check that input/output meters, AGC state, stream flags, multiband meters, and AM/SSB settings update. Press `q` or `Ctrl-C` to stop.
+Check that input/output meters, AGC state, stream flags, multiband meters, analysis metrics when enabled, and AM/SSB settings update. Press `q` or `Ctrl-C` to stop.
 
 For live control testing, press `d` to toggle dehummer and `m` to cycle
 multiband off, speech, and music. For AM control testing, add `--am`, press
@@ -454,10 +481,11 @@ See [docs/validation.md](docs/validation.md).
 `make quality` runs a fixed measurement pass over silence, speech-like steps,
 music-like harmonic content, clipped sine, DC offset, 50 Hz hum, 60 Hz hum,
 burst transients, high-frequency content, and stereo imbalance. It prints RMS,
-peak, crest factor, DC, hum-bin, and stereo-balance measurements for the
-current default, dehummer, multiband plus bass EQ, AM, and SSB profiles. This is
-a repeatable QA report for tuning and regression review, not a listening test,
-spectrum measurement, or compliance claim.
+peak, crest factor, DC, hum-bin, stereo-balance, clipping indicator, and
+high-frequency-loss indicator measurements for the current default, dehummer,
+multiband plus bass EQ, AM, and SSB profiles. This is a repeatable QA report
+for tuning and regression review, not a listening test, spectrum measurement,
+restoration-quality claim, or compliance claim.
 
 TUI control is preset-only for DSP changes in this milestone. It can switch the
 dehummer on or off, cycle multiband between off, speech, and music, switch the
@@ -465,6 +493,24 @@ AM and SSB output chains between validated presets, and skip to the next track
 during playlist playout. AM and SSB controls are split into explicit banks so AM
 preset keys do not affect SSB mode, and SSB preset keys do not affect AM mode.
 It does not expose arbitrary DSP parameter editing.
+
+## Restoration Analysis
+
+The M9.1 analyzer is disabled by default. Enable it with `--analyze`. It
+observes the post-DC-blocker and post-dehummer signal before AGC, then reports:
+
+| Metric                             | Meaning                                      |
+| ---------------------------------- | -------------------------------------------- |
+| `analysis_clip_ratio`              | Samples near the configured clipping ceiling |
+| `analysis_hf_ratio`                | Simple high-frequency activity indicator     |
+| `analysis_clip_confidence`         | Conservative clipping suspicion score        |
+| `analysis_lossy_confidence`        | High-frequency-loss suspicion score          |
+| `flat_runs`                        | Repeated near-peak flat sample runs          |
+| `peak_repeats`                     | Repeated near-peak samples                   |
+
+The analyzer does not modify audio. It is intended to guide later clean-room
+declipper and delossifier research. A high score is not proof of source damage,
+and a low score is not proof that a source is clean.
 
 ## AGC Controls
 

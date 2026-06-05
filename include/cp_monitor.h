@@ -39,6 +39,13 @@ struct cp_monitor_snapshot {
 	unsigned int dehummer_harmonic_count;
 	unsigned int multiband_enabled;
 	int multiband_preset;
+	unsigned int restoration_enabled;
+	unsigned int restoration_clipped_ratio;
+	unsigned int restoration_hf_ratio;
+	unsigned int restoration_clipping_confidence;
+	unsigned int restoration_lossy_confidence;
+	unsigned int restoration_flat_runs;
+	unsigned int restoration_peak_repeats;
 	unsigned int bass_eq_enabled;
 	unsigned int bass_eq_low_hz;
 	int bass_eq_low_gain_db_centibel;
