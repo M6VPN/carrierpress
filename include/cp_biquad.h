@@ -27,6 +27,10 @@ int		cp_biquad_highpass(struct cp_biquad_coeff *, cp_sample_t,
 		    cp_sample_t, cp_sample_t);
 int		cp_biquad_allpass(struct cp_biquad_coeff *, cp_sample_t,
 		    cp_sample_t, cp_sample_t);
+int		cp_biquad_low_shelf(struct cp_biquad_coeff *, cp_sample_t,
+		    cp_sample_t, cp_sample_t);
+int		cp_biquad_high_shelf(struct cp_biquad_coeff *, cp_sample_t,
+		    cp_sample_t, cp_sample_t);
 cp_sample_t	cp_biquad_process_sample(const struct cp_biquad_coeff *,
 		    struct cp_biquad_state *, cp_sample_t);
 int		cp_biquad_reset(struct cp_biquad_state *);

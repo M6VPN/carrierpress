@@ -10,6 +10,7 @@
 #include <curses.h>
 
 #include "cp_agc.h"
+#include "cp_bass_eq.h"
 #include "cp_multiband.h"
 #include "cp_ssb.h"
 #include "cp_tui.h"
@@ -20,6 +21,8 @@
 static void	cp_tui_draw_bar(int, int, const char *, cp_sample_t,
 		    cp_sample_t);
 static void	cp_tui_draw_am(int, const struct cp_monitor_snapshot *);
+static void	cp_tui_draw_bass_eq(int,
+		    const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_dehummer(int,
 		    const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_flags(int, unsigned int);
@@ -116,6 +119,7 @@ cp_tui_update_view(struct cp_tui *tui, const struct cp_tui_view *view,
 
 	cp_tui_draw_dehummer(11, snapshot);
 	cp_tui_draw_multiband(12, snapshot);
+	cp_tui_draw_bass_eq(17, snapshot);
 
 	cp_tui_draw_am(18, snapshot);
 	cp_tui_draw_ssb(19, snapshot);
@@ -171,6 +175,28 @@ cp_tui_draw_am(int row, const struct cp_monitor_snapshot *snapshot)
 	    cp_monitor_level_to_sample(snapshot->am_negative_peak),
 	    snapshot->am_asymmetry_enabled ? "on" : "off",
 	    cp_monitor_level_to_sample(snapshot->am_asymmetry_ratio));
+}
+
+static void
+cp_tui_draw_bass_eq(int row, const struct cp_monitor_snapshot *snapshot)
+{
+	const char *preset_name;
+
+	preset_name = cp_bass_eq_preset_string(
+	    (enum cp_bass_eq_preset)snapshot->bass_eq_preset);
+	if (preset_name == NULL)
+		preset_name = "unknown";
+
+	mvprintw(row, 2, "Bass EQ %s preset %s bass %u Hz %0.2f dB "
+	    "presence %u Hz %0.2f dB",
+	    snapshot->bass_eq_enabled ? "on" : "off",
+	    preset_name,
+	    snapshot->bass_eq_low_hz,
+	    cp_monitor_centibel_to_db(
+	    snapshot->bass_eq_low_gain_db_centibel),
+	    snapshot->bass_eq_high_hz,
+	    cp_monitor_centibel_to_db(
+	    snapshot->bass_eq_high_gain_db_centibel));
 }
 
 static void

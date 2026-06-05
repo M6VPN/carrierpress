@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "cp_am.h"
+#include "cp_bass_eq.h"
 #include "cp_block.h"
 #include "cp_monitor.h"
 #include "cp_ssb.h"
@@ -98,6 +99,17 @@ cp_monitor_snapshot_from_processor(const struct cp_block_processor *processor,
 	snapshot->multiband_enabled =
 	    processor->multiband.config.enabled ? 1u : 0u;
 	snapshot->multiband_preset = processor->multiband.config.preset;
+	snapshot->bass_eq_enabled =
+	    processor->bass_eq.config.enabled ? 1u : 0u;
+	snapshot->bass_eq_low_hz =
+	    (unsigned int)lrintf(processor->bass_eq.config.low_shelf_hz);
+	snapshot->bass_eq_low_gain_db_centibel =
+	    cp_monitor_db_to_centibel(processor->bass_eq.config.low_gain_db);
+	snapshot->bass_eq_high_hz =
+	    (unsigned int)lrintf(processor->bass_eq.config.high_shelf_hz);
+	snapshot->bass_eq_high_gain_db_centibel =
+	    cp_monitor_db_to_centibel(processor->bass_eq.config.high_gain_db);
+	snapshot->bass_eq_preset = processor->bass_eq.config.preset;
 	snapshot->am_enabled = processor->am.config.enabled ? 1u : 0u;
 	snapshot->am_highpass_hz =
 	    (unsigned int)lrintf(processor->am.config.highpass_hz);

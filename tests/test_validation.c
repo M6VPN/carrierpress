@@ -97,6 +97,9 @@ cp_validation_config(struct cp_block_config *config,
 		config->multiband_enabled = 1;
 		config->multiband_band_count = 3;
 		config->multiband_preset = CP_MULTIBAND_PRESET_SPEECH;
+		config->bass_eq_config.enabled = 1;
+		(void)cp_bass_eq_apply_preset(&config->bass_eq_config,
+		    "speech");
 		(void)cp_am_apply_preset(&config->am_config, "am-shortwave");
 		config->am_config.enabled = 1;
 	}
@@ -107,6 +110,9 @@ cp_validation_config(struct cp_block_config *config,
 		config->multiband_enabled = 1;
 		config->multiband_band_count = 3;
 		config->multiband_preset = CP_MULTIBAND_PRESET_SPEECH;
+		config->bass_eq_config.enabled = 1;
+		(void)cp_bass_eq_apply_preset(&config->bass_eq_config,
+		    "speech");
 		(void)cp_ssb_apply_preset(&config->ssb_config, "ssb-narrow");
 		config->ssb_config.enabled = 1;
 	}

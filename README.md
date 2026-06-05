@@ -1,10 +1,10 @@
 # CarrierPress
 
-CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.1 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, an optional dehummer, a simple optional multiband compressor foundation, and a safe peak limiter.
+CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.1 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, an optional dehummer, a simple optional multiband compressor foundation, optional static bass EQ, and a safe peak limiter.
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
-Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
+Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
 
 ## Table of Contents
 
@@ -115,6 +115,13 @@ Run the self-test with the M5 multiband compressor enabled:
 ./carrierpress --self-test --multiband --multiband-bands 3 --multiband-preset speech
 ```
 
+Run the self-test with the M8.1 static bass EQ enabled:
+
+```sh
+./carrierpress --self-test --bass-eq --bass-eq-preset music
+./carrierpress --self-test --bass-eq --bass-gain-db 2.0 --bass-frequency 120 --presence-gain-db 0.5
+```
+
 Run the self-test with the M6 AM output chain enabled:
 
 ```sh
@@ -140,6 +147,12 @@ Process a WAV file with 60 Hz hum notches and four harmonics:
 
 ```sh
 ./carrierpress --input input.wav --output output.wav --dehummer --hum-frequency 60 --hum-harmonics 4
+```
+
+Process a WAV file with static bass EQ:
+
+```sh
+./carrierpress --input input.wav --output output.wav --bass-eq --bass-eq-preset warm
 ```
 
 WAV support requires a `WITH_SNDFILE=1` build. Without it, the command exits with:
@@ -186,6 +199,12 @@ Print live-style meters once per second while playing:
 
 ```sh
 ./carrierpress --play input.wav --meter-interval-ms 1000
+```
+
+Run playout through static bass EQ:
+
+```sh
+./carrierpress --play input.wav --bass-eq --bass-eq-preset music
 ```
 
 Stop play mode with `Ctrl-C`. CarrierPress stops cleanly between processed
@@ -290,6 +309,12 @@ Run live processing with the simple speech multiband preset:
 
 ```sh
 ./carrierpress --live --multiband --multiband-bands 3 --multiband-preset speech
+```
+
+Run live processing with static bass EQ:
+
+```sh
+./carrierpress --live --bass-eq --bass-eq-preset music
 ```
 
 Run live processing with AM-safe output shaping:
@@ -473,6 +498,26 @@ Enable it with `--multiband`. The `speech` preset uses slightly stronger conserv
 ```
 
 M5 uses cascaded 2nd-order low-pass sections with subtractive band creation for the crossover scaffold. It is bounded and deterministic, but it is not final broadcast processing.
+
+## Bass EQ
+
+The M8.1 bass EQ mode is a static two-shelf tone-shaping foundation. It runs after the first multiband compressor and before AM or SSB output shaping. It is disabled by default and leaves audio unchanged unless `--bass-eq` is selected.
+
+Enable it with `--bass-eq`. Presets are conservative starting points:
+
+| Preset   | Purpose                                      |
+| -------- | -------------------------------------------- |
+| `flat`   | No shelf gain changes                        |
+| `speech` | Slight low reduction and presence lift       |
+| `music`  | Modest bass lift with small presence lift    |
+| `warm`   | Mild low lift with softer presence           |
+
+```sh
+./carrierpress --input input.wav --output output.wav --bass-eq --bass-eq-preset music
+./carrierpress --input input.wav --output output.wav --bass-eq --bass-gain-db 2.0 --bass-frequency 120 --presence-gain-db 0.5
+```
+
+M8.1 does not implement automatic EQ, immersive bass, true bass, subharmonic synthesis, or adaptive source analysis. It is a static, bounded bass and presence EQ stage for later tuning work.
 
 ## AM Mode
 

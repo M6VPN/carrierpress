@@ -25,8 +25,8 @@ The current validation executable generates these synthetic sources:
 Each source is processed through:
 
 - default chain
-- dehummer, multiband, and AM shortwave chain
-- dehummer, multiband, and SSB narrow chain
+- dehummer, multiband, static bass EQ, and AM shortwave chain
+- dehummer, multiband, static bass EQ, and SSB narrow chain
 
 The report checks:
 
@@ -42,6 +42,10 @@ non-finite input rejection.
 M7.4 adds unit coverage for live/playout config parity, shared monitor snapshot
 fields, and AM/SSB TUI bank locking. These tests verify command routing and
 state reporting, not hardware audio behavior.
+
+M8.1 adds unit coverage for static bass EQ shelf behavior, disabled passthrough,
+invalid config rejection, stereo stability, and finite output under non-finite
+input.
 
 Validation does not prove regulatory compliance, occupied bandwidth compliance,
 sample-rate conversion quality, or broadcast-processor quality. Live hardware

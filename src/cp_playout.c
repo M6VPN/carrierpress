@@ -301,6 +301,8 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	audio_config.sample_rate = output_rate;
 	audio_config.sample_rate_explicit = 1;
 	audio_config.channels = channels;
+	audio_config.bass_eq_config.sample_rate = (cp_sample_t)output_rate;
+	audio_config.bass_eq_config.channel_count = channels;
 	audio_config.am_config.sample_rate = (cp_sample_t)output_rate;
 	audio_config.am_config.channel_count = channels;
 	audio_config.ssb_config.sample_rate = (cp_sample_t)output_rate;
@@ -346,6 +348,8 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	    output_info->defaultSampleRate)) {
 		output_rate = output_info->defaultSampleRate;
 		audio_config.sample_rate = output_rate;
+		audio_config.bass_eq_config.sample_rate =
+		    (cp_sample_t)output_rate;
 		audio_config.am_config.sample_rate = (cp_sample_t)output_rate;
 		audio_config.ssb_config.sample_rate = (cp_sample_t)output_rate;
 		if (cp_audio_validate_config(&audio_config) != CP_AUDIO_OK) {

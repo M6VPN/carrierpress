@@ -100,6 +100,8 @@ test_snapshot_from_processor(void)
 	config.multiband_enabled = 1;
 	config.multiband_band_count = 3;
 	config.multiband_preset = CP_MULTIBAND_PRESET_MUSIC;
+	config.bass_eq_config.enabled = 1;
+	(void)cp_bass_eq_apply_preset(&config.bass_eq_config, "music");
 	cp_am_apply_preset(&config.am_config, "am-shortwave");
 	config.am_config.enabled = 1;
 	if (cp_block_init(&processor, &config) != CP_OK) {
@@ -117,6 +119,9 @@ test_snapshot_from_processor(void)
 	    !snapshot.multiband_enabled ||
 	    snapshot.multiband_preset != CP_MULTIBAND_PRESET_MUSIC ||
 	    snapshot.band_count != 3 ||
+	    !snapshot.bass_eq_enabled ||
+	    snapshot.bass_eq_preset != CP_BASS_EQ_PRESET_MUSIC ||
+	    snapshot.bass_eq_low_hz != 120u ||
 	    !snapshot.am_enabled ||
 	    snapshot.am_preset != CP_AM_PRESET_SHORTWAVE ||
 	    snapshot.ssb_enabled) {

@@ -39,6 +39,12 @@ struct cp_portaudio_runtime {
 	atomic_uint dehummer_harmonic_count;
 	atomic_uint multiband_enabled;
 	atomic_int multiband_preset;
+	atomic_uint bass_eq_enabled;
+	atomic_uint bass_eq_low_hz;
+	atomic_int bass_eq_low_gain_db_centibel;
+	atomic_uint bass_eq_high_hz;
+	atomic_int bass_eq_high_gain_db_centibel;
+	atomic_int bass_eq_preset;
 	atomic_uint band_count;
 	atomic_uint band_rms[CP_MONITOR_MAX_BANDS];
 	atomic_int band_gr_db_centibel[CP_MONITOR_MAX_BANDS];
@@ -480,6 +486,12 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	atomic_init(&runtime->multiband_enabled, 0u);
 	atomic_init(&runtime->multiband_preset,
 	    (int)CP_MULTIBAND_PRESET_SPEECH);
+	atomic_init(&runtime->bass_eq_enabled, 0u);
+	atomic_init(&runtime->bass_eq_low_hz, 0u);
+	atomic_init(&runtime->bass_eq_low_gain_db_centibel, 0);
+	atomic_init(&runtime->bass_eq_high_hz, 0u);
+	atomic_init(&runtime->bass_eq_high_gain_db_centibel, 0);
+	atomic_init(&runtime->bass_eq_preset, (int)CP_BASS_EQ_PRESET_FLAT);
 	atomic_init(&runtime->band_count, 0u);
 	for (band = 0; band < CP_MONITOR_MAX_BANDS; band++) {
 		atomic_init(&runtime->band_rms[band], 0u);
@@ -557,6 +569,16 @@ cp_pa_load_snapshot(struct cp_portaudio_runtime *runtime,
 	    atomic_load(&runtime->multiband_enabled);
 	snapshot->multiband_preset =
 	    atomic_load(&runtime->multiband_preset);
+	snapshot->bass_eq_enabled =
+	    atomic_load(&runtime->bass_eq_enabled);
+	snapshot->bass_eq_low_hz = atomic_load(&runtime->bass_eq_low_hz);
+	snapshot->bass_eq_low_gain_db_centibel =
+	    atomic_load(&runtime->bass_eq_low_gain_db_centibel);
+	snapshot->bass_eq_high_hz =
+	    atomic_load(&runtime->bass_eq_high_hz);
+	snapshot->bass_eq_high_gain_db_centibel =
+	    atomic_load(&runtime->bass_eq_high_gain_db_centibel);
+	snapshot->bass_eq_preset = atomic_load(&runtime->bass_eq_preset);
 	snapshot->am_enabled = atomic_load(&runtime->am_enabled);
 	snapshot->am_highpass_hz = atomic_load(&runtime->am_highpass_hz);
 	snapshot->am_lowpass_hz = atomic_load(&runtime->am_lowpass_hz);
@@ -776,6 +798,18 @@ cp_pa_store_meters(struct cp_portaudio_runtime *runtime)
 	    snapshot.multiband_enabled);
 	atomic_store(&runtime->multiband_preset,
 	    snapshot.multiband_preset);
+	atomic_store(&runtime->bass_eq_enabled,
+	    snapshot.bass_eq_enabled);
+	atomic_store(&runtime->bass_eq_low_hz,
+	    snapshot.bass_eq_low_hz);
+	atomic_store(&runtime->bass_eq_low_gain_db_centibel,
+	    snapshot.bass_eq_low_gain_db_centibel);
+	atomic_store(&runtime->bass_eq_high_hz,
+	    snapshot.bass_eq_high_hz);
+	atomic_store(&runtime->bass_eq_high_gain_db_centibel,
+	    snapshot.bass_eq_high_gain_db_centibel);
+	atomic_store(&runtime->bass_eq_preset,
+	    snapshot.bass_eq_preset);
 
 	atomic_store(&runtime->band_count, (unsigned int)snapshot.band_count);
 	for (band = 0; band < snapshot.band_count; band++) {

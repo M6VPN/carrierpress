@@ -61,6 +61,8 @@ test_block_config_from_audio(void)
 	audio_config.multiband_enabled = 1;
 	audio_config.multiband_band_count = 3;
 	audio_config.multiband_preset = CP_MULTIBAND_PRESET_MUSIC;
+	audio_config.bass_eq_config.enabled = 1;
+	(void)cp_bass_eq_apply_preset(&audio_config.bass_eq_config, "warm");
 	cp_am_apply_preset(&audio_config.am_config, "am-shortwave");
 	audio_config.am_config.enabled = 1;
 
@@ -78,6 +80,9 @@ test_block_config_from_audio(void)
 	    !block_config.multiband_enabled ||
 	    block_config.multiband_band_count != 3 ||
 	    block_config.multiband_preset != CP_MULTIBAND_PRESET_MUSIC ||
+	    !block_config.bass_eq_config.enabled ||
+	    block_config.bass_eq_config.preset != CP_BASS_EQ_PRESET_WARM ||
+	    block_config.bass_eq_config.channel_count != CP_CHANNELS_MONO ||
 	    !block_config.am_config.enabled ||
 	    block_config.am_config.channel_count != CP_CHANNELS_MONO ||
 	    block_config.ssb_config.enabled) {
@@ -223,6 +228,14 @@ test_validate_config(void)
 	config.multiband_band_count = CP_MULTIBAND_M5_MAX_BANDS + 1;
 	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_MB) {
 		printf("test_audio: invalid multiband band count accepted\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&config);
+	config.bass_eq_config.enabled = 1;
+	config.bass_eq_config.low_gain_db = CP_BASS_EQ_MAX_GAIN_DB + 1.0f;
+	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_BASS_EQ) {
+		printf("test_audio: invalid bass EQ config accepted\n");
 		return 0;
 	}
 

@@ -74,7 +74,7 @@ Implemented as a host-path parity pass. Live mode and WAV playout now share host
 
 ## M8 auto EQ and bass modules
 
-Research auto EQ, bass EQ, immersive bass, and true bass style functions without copying proprietary algorithms or presets.
+Partially implemented. CarrierPress now has an optional static bass EQ foundation with conservative flat, speech, music, and warm presets. It uses bounded low-shelf and high-shelf filters after the first multiband compressor and before AM or SSB shaping. Automatic EQ, immersive bass, true bass, and adaptive source analysis remain deferred.
 
 ## M9 declipper and delossifier research
 

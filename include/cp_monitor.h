@@ -4,6 +4,7 @@
 #ifndef CP_MONITOR_H
 #define CP_MONITOR_H
 
+#include "cp_bass_eq.h"
 #include "cp_multiband.h"
 #include "cp_types.h"
 
@@ -38,6 +39,12 @@ struct cp_monitor_snapshot {
 	unsigned int dehummer_harmonic_count;
 	unsigned int multiband_enabled;
 	int multiband_preset;
+	unsigned int bass_eq_enabled;
+	unsigned int bass_eq_low_hz;
+	int bass_eq_low_gain_db_centibel;
+	unsigned int bass_eq_high_hz;
+	int bass_eq_high_gain_db_centibel;
+	int bass_eq_preset;
 	unsigned int am_enabled;
 	unsigned int am_highpass_hz;
 	unsigned int am_lowpass_hz;

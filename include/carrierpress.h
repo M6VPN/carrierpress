@@ -7,6 +7,7 @@
 #include "cp_agc.h"
 #include "cp_am.h"
 #include "cp_audio.h"
+#include "cp_bass_eq.h"
 #include "cp_biquad.h"
 #include "cp_block.h"
 #include "cp_compressor.h"

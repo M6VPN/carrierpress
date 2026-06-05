@@ -20,6 +20,7 @@ CORE_SRCS = \
 	src/cp_agc.c \
 	src/cp_am.c \
 	src/cp_audio.c \
+	src/cp_bass_eq.c \
 	src/cp_biquad.c \
 	src/cp_block.c \
 	src/cp_compressor.c \
@@ -40,6 +41,7 @@ TEST_SRCS = \
 	tests/test_agc.c \
 	tests/test_am.c \
 	tests/test_audio.c \
+	tests/test_bass_eq.c \
 	tests/test_biquad.c \
 	tests/test_compressor.c \
 	tests/test_control.c \
@@ -99,6 +101,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_agc \
 	$(TEST_BIN_DIR)/test_am \
 	$(TEST_BIN_DIR)/test_audio \
+	$(TEST_BIN_DIR)/test_bass_eq \
 	$(TEST_BIN_DIR)/test_biquad \
 	$(TEST_BIN_DIR)/test_compressor \
 	$(TEST_BIN_DIR)/test_control \
@@ -139,6 +142,10 @@ $(TEST_BIN_DIR)/test_am: $(TEST_OBJ_DIR)/tests/test_am.o $(TEST_CORE_OBJS)
 $(TEST_BIN_DIR)/test_audio: $(TEST_OBJ_DIR)/tests/test_audio.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_audio.o $(TEST_CORE_OBJS) $(LDLIBS)
+
+$(TEST_BIN_DIR)/test_bass_eq: $(TEST_OBJ_DIR)/tests/test_bass_eq.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_bass_eq.o $(TEST_CORE_OBJS) $(LDLIBS)
 
 $(TEST_BIN_DIR)/test_biquad: $(TEST_OBJ_DIR)/tests/test_biquad.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
@@ -205,6 +212,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_agc
 	./$(TEST_BIN_DIR)/test_am
 	./$(TEST_BIN_DIR)/test_audio
+	./$(TEST_BIN_DIR)/test_bass_eq
 	./$(TEST_BIN_DIR)/test_biquad
 	./$(TEST_BIN_DIR)/test_compressor
 	./$(TEST_BIN_DIR)/test_control
@@ -257,6 +265,7 @@ clean:
 	rm -rf $(BUILD_DIR)
 	rm -f carrierpress libcarrierpress.a src/*.o tests/*.o
 	rm -f tests/test_agc tests/test_am tests/test_audio tests/test_biquad
+	rm -f tests/test_bass_eq
 	rm -f tests/test_compressor tests/test_crossover
 	rm -f tests/test_control
 	rm -f tests/test_dc_blocker tests/test_dehummer

@@ -30,6 +30,8 @@ static volatile sig_atomic_t stop_requested = 0;
 static void	handle_signal(int);
 #endif
 static int	parse_am_preset(struct cp_am_config *, const char *);
+static int	parse_bass_eq_preset(struct cp_bass_eq_config *,
+		    const char *);
 static int	parse_double_arg(const char *, double *);
 static int	parse_int_arg(const char *, int *);
 static int	parse_multiband_preset(const char *,
@@ -201,6 +203,48 @@ main(int argc, char *argv[])
 			}
 			audio_config.multiband_preset =
 			    block_config.multiband_preset;
+		} else if (strcmp(argv[arg], "--bass-eq") == 0) {
+			block_config.bass_eq_config.enabled = 1;
+			audio_config.bass_eq_config.enabled = 1;
+		} else if (strcmp(argv[arg], "--bass-eq-preset") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_bass_eq_preset(&block_config.bass_eq_config,
+			    argv[++arg])) {
+				usage(argv[0]);
+				return 1;
+			}
+			audio_config.bass_eq_config =
+			    block_config.bass_eq_config;
+		} else if (strcmp(argv[arg], "--bass-gain-db") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.bass_eq_config.low_gain_db =
+			    (cp_sample_t)parsed_double;
+			audio_config.bass_eq_config.low_gain_db =
+			    (cp_sample_t)parsed_double;
+		} else if (strcmp(argv[arg], "--bass-frequency") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.bass_eq_config.low_shelf_hz =
+			    (cp_sample_t)parsed_double;
+			audio_config.bass_eq_config.low_shelf_hz =
+			    (cp_sample_t)parsed_double;
+		} else if (strcmp(argv[arg], "--presence-gain-db") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.bass_eq_config.high_gain_db =
+			    (cp_sample_t)parsed_double;
+			audio_config.bass_eq_config.high_gain_db =
+			    (cp_sample_t)parsed_double;
 		} else if (strcmp(argv[arg], "--am") == 0) {
 			block_config.am_config.enabled = 1;
 			audio_config.am_config.enabled = 1;
@@ -317,6 +361,9 @@ main(int argc, char *argv[])
 		}
 	}
 
+	audio_config.bass_eq_config.channel_count = audio_config.channels;
+	audio_config.bass_eq_config.sample_rate =
+	    (cp_sample_t)audio_config.sample_rate;
 	audio_config.am_config.channel_count = audio_config.channels;
 	audio_config.am_config.sample_rate = (cp_sample_t)audio_config.sample_rate;
 	audio_config.ssb_config.channel_count = audio_config.channels;
@@ -403,6 +450,17 @@ parse_am_preset(struct cp_am_config *config, const char *text)
 	if (config == NULL || text == NULL)
 		return 0;
 	if (cp_am_apply_preset(config, text) != CP_OK)
+		return 0;
+
+	return 1;
+}
+
+static int
+parse_bass_eq_preset(struct cp_bass_eq_config *config, const char *text)
+{
+	if (config == NULL || text == NULL)
+		return 0;
+	if (cp_bass_eq_apply_preset(config, text) != CP_OK)
 		return 0;
 
 	return 1;
@@ -752,6 +810,14 @@ run_self_test(const struct cp_block_config *self_config)
 		    processor.multiband.band_rms[band], band + 1,
 		    processor.multiband.band_gain_reduction_db[band]);
 	}
+	printf("bass_eq=%s preset=%s bass_hz=%0.1f bass_gain_db=%0.2f "
+	    "presence_hz=%0.1f presence_gain_db=%0.2f\n",
+	    processor.bass_eq.config.enabled ? "on" : "off",
+	    cp_bass_eq_preset_string(processor.bass_eq.config.preset),
+	    processor.bass_eq.config.low_shelf_hz,
+	    processor.bass_eq.config.low_gain_db,
+	    processor.bass_eq.config.high_shelf_hz,
+	    processor.bass_eq.config.high_gain_db);
 	printf("input_peak=%0.6f input_rms=%0.6f\n",
 	    processor.input_meter.peak[0], processor.input_meter.rms[0]);
 	printf("am=%s preset=%s highpass=%0.1f lowpass=%0.1f "
@@ -809,6 +875,9 @@ usage(const char *program)
 	    "--hum-harmonics N --hum-q Q\n");
 	printf("multiband options: --multiband --multiband-bands 2|3|4 "
 	    "--multiband-preset speech|music\n");
+	printf("bass EQ options: --bass-eq --bass-eq-preset "
+	    "flat|speech|music|warm --bass-gain-db DB "
+	    "--bass-frequency HZ --presence-gain-db DB\n");
 	printf("AM options: --am --am-preset am-safe|am-shortwave|am-wide|am-voice "
 	    "--am-lowpass HZ --am-highpass HZ --am-phase-rotator "
 	    "--am-positive-peak FLOAT --am-negative-peak FLOAT "

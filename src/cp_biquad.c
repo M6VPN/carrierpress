@@ -6,6 +6,8 @@
 #include "cp_biquad.h"
 
 #define CP_BIQUAD_DENORMAL_FLOOR	(0.00000000000000000001f)
+#define CP_BIQUAD_MAX_GAIN_DB	(24.0f)
+#define CP_BIQUAD_MIN_GAIN_DB	(-24.0f)
 #define CP_BIQUAD_MAX_Q		(1000.0f)
 #define CP_BIQUAD_MIN_Q		(0.1f)
 #define CP_BIQUAD_TWO_PI	(6.28318530717958647692f)
@@ -14,6 +16,96 @@ static cp_sample_t	cp_biquad_clean(cp_sample_t);
 static int		cp_biquad_check_filter(const struct cp_biquad_coeff *);
 static int		cp_biquad_check_params(cp_sample_t, cp_sample_t,
 			    cp_sample_t);
+
+int
+cp_biquad_low_shelf(struct cp_biquad_coeff *coeff, cp_sample_t sample_rate,
+	cp_sample_t frequency, cp_sample_t gain_db)
+{
+	cp_sample_t a;
+	cp_sample_t a0;
+	cp_sample_t alpha;
+	cp_sample_t cos_w0;
+	cp_sample_t root_a;
+	cp_sample_t sin_w0;
+	cp_sample_t w0;
+
+	if (coeff == NULL)
+		return CP_ERR_NULL;
+	if (cp_biquad_check_params(sample_rate, frequency, 1.0f) != CP_OK)
+		return CP_ERR_RANGE;
+	if (!isfinite(gain_db) || gain_db < CP_BIQUAD_MIN_GAIN_DB ||
+	    gain_db > CP_BIQUAD_MAX_GAIN_DB)
+		return CP_ERR_RANGE;
+
+	w0     = (CP_BIQUAD_TWO_PI * frequency) / sample_rate;
+	sin_w0 = sinf(w0);
+	cos_w0 = cosf(w0);
+	a      = powf(10.0f, gain_db / 40.0f);
+	root_a = sqrtf(a);
+	alpha  = sin_w0 * 0.5f * sqrtf(2.0f);
+	a0 = (a + 1.0f) + ((a - 1.0f) * cos_w0) +
+	    (2.0f * root_a * alpha);
+	if (!isfinite(a0) || a0 <= 0.0f)
+		return CP_ERR_RANGE;
+
+	coeff->b0 = (a * ((a + 1.0f) - ((a - 1.0f) * cos_w0) +
+	    (2.0f * root_a * alpha))) / a0;
+	coeff->b1 = (2.0f * a * ((a - 1.0f) -
+	    ((a + 1.0f) * cos_w0))) / a0;
+	coeff->b2 = (a * ((a + 1.0f) - ((a - 1.0f) * cos_w0) -
+	    (2.0f * root_a * alpha))) / a0;
+	coeff->a1 = (-2.0f * ((a - 1.0f) +
+	    ((a + 1.0f) * cos_w0))) / a0;
+	coeff->a2 = ((a + 1.0f) + ((a - 1.0f) * cos_w0) -
+	    (2.0f * root_a * alpha)) / a0;
+
+	return cp_biquad_check_filter(coeff);
+}
+
+int
+cp_biquad_high_shelf(struct cp_biquad_coeff *coeff, cp_sample_t sample_rate,
+	cp_sample_t frequency, cp_sample_t gain_db)
+{
+	cp_sample_t a;
+	cp_sample_t a0;
+	cp_sample_t alpha;
+	cp_sample_t cos_w0;
+	cp_sample_t root_a;
+	cp_sample_t sin_w0;
+	cp_sample_t w0;
+
+	if (coeff == NULL)
+		return CP_ERR_NULL;
+	if (cp_biquad_check_params(sample_rate, frequency, 1.0f) != CP_OK)
+		return CP_ERR_RANGE;
+	if (!isfinite(gain_db) || gain_db < CP_BIQUAD_MIN_GAIN_DB ||
+	    gain_db > CP_BIQUAD_MAX_GAIN_DB)
+		return CP_ERR_RANGE;
+
+	w0     = (CP_BIQUAD_TWO_PI * frequency) / sample_rate;
+	sin_w0 = sinf(w0);
+	cos_w0 = cosf(w0);
+	a      = powf(10.0f, gain_db / 40.0f);
+	root_a = sqrtf(a);
+	alpha  = sin_w0 * 0.5f * sqrtf(2.0f);
+	a0 = (a + 1.0f) - ((a - 1.0f) * cos_w0) +
+	    (2.0f * root_a * alpha);
+	if (!isfinite(a0) || a0 <= 0.0f)
+		return CP_ERR_RANGE;
+
+	coeff->b0 = (a * ((a + 1.0f) + ((a - 1.0f) * cos_w0) +
+	    (2.0f * root_a * alpha))) / a0;
+	coeff->b1 = (-2.0f * a * ((a - 1.0f) +
+	    ((a + 1.0f) * cos_w0))) / a0;
+	coeff->b2 = (a * ((a + 1.0f) + ((a - 1.0f) * cos_w0) -
+	    (2.0f * root_a * alpha))) / a0;
+	coeff->a1 = (2.0f * ((a - 1.0f) -
+	    ((a + 1.0f) * cos_w0))) / a0;
+	coeff->a2 = ((a + 1.0f) - ((a - 1.0f) * cos_w0) -
+	    (2.0f * root_a * alpha)) / a0;
+
+	return cp_biquad_check_filter(coeff);
+}
 
 int
 cp_biquad_notch(struct cp_biquad_coeff *coeff, cp_sample_t sample_rate,

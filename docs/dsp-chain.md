@@ -20,7 +20,30 @@ final limiter / clipper
 output
 ```
 
-v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, first multiband compressor scaffold, AM output-chain foundation, SSB output-chain foundation, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, first multiband compressor scaffold, static bass EQ foundation, AM output-chain foundation, SSB output-chain foundation, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+
+## M8.1 Bass EQ Behavior
+
+The active M8.1 chain is:
+
+```text
+input
+DC blocker
+dehummer
+AGC
+multiband compressor 1
+bass EQ
+AM or SSB output chain
+limiter
+meter
+output
+```
+
+The bass EQ stage is disabled by default. When enabled, it applies conservative
+low-shelf and high-shelf filters after the first multiband compressor and before
+AM or SSB shaping. This gives later AM/SSB presets a simple tone-shaping stage
+without adding automatic EQ, subharmonic synthesis, immersive bass, or true bass
+processing yet.
 
 ## M7 SSB Behavior
 
@@ -32,6 +55,7 @@ DC blocker
 dehummer
 AGC
 multiband compressor 1
+bass EQ
 SSB output chain
 limiter
 meter
@@ -56,6 +80,7 @@ DC blocker
 dehummer
 AGC
 multiband compressor 1
+bass EQ
 AM output chain
 limiter
 meter

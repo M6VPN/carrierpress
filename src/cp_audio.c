@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "cp_audio.h"
+#include "cp_bass_eq.h"
 #include "cp_dehummer.h"
 
 static int	cp_audio_candidate_full_duplex(
@@ -121,6 +122,9 @@ cp_audio_default_config(struct cp_audio_config *config)
 	config->multiband_enabled = CP_MULTIBAND_DEFAULT_ENABLED;
 	config->multiband_band_count = CP_MULTIBAND_DEFAULT_BANDS;
 	config->multiband_preset  = CP_MULTIBAND_PRESET_SPEECH;
+	cp_bass_eq_default_config(&config->bass_eq_config);
+	config->bass_eq_config.channel_count = config->channels;
+	config->bass_eq_config.sample_rate = (cp_sample_t)config->sample_rate;
 	cp_am_default_config(&config->am_config);
 	config->am_config.channel_count = config->channels;
 	config->am_config.sample_rate = (cp_sample_t)config->sample_rate;
@@ -211,6 +215,8 @@ cp_audio_status_string(int status)
 		return "invalid audio backend";
 	case CP_AUDIO_ERR_SSB:
 		return "invalid SSB settings";
+	case CP_AUDIO_ERR_BASS_EQ:
+		return "invalid bass EQ settings";
 	default:
 		return "unknown audio error";
 	}
@@ -220,6 +226,7 @@ int
 cp_audio_validate_config(const struct cp_audio_config *config)
 {
 	struct cp_am am;
+	struct cp_bass_eq bass_eq;
 	struct cp_ssb ssb;
 
 	if (config == NULL)
@@ -271,6 +278,11 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 	if (config->multiband_preset != CP_MULTIBAND_PRESET_SPEECH &&
 	    config->multiband_preset != CP_MULTIBAND_PRESET_MUSIC)
 		return CP_AUDIO_ERR_MB;
+	if (config->bass_eq_config.channel_count != config->channels)
+		return CP_AUDIO_ERR_BASS_EQ;
+	if (config->bass_eq_config.sample_rate !=
+	    (cp_sample_t)config->sample_rate)
+		return CP_AUDIO_ERR_BASS_EQ;
 	if (config->am_config.channel_count != config->channels)
 		return CP_AUDIO_ERR_AM;
 	if (config->am_config.sample_rate != (cp_sample_t)config->sample_rate)
@@ -284,6 +296,11 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 	if (config->am_config.enabled) {
 		if (cp_am_init(&am, &config->am_config) != CP_OK)
 			return CP_AUDIO_ERR_AM;
+	}
+	if (config->bass_eq_config.enabled) {
+		if (cp_bass_eq_init(&bass_eq,
+		    &config->bass_eq_config) != CP_OK)
+			return CP_AUDIO_ERR_BASS_EQ;
 	}
 	if (config->ssb_config.enabled) {
 		if (cp_ssb_init(&ssb, &config->ssb_config) != CP_OK)
