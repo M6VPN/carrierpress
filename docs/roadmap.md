@@ -80,6 +80,10 @@ Partially implemented. CarrierPress now has an optional static bass EQ foundatio
 
 Implemented as a deterministic validation pass for the current chain. It checks default, dehummer, multiband plus bass EQ, AM, and SSB profiles against finite output, limiter bounds, AM/SSB peak limits, silence stability, DC reduction, hum reduction, low-pass rejection, stereo stability, and AGC gain limits. It is an engineering regression gate, not a broadcast-quality or compliance claim.
 
+## M8.3 audio QA measurement harness
+
+Implemented as a deterministic measurement pass for the current chain. `make quality` prints machine-readable RMS, peak, crest factor, DC offset, hum-bin, and stereo-balance measurements for selected default, dehummer, multiband plus bass EQ, AM, and SSB profiles. It is intended to support tuning and regression review before M9 restoration research. It is not a listening test, spectrum measurement, transmitter test, or compliance claim.
+
 ## M9 declipper and delossifier research
 
 Research restoration stages for clipped or lossy source material. Add only validated clean-room designs.

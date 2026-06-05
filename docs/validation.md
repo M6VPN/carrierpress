@@ -11,6 +11,12 @@ Run:
 make validate
 ```
 
+Run the measurement-oriented QA report:
+
+```sh
+make quality
+```
+
 The first validation executable generates these synthetic sources:
 
 - silence
@@ -66,6 +72,36 @@ input.
 
 M8.2 adds the chain-quality validation gate. It is intended to catch regressions
 before tuning, hardware tests, or new DSP stages are added.
+
+M8.3 adds a deterministic audio QA report. It processes these sources:
+
+- silence
+- speech-like stepped levels
+- music-like harmonic content
+- clipped sine
+- DC offset
+- 50 Hz hum plus program tone
+- 60 Hz hum plus program tone
+- burst transients
+- high-frequency tone
+- stereo imbalance
+
+The report covers default, 50 Hz dehummer, 60 Hz dehummer, multiband plus bass
+EQ, AM shortwave, and SSB narrow profiles. Each line prints:
+
+- input and output RMS
+- input and output peak
+- output minimum and maximum sample value
+- input and output crest factor
+- input and output DC offset
+- 50 Hz and 60 Hz single-bin hum measurements
+- output left and right RMS
+- pass or fail status
+
+The M8.3 thresholds are conservative regression checks for finite output,
+limiter ceiling, silence stability, DC reduction, hum reduction, AM/SSB
+low-pass rejection, and stereo stability. They are not tuning targets and do not
+replace listening tests, spectrum checks, or transmitter/load tests.
 
 Validation does not prove regulatory compliance, occupied bandwidth compliance,
 sample-rate conversion quality, or broadcast-processor quality. Live hardware

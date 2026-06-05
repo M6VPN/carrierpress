@@ -51,6 +51,12 @@ Run deterministic DSP validation fixtures and print a compact report:
 make validate
 ```
 
+Run deterministic audio QA fixtures and print machine-readable measurements:
+
+```sh
+make quality
+```
+
 Build with optional WAV support:
 
 ```sh
@@ -444,6 +450,14 @@ bounded peaks, AM/SSB peak limits, silence stability, DC reduction, hum
 reduction, low-pass rejection, stereo stability, and AGC gain limits. This is an
 engineering gate for regressions, not a claim of broadcast processor quality.
 See [docs/validation.md](docs/validation.md).
+
+`make quality` runs a fixed measurement pass over silence, speech-like steps,
+music-like harmonic content, clipped sine, DC offset, 50 Hz hum, 60 Hz hum,
+burst transients, high-frequency content, and stereo imbalance. It prints RMS,
+peak, crest factor, DC, hum-bin, and stereo-balance measurements for the
+current default, dehummer, multiband plus bass EQ, AM, and SSB profiles. This is
+a repeatable QA report for tuning and regression review, not a listening test,
+spectrum measurement, or compliance claim.
 
 TUI control is preset-only for DSP changes in this milestone. It can switch the
 dehummer on or off, cycle multiband between off, speech, and music, switch the

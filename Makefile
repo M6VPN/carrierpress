@@ -53,6 +53,7 @@ TEST_SRCS = \
 	tests/test_meter.c \
 	tests/test_monitor.c \
 	tests/test_multiband.c \
+	tests/test_quality_report.c \
 	tests/test_resampler.c \
 	tests/test_ssb.c
 
@@ -99,6 +100,9 @@ TEST_OBJS = $(TEST_SRCS:tests/%.c=$(TEST_OBJ_DIR)/tests/%.o)
 VALIDATION_BINS = \
 	$(TEST_BIN_DIR)/test_validation \
 	$(TEST_BIN_DIR)/test_chain_quality
+
+QUALITY_BINS = \
+	$(TEST_BIN_DIR)/test_quality_report
 
 TEST_BINS = \
 	$(TEST_BIN_DIR)/test_agc \
@@ -206,6 +210,10 @@ $(TEST_BIN_DIR)/test_playout: $(TEST_OBJ_DIR)/tests/test_playout.o $(TEST_CORE_O
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_playout.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_quality_report: $(TEST_OBJ_DIR)/tests/test_quality_report.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_quality_report.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_wav: $(TEST_OBJ_DIR)/tests/test_wav.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_wav.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -241,6 +249,9 @@ endif
 validate: $(VALIDATION_BINS)
 	./$(TEST_BIN_DIR)/test_validation
 	./$(TEST_BIN_DIR)/test_chain_quality
+
+quality: $(QUALITY_BINS)
+	./$(TEST_BIN_DIR)/test_quality_report
 
 check-sndfile:
 	@mkdir -p $(BUILD_DIR)
@@ -280,10 +291,11 @@ clean:
 	rm -f tests/test_dc_blocker tests/test_dehummer
 	rm -f tests/test_limiter tests/test_meter
 	rm -f tests/test_monitor tests/test_multiband
+	rm -f tests/test_quality_report
 	rm -f tests/test_resampler tests/test_ssb
 	rm -f tests/test_playout tests/test_validation tests/test_wav
 	rm -f tests/playout_bad.txt tests/playout_good.txt
 	rm -f tests/playout_report.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all check-portaudio check-sndfile check-tui clean test validate
+.PHONY: all check-portaudio check-sndfile check-tui clean quality test validate
