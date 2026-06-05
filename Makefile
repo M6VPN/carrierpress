@@ -43,6 +43,7 @@ TEST_SRCS = \
 	tests/test_audio.c \
 	tests/test_bass_eq.c \
 	tests/test_biquad.c \
+	tests/test_chain_quality.c \
 	tests/test_compressor.c \
 	tests/test_control.c \
 	tests/test_crossover.c \
@@ -95,7 +96,9 @@ APP_CORE_OBJS = $(CORE_SRCS:src/%.c=$(APP_OBJ_DIR)/src/%.o)
 APP_OBJS = $(APP_CORE_OBJS) $(APP_SRCS:src/%.c=$(APP_OBJ_DIR)/src/%.o)
 TEST_CORE_OBJS = $(CORE_SRCS:src/%.c=$(TEST_OBJ_DIR)/src/%.o)
 TEST_OBJS = $(TEST_SRCS:tests/%.c=$(TEST_OBJ_DIR)/tests/%.o)
-VALIDATION_BINS = $(TEST_BIN_DIR)/test_validation
+VALIDATION_BINS = \
+	$(TEST_BIN_DIR)/test_validation \
+	$(TEST_BIN_DIR)/test_chain_quality
 
 TEST_BINS = \
 	$(TEST_BIN_DIR)/test_agc \
@@ -150,6 +153,10 @@ $(TEST_BIN_DIR)/test_bass_eq: $(TEST_OBJ_DIR)/tests/test_bass_eq.o $(TEST_CORE_O
 $(TEST_BIN_DIR)/test_biquad: $(TEST_OBJ_DIR)/tests/test_biquad.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_biquad.o $(TEST_CORE_OBJS) $(LDLIBS)
+
+$(TEST_BIN_DIR)/test_chain_quality: $(TEST_OBJ_DIR)/tests/test_chain_quality.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_chain_quality.o $(TEST_CORE_OBJS) $(LDLIBS)
 
 $(TEST_BIN_DIR)/test_compressor: $(TEST_OBJ_DIR)/tests/test_compressor.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
@@ -233,6 +240,7 @@ endif
 
 validate: $(VALIDATION_BINS)
 	./$(TEST_BIN_DIR)/test_validation
+	./$(TEST_BIN_DIR)/test_chain_quality
 
 check-sndfile:
 	@mkdir -p $(BUILD_DIR)
@@ -266,6 +274,7 @@ clean:
 	rm -f carrierpress libcarrierpress.a src/*.o tests/*.o
 	rm -f tests/test_agc tests/test_am tests/test_audio tests/test_biquad
 	rm -f tests/test_bass_eq
+	rm -f tests/test_chain_quality
 	rm -f tests/test_compressor tests/test_crossover
 	rm -f tests/test_control
 	rm -f tests/test_dc_blocker tests/test_dehummer

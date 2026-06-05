@@ -76,6 +76,10 @@ Implemented as a host-path parity pass. Live mode and WAV playout now share host
 
 Partially implemented. CarrierPress now has an optional static bass EQ foundation with conservative flat, speech, music, and warm presets. It uses bounded low-shelf and high-shelf filters after the first multiband compressor and before AM or SSB shaping. Automatic EQ, immersive bass, true bass, and adaptive source analysis remain deferred.
 
+## M8.2 professional validation gate
+
+Implemented as a deterministic validation pass for the current chain. It checks default, dehummer, multiband plus bass EQ, AM, and SSB profiles against finite output, limiter bounds, AM/SSB peak limits, silence stability, DC reduction, hum reduction, low-pass rejection, stereo stability, and AGC gain limits. It is an engineering regression gate, not a broadcast-quality or compliance claim.
+
 ## M9 declipper and delossifier research
 
 Research restoration stages for clipped or lossy source material. Add only validated clean-room designs.

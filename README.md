@@ -438,11 +438,12 @@ When playout resampling is active, CarrierPress runs the DSP chain at the output
 stream rate so AGC and filter timing match playback. Offline `--input` and
 `--output` WAV processing still preserves the input file sample rate.
 
-`make validate` runs deterministic synthetic fixtures through default, AM, and
-SSB chains. It checks finite output, bounded peaks, AM negative peak protection,
-and SSB peak limits, then prints report lines that can be archived during
-tuning. This is an engineering gate for regressions, not a claim of broadcast
-processor quality. See [docs/validation.md](docs/validation.md).
+`make validate` runs deterministic synthetic fixtures through default, dehummer,
+multiband plus bass EQ, AM, and SSB chain profiles. It checks finite output,
+bounded peaks, AM/SSB peak limits, silence stability, DC reduction, hum
+reduction, low-pass rejection, stereo stability, and AGC gain limits. This is an
+engineering gate for regressions, not a claim of broadcast processor quality.
+See [docs/validation.md](docs/validation.md).
 
 TUI control is preset-only for DSP changes in this milestone. It can switch the
 dehummer on or off, cycle multiband between off, speech, and music, switch the
