@@ -102,6 +102,8 @@ test_snapshot_from_processor(void)
 	config.multiband_preset = CP_MULTIBAND_PRESET_MUSIC;
 	config.restoration_config.enabled = 1;
 	config.declipper_config.enabled = 1;
+	config.natural_dynamics_config.enabled = 1;
+	config.low_level_boost_config.enabled = 1;
 	config.bass_eq_config.enabled = 1;
 	(void)cp_bass_eq_apply_preset(&config.bass_eq_config, "music");
 	cp_am_apply_preset(&config.am_config, "am-shortwave");
@@ -123,6 +125,8 @@ test_snapshot_from_processor(void)
 	    snapshot.band_count != 3 ||
 	    !snapshot.restoration_enabled ||
 	    !snapshot.declipper_enabled ||
+	    !snapshot.natural_dynamics_enabled ||
+	    !snapshot.low_level_boost_enabled ||
 	    !snapshot.bass_eq_enabled ||
 	    snapshot.bass_eq_preset != CP_BASS_EQ_PRESET_MUSIC ||
 	    snapshot.bass_eq_low_hz != 120u ||

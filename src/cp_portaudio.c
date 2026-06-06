@@ -45,6 +45,15 @@ struct cp_portaudio_runtime {
 	atomic_uint declipper_max_delta;
 	atomic_int declipper_bypass_reason;
 	atomic_uint declipper_finite;
+	atomic_uint natural_dynamics_enabled;
+	atomic_uint natural_dynamics_rms;
+	atomic_uint natural_dynamics_gain;
+	atomic_int natural_dynamics_gr_db_centibel;
+	atomic_uint low_level_boost_enabled;
+	atomic_uint low_level_boost_rms;
+	atomic_uint low_level_boost_gain;
+	atomic_int low_level_boost_gain_db_centibel;
+	atomic_int low_level_boost_state;
 	atomic_uint multiband_enabled;
 	atomic_int multiband_preset;
 	atomic_uint restoration_enabled;
@@ -513,6 +522,16 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	atomic_init(&runtime->declipper_bypass_reason,
 	    (int)CP_DECLIPPER_BYPASS_DISABLED);
 	atomic_init(&runtime->declipper_finite, 1u);
+	atomic_init(&runtime->natural_dynamics_enabled, 0u);
+	atomic_init(&runtime->natural_dynamics_rms, 0u);
+	atomic_init(&runtime->natural_dynamics_gain, 0u);
+	atomic_init(&runtime->natural_dynamics_gr_db_centibel, 0);
+	atomic_init(&runtime->low_level_boost_enabled, 0u);
+	atomic_init(&runtime->low_level_boost_rms, 0u);
+	atomic_init(&runtime->low_level_boost_gain, 0u);
+	atomic_init(&runtime->low_level_boost_gain_db_centibel, 0);
+	atomic_init(&runtime->low_level_boost_state,
+	    (int)CP_AGC_STATE_OPEN);
 	atomic_init(&runtime->multiband_enabled, 0u);
 	atomic_init(&runtime->multiband_preset,
 	    (int)CP_MULTIBAND_PRESET_SPEECH);
@@ -623,6 +642,24 @@ cp_pa_load_snapshot(struct cp_portaudio_runtime *runtime,
 	    atomic_load(&runtime->declipper_bypass_reason);
 	snapshot->declipper_finite =
 	    atomic_load(&runtime->declipper_finite);
+	snapshot->natural_dynamics_enabled =
+	    atomic_load(&runtime->natural_dynamics_enabled);
+	snapshot->natural_dynamics_rms =
+	    atomic_load(&runtime->natural_dynamics_rms);
+	snapshot->natural_dynamics_gain =
+	    atomic_load(&runtime->natural_dynamics_gain);
+	snapshot->natural_dynamics_gr_db_centibel =
+	    atomic_load(&runtime->natural_dynamics_gr_db_centibel);
+	snapshot->low_level_boost_enabled =
+	    atomic_load(&runtime->low_level_boost_enabled);
+	snapshot->low_level_boost_rms =
+	    atomic_load(&runtime->low_level_boost_rms);
+	snapshot->low_level_boost_gain =
+	    atomic_load(&runtime->low_level_boost_gain);
+	snapshot->low_level_boost_gain_db_centibel =
+	    atomic_load(&runtime->low_level_boost_gain_db_centibel);
+	snapshot->low_level_boost_state =
+	    atomic_load(&runtime->low_level_boost_state);
 	snapshot->multiband_enabled =
 	    atomic_load(&runtime->multiband_enabled);
 	snapshot->multiband_preset =
@@ -772,6 +809,26 @@ cp_pa_print_meters(const struct cp_monitor_snapshot *snapshot)
 		    (enum cp_declipper_bypass_reason)
 		    snapshot->declipper_bypass_reason),
 		    snapshot->declipper_finite ? "yes" : "no");
+	}
+	if (snapshot->natural_dynamics_enabled) {
+		printf("natural_dynamics=on rms=%0.6f gain=%0.6f "
+		    "gain_reduction_db=%0.2f\n",
+		    cp_monitor_level_to_sample(
+		    snapshot->natural_dynamics_rms),
+		    cp_monitor_level_to_sample(
+		    snapshot->natural_dynamics_gain),
+		    cp_monitor_centibel_to_db(
+		    snapshot->natural_dynamics_gr_db_centibel));
+	}
+	if (snapshot->low_level_boost_enabled) {
+		printf("low_level_boost=on rms=%0.6f gain=%0.6f "
+		    "gain_db=%0.2f state=%s\n",
+		    cp_monitor_level_to_sample(snapshot->low_level_boost_rms),
+		    cp_monitor_level_to_sample(snapshot->low_level_boost_gain),
+		    cp_monitor_centibel_to_db(
+		    snapshot->low_level_boost_gain_db_centibel),
+		    cp_agc_state_string((enum cp_agc_gate_state)
+		    snapshot->low_level_boost_state));
 	}
 }
 
@@ -940,6 +997,24 @@ cp_pa_store_meters(struct cp_portaudio_runtime *runtime)
 	    snapshot.declipper_bypass_reason);
 	atomic_store(&runtime->declipper_finite,
 	    snapshot.declipper_finite);
+	atomic_store(&runtime->natural_dynamics_enabled,
+	    snapshot.natural_dynamics_enabled);
+	atomic_store(&runtime->natural_dynamics_rms,
+	    snapshot.natural_dynamics_rms);
+	atomic_store(&runtime->natural_dynamics_gain,
+	    snapshot.natural_dynamics_gain);
+	atomic_store(&runtime->natural_dynamics_gr_db_centibel,
+	    snapshot.natural_dynamics_gr_db_centibel);
+	atomic_store(&runtime->low_level_boost_enabled,
+	    snapshot.low_level_boost_enabled);
+	atomic_store(&runtime->low_level_boost_rms,
+	    snapshot.low_level_boost_rms);
+	atomic_store(&runtime->low_level_boost_gain,
+	    snapshot.low_level_boost_gain);
+	atomic_store(&runtime->low_level_boost_gain_db_centibel,
+	    snapshot.low_level_boost_gain_db_centibel);
+	atomic_store(&runtime->low_level_boost_state,
+	    snapshot.low_level_boost_state);
 	atomic_store(&runtime->multiband_enabled,
 	    snapshot.multiband_enabled);
 	atomic_store(&runtime->multiband_preset,

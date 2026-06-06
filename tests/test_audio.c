@@ -65,6 +65,10 @@ test_block_config_from_audio(void)
 	audio_config.restoration_config.clip_threshold = 0.97f;
 	audio_config.declipper_config.enabled = 1;
 	audio_config.declipper_config.repair_strength = 0.25f;
+	audio_config.natural_dynamics_config.enabled = 1;
+	audio_config.natural_dynamics_config.threshold_db = -16.0f;
+	audio_config.low_level_boost_config.enabled = 1;
+	audio_config.low_level_boost_config.max_boost_db = 4.0f;
 	audio_config.bass_eq_config.enabled = 1;
 	(void)cp_bass_eq_apply_preset(&audio_config.bass_eq_config, "warm");
 	cp_am_apply_preset(&audio_config.am_config, "am-shortwave");
@@ -90,6 +94,14 @@ test_block_config_from_audio(void)
 	    !block_config.declipper_config.enabled ||
 	    block_config.declipper_config.repair_strength != 0.25f ||
 	    block_config.declipper_config.channel_count != CP_CHANNELS_MONO ||
+	    !block_config.natural_dynamics_config.enabled ||
+	    block_config.natural_dynamics_config.threshold_db != -16.0f ||
+	    block_config.natural_dynamics_config.channel_count !=
+	    CP_CHANNELS_MONO ||
+	    !block_config.low_level_boost_config.enabled ||
+	    block_config.low_level_boost_config.max_boost_db != 4.0f ||
+	    block_config.low_level_boost_config.channel_count !=
+	    CP_CHANNELS_MONO ||
 	    !block_config.bass_eq_config.enabled ||
 	    block_config.bass_eq_config.preset != CP_BASS_EQ_PRESET_WARM ||
 	    block_config.bass_eq_config.channel_count != CP_CHANNELS_MONO ||
@@ -254,6 +266,24 @@ test_validate_config(void)
 	config.declipper_config.repair_strength = 2.0f;
 	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_DECLIPPER) {
 		printf("test_audio: invalid declipper config accepted\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&config);
+	config.natural_dynamics_config.enabled = 1;
+	config.natural_dynamics_config.ratio = 0.5f;
+	if (cp_audio_validate_config(&config) !=
+	    CP_AUDIO_ERR_NATURAL_DYNAMICS) {
+		printf("test_audio: invalid natural dynamics accepted\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&config);
+	config.low_level_boost_config.enabled = 1;
+	config.low_level_boost_config.max_boost_db = -1.0f;
+	if (cp_audio_validate_config(&config) !=
+	    CP_AUDIO_ERR_LOW_LEVEL_BOOST) {
+		printf("test_audio: invalid low boost accepted\n");
 		return 0;
 	}
 

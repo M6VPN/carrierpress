@@ -311,6 +311,12 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	audio_config.restoration_config.channel_count = channels;
 	audio_config.declipper_config.sample_rate = (cp_sample_t)output_rate;
 	audio_config.declipper_config.channel_count = channels;
+	audio_config.natural_dynamics_config.sample_rate =
+	    (cp_sample_t)output_rate;
+	audio_config.natural_dynamics_config.channel_count = channels;
+	audio_config.low_level_boost_config.sample_rate =
+	    (cp_sample_t)output_rate;
+	audio_config.low_level_boost_config.channel_count = channels;
 	audio_config.ssb_config.sample_rate = (cp_sample_t)output_rate;
 	audio_config.ssb_config.channel_count = channels;
 	status = cp_audio_validate_config(&audio_config);
@@ -360,6 +366,10 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 		audio_config.restoration_config.sample_rate =
 		    (cp_sample_t)output_rate;
 		audio_config.declipper_config.sample_rate =
+		    (cp_sample_t)output_rate;
+		audio_config.natural_dynamics_config.sample_rate =
+		    (cp_sample_t)output_rate;
+		audio_config.low_level_boost_config.sample_rate =
 		    (cp_sample_t)output_rate;
 		audio_config.ssb_config.sample_rate = (cp_sample_t)output_rate;
 		if (cp_audio_validate_config(&audio_config) != CP_AUDIO_OK) {
@@ -1010,6 +1020,26 @@ cp_playout_print_meters(const struct cp_monitor_snapshot *snapshot)
 		    (enum cp_declipper_bypass_reason)
 		    snapshot->declipper_bypass_reason),
 		    snapshot->declipper_finite ? "yes" : "no");
+	}
+	if (snapshot->natural_dynamics_enabled) {
+		printf("natural_dynamics=on rms=%0.6f gain=%0.6f "
+		    "gain_reduction_db=%0.2f\n",
+		    cp_monitor_level_to_sample(
+		    snapshot->natural_dynamics_rms),
+		    cp_monitor_level_to_sample(
+		    snapshot->natural_dynamics_gain),
+		    cp_monitor_centibel_to_db(
+		    snapshot->natural_dynamics_gr_db_centibel));
+	}
+	if (snapshot->low_level_boost_enabled) {
+		printf("low_level_boost=on rms=%0.6f gain=%0.6f "
+		    "gain_db=%0.2f state=%s\n",
+		    cp_monitor_level_to_sample(snapshot->low_level_boost_rms),
+		    cp_monitor_level_to_sample(snapshot->low_level_boost_gain),
+		    cp_monitor_centibel_to_db(
+		    snapshot->low_level_boost_gain_db_centibel),
+		    cp_agc_state_string((enum cp_agc_gate_state)
+		    snapshot->low_level_boost_state));
 	}
 	if (snapshot->ssb_enabled) {
 		printf("ssb=on preset=%s highpass=%u lowpass=%u "

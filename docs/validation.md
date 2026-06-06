@@ -87,7 +87,8 @@ M8.3 adds a deterministic audio QA report. It processes these sources:
 - stereo imbalance
 
 The report covers default, 50 Hz dehummer, 60 Hz dehummer, declipper,
-multiband plus bass EQ, AM shortwave, and SSB narrow profiles. Each line
+natural dynamics plus low-level boost, multiband plus bass EQ, AM shortwave,
+and SSB narrow profiles. Each line
 prints:
 
 - input and output RMS
@@ -102,6 +103,8 @@ prints:
 - high-frequency-loss indicator metrics
 - analysis source profile and reason flags
 - declipper repaired samples, repaired runs, maximum delta, and bypass reason
+- natural dynamics gain reduction
+- low-level boost gain
 - pass or fail status
 
 The M8.3 thresholds are conservative regression checks for finite output,
@@ -119,6 +122,12 @@ M9.3 extends `make quality` with declipper-gating fixtures. Hard-clipped and
 low-ceiling clipped fixtures must produce repaired samples when the declipper
 profile is active. Burst fixtures must remain bypassed. These checks validate
 bounded behavior and bypass logic only.
+
+M9.4 adds unit coverage for natural dynamics and low-level boost disabled
+passthrough, invalid config rejection, linked stereo gain, finite output under
+non-finite input, loud-block reduction, quiet-program boost, and silence gating.
+It also extends `make quality` with a dynamics profile so silence stays gated
+and stepped speech exercises at least one pre-AGC dynamics stage.
 
 These fields are diagnostic and regression signals only. They do not prove
 clipping, lossy encoding, clean source quality, or restored source quality.

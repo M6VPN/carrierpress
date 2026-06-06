@@ -21,24 +21,42 @@ static int	test_command_keys(void);
 int
 main(void)
 {
-	if (!test_command_keys())
+	if (!test_command_keys()) {
+		printf("test_control: command keys failed\n");
 		return 1;
-	if (!test_apply_am_preset())
+	}
+	if (!test_apply_am_preset()) {
+		printf("test_control: AM preset failed\n");
 		return 1;
-	if (!test_apply_am_off())
+	}
+	if (!test_apply_am_off()) {
+		printf("test_control: AM off failed\n");
 		return 1;
-	if (!test_apply_dehummer_toggle())
+	}
+	if (!test_apply_dehummer_toggle()) {
+		printf("test_control: dehummer toggle failed\n");
 		return 1;
-	if (!test_apply_multiband_cycle())
+	}
+	if (!test_apply_multiband_cycle()) {
+		printf("test_control: multiband cycle failed\n");
 		return 1;
-	if (!test_apply_ssb_preset())
+	}
+	if (!test_apply_ssb_preset()) {
+		printf("test_control: SSB preset failed\n");
 		return 1;
-	if (!test_apply_ssb_off())
+	}
+	if (!test_apply_ssb_off()) {
+		printf("test_control: SSB off failed\n");
 		return 1;
-	if (!test_apply_mutual_exclusion())
+	}
+	if (!test_apply_mutual_exclusion()) {
+		printf("test_control: mutual exclusion failed\n");
 		return 1;
-	if (!test_bank_locked_apply())
+	}
+	if (!test_bank_locked_apply()) {
+		printf("test_control: bank locked apply failed\n");
 		return 1;
+	}
 
 	return 0;
 }
@@ -142,6 +160,7 @@ test_apply_mutual_exclusion(void)
 	struct cp_block_config config;
 	struct cp_block_processor processor;
 	struct cp_control_command command;
+	int status;
 
 	cp_block_default_config(&config, CP_CHANNELS_MONO);
 	if (cp_block_init(&processor, &config) != CP_OK)
@@ -158,8 +177,12 @@ test_apply_mutual_exclusion(void)
 	cp_control_command_clear(&command);
 	command.type = CP_CONTROL_COMMAND_SSB_PRESET;
 	command.ssb_preset = CP_SSB_PRESET_NARROW;
-	if (cp_control_apply(&processor, &command) != CP_OK)
+	status = cp_control_apply(&processor, &command);
+	if (status != CP_OK) {
+		printf("test_control: SSB preset status failed %d\n",
+		    status);
 		return 0;
+	}
 	if (processor.am.config.enabled || processor.am.enabled ||
 	    !processor.ssb.config.enabled || !processor.ssb.enabled) {
 		printf("test_control: SSB did not disable AM\n");
@@ -234,6 +257,7 @@ test_apply_ssb_preset(void)
 	struct cp_block_config config;
 	struct cp_block_processor processor;
 	struct cp_control_command command;
+	int status;
 
 	cp_block_default_config(&config, CP_CHANNELS_MONO);
 	if (cp_block_init(&processor, &config) != CP_OK)
@@ -242,11 +266,18 @@ test_apply_ssb_preset(void)
 	cp_control_command_clear(&command);
 	command.type = CP_CONTROL_COMMAND_SSB_PRESET;
 	command.ssb_preset = CP_SSB_PRESET_NARROW;
-	if (cp_control_apply(&processor, &command) != CP_OK)
+	status = cp_control_apply(&processor, &command);
+	if (status != CP_OK) {
+		printf("test_control: SSB preset status failed %d\n",
+		    status);
 		return 0;
+	}
 	if (!processor.ssb.config.enabled ||
 	    strcmp(processor.ssb.config.preset_name, "ssb-narrow") != 0) {
-		printf("test_control: SSB preset command failed\n");
+		printf("test_control: SSB preset command failed enabled=%d "
+		    "runtime=%d name=%s\n",
+		    processor.ssb.config.enabled, processor.ssb.enabled,
+		    processor.ssb.config.preset_name);
 		return 0;
 	}
 

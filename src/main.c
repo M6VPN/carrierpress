@@ -126,6 +126,82 @@ main(int argc, char *argv[])
 			    parsed_size;
 			audio_config.declipper_config.max_repair_samples =
 			    parsed_size;
+		} else if (strcmp(argv[arg], "--natural-dynamics") == 0) {
+			block_config.natural_dynamics_config.enabled = 1;
+			audio_config.natural_dynamics_config.enabled = 1;
+		} else if (strcmp(argv[arg],
+		    "--natural-threshold-db") == 0 && arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.natural_dynamics_config.threshold_db =
+			    (cp_sample_t)parsed_double;
+			audio_config.natural_dynamics_config.threshold_db =
+			    (cp_sample_t)parsed_double;
+		} else if (strcmp(argv[arg], "--natural-ratio") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.natural_dynamics_config.ratio =
+			    (cp_sample_t)parsed_double;
+			audio_config.natural_dynamics_config.ratio =
+			    (cp_sample_t)parsed_double;
+		} else if (strcmp(argv[arg],
+		    "--natural-max-reduction-db") == 0 && arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.natural_dynamics_config.
+			    max_gain_reduction_db = (cp_sample_t)parsed_double;
+			audio_config.natural_dynamics_config.
+			    max_gain_reduction_db = (cp_sample_t)parsed_double;
+		} else if (strcmp(argv[arg], "--low-level-boost") == 0) {
+			block_config.low_level_boost_config.enabled = 1;
+			audio_config.low_level_boost_config.enabled = 1;
+		} else if (strcmp(argv[arg],
+		    "--low-level-target-rms") == 0 && arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.low_level_boost_config.target_rms =
+			    (cp_sample_t)parsed_double;
+			audio_config.low_level_boost_config.target_rms =
+			    (cp_sample_t)parsed_double;
+		} else if (strcmp(argv[arg],
+		    "--low-level-max-boost-db") == 0 && arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.low_level_boost_config.max_boost_db =
+			    (cp_sample_t)parsed_double;
+			audio_config.low_level_boost_config.max_boost_db =
+			    (cp_sample_t)parsed_double;
+		} else if (strcmp(argv[arg], "--low-level-gate-db") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.low_level_boost_config.gate_threshold_db =
+			    (cp_sample_t)parsed_double;
+			audio_config.low_level_boost_config.gate_threshold_db =
+			    (cp_sample_t)parsed_double;
+		} else if (strcmp(argv[arg],
+		    "--low-level-silence-db") == 0 && arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg], &parsed_double)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.low_level_boost_config.silence_threshold_db =
+			    (cp_sample_t)parsed_double;
+			audio_config.low_level_boost_config.silence_threshold_db =
+			    (cp_sample_t)parsed_double;
 		} else if (strcmp(argv[arg], "--audio-backend") == 0 &&
 		    arg + 1 < argc) {
 			if (cp_audio_backend_from_string(argv[++arg],
@@ -400,6 +476,14 @@ main(int argc, char *argv[])
 	    (cp_sample_t)audio_config.sample_rate;
 	audio_config.declipper_config.channel_count = audio_config.channels;
 	audio_config.declipper_config.sample_rate =
+	    (cp_sample_t)audio_config.sample_rate;
+	audio_config.natural_dynamics_config.channel_count =
+	    audio_config.channels;
+	audio_config.natural_dynamics_config.sample_rate =
+	    (cp_sample_t)audio_config.sample_rate;
+	audio_config.low_level_boost_config.channel_count =
+	    audio_config.channels;
+	audio_config.low_level_boost_config.sample_rate =
 	    (cp_sample_t)audio_config.sample_rate;
 	audio_config.ssb_config.channel_count = audio_config.channels;
 	audio_config.ssb_config.sample_rate =
@@ -807,6 +891,10 @@ run_self_test(const struct cp_block_config *self_config)
 	config.sample_rate = CP_SELF_TEST_RATE;
 	config.declipper_config.channel_count = CP_CHANNELS_MONO;
 	config.declipper_config.sample_rate = CP_SELF_TEST_RATE;
+	config.natural_dynamics_config.channel_count = CP_CHANNELS_MONO;
+	config.natural_dynamics_config.sample_rate = CP_SELF_TEST_RATE;
+	config.low_level_boost_config.channel_count = CP_CHANNELS_MONO;
+	config.low_level_boost_config.sample_rate = CP_SELF_TEST_RATE;
 	status = cp_block_init(&processor, &config);
 	if (status != CP_OK) {
 		printf("carrierpress: init failed: %d\n", status);
@@ -858,6 +946,23 @@ run_self_test(const struct cp_block_config *self_config)
 	    processor.bass_eq.config.low_gain_db,
 	    processor.bass_eq.config.high_shelf_hz,
 	    processor.bass_eq.config.high_gain_db);
+	printf("natural_dynamics=%s threshold_db=%0.2f ratio=%0.2f "
+	    "gain=%0.6f gain_reduction_db=%0.2f rms=%0.6f\n",
+	    processor.natural_dynamics.config.enabled ? "on" : "off",
+	    processor.natural_dynamics.config.threshold_db,
+	    processor.natural_dynamics.config.ratio,
+	    processor.natural_dynamics.gain,
+	    processor.natural_dynamics.gain_reduction_db,
+	    processor.natural_dynamics.last_rms);
+	printf("low_level_boost=%s target_rms=%0.6f max_boost_db=%0.2f "
+	    "gain=%0.6f gain_db=%0.2f rms=%0.6f state=%s\n",
+	    processor.low_level_boost.config.enabled ? "on" : "off",
+	    processor.low_level_boost.config.target_rms,
+	    processor.low_level_boost.config.max_boost_db,
+	    processor.low_level_boost.gain,
+	    processor.low_level_boost.gain_db,
+	    processor.low_level_boost.last_rms,
+	    cp_agc_state_string(processor.low_level_boost.gate_state));
 	printf("input_peak=%0.6f input_rms=%0.6f\n",
 	    processor.input_meter.peak[0], processor.input_meter.rms[0]);
 	printf("am=%s preset=%s highpass=%0.1f lowpass=%0.1f "
@@ -942,6 +1047,8 @@ usage(const char *program)
 	printf("usage: %s --self-test --dehummer --hum-frequency 50 "
 	    "--hum-harmonics 4\n", program);
 	printf("usage: %s --self-test --analyze --declipper\n", program);
+	printf("usage: %s --self-test --natural-dynamics "
+	    "--low-level-boost\n", program);
 	printf("usage: %s --self-test --ssb --ssb-preset ssb-speech\n",
 	    program);
 	printf("usage: %s --input input.wav --output output.wav\n", program);
@@ -961,6 +1068,12 @@ usage(const char *program)
 	printf("analysis option: --analyze\n");
 	printf("declipper options: --declipper --declipper-strength FLOAT "
 	    "--declipper-max-samples N\n");
+	printf("natural dynamics options: --natural-dynamics "
+	    "--natural-threshold-db DB --natural-ratio FLOAT "
+	    "--natural-max-reduction-db DB\n");
+	printf("low-level boost options: --low-level-boost "
+	    "--low-level-target-rms FLOAT --low-level-max-boost-db DB "
+	    "--low-level-gate-db DB --low-level-silence-db DB\n");
 	printf("dehummer options: --dehummer --hum-frequency 50|60 "
 	    "--hum-harmonics N --hum-q Q\n");
 	printf("multiband options: --multiband --multiband-bands 2|3|4 "

@@ -30,9 +30,11 @@ CORE_SRCS = \
 	src/cp_declipper.c \
 	src/cp_dehummer.c \
 	src/cp_limiter.c \
+	src/cp_low_level_boost.c \
 	src/cp_meter.c \
 	src/cp_monitor.c \
 	src/cp_multiband.c \
+	src/cp_natural_dynamics.c \
 	src/cp_restoration.c \
 	src/cp_resampler.c \
 	src/cp_ssb.c
@@ -53,13 +55,17 @@ TEST_SRCS = \
 	tests/test_declipper.c \
 	tests/test_dehummer.c \
 	tests/test_limiter.c \
+	tests/test_low_level_boost.c \
 	tests/test_meter.c \
 	tests/test_monitor.c \
 	tests/test_multiband.c \
+	tests/test_natural_dynamics.c \
 	tests/test_quality_report.c \
 	tests/test_restoration.c \
 	tests/test_resampler.c \
 	tests/test_ssb.c
+
+HEADERS = $(wildcard include/*.h)
 
 ifeq ($(WITH_SNDFILE),1)
 FEATURE_DIR := $(FEATURE_DIR)-sndfile
@@ -121,9 +127,11 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_declipper \
 	$(TEST_BIN_DIR)/test_dehummer \
 	$(TEST_BIN_DIR)/test_limiter \
+	$(TEST_BIN_DIR)/test_low_level_boost \
 	$(TEST_BIN_DIR)/test_meter \
 	$(TEST_BIN_DIR)/test_monitor \
 	$(TEST_BIN_DIR)/test_multiband \
+	$(TEST_BIN_DIR)/test_natural_dynamics \
 	$(TEST_BIN_DIR)/test_restoration \
 	$(TEST_BIN_DIR)/test_resampler \
 	$(TEST_BIN_DIR)/test_ssb
@@ -196,6 +204,10 @@ $(TEST_BIN_DIR)/test_limiter: $(TEST_OBJ_DIR)/tests/test_limiter.o $(TEST_CORE_O
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_limiter.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_low_level_boost: $(TEST_OBJ_DIR)/tests/test_low_level_boost.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_low_level_boost.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_meter: $(TEST_OBJ_DIR)/tests/test_meter.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_meter.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -207,6 +219,10 @@ $(TEST_BIN_DIR)/test_monitor: $(TEST_OBJ_DIR)/tests/test_monitor.o $(TEST_CORE_O
 $(TEST_BIN_DIR)/test_multiband: $(TEST_OBJ_DIR)/tests/test_multiband.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_multiband.o $(TEST_CORE_OBJS) $(LDLIBS)
+
+$(TEST_BIN_DIR)/test_natural_dynamics: $(TEST_OBJ_DIR)/tests/test_natural_dynamics.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_natural_dynamics.o $(TEST_CORE_OBJS) $(LDLIBS)
 
 $(TEST_BIN_DIR)/test_resampler: $(TEST_OBJ_DIR)/tests/test_resampler.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
@@ -249,9 +265,11 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_declipper
 	./$(TEST_BIN_DIR)/test_dehummer
 	./$(TEST_BIN_DIR)/test_limiter
+	./$(TEST_BIN_DIR)/test_low_level_boost
 	./$(TEST_BIN_DIR)/test_meter
 	./$(TEST_BIN_DIR)/test_monitor
 	./$(TEST_BIN_DIR)/test_multiband
+	./$(TEST_BIN_DIR)/test_natural_dynamics
 	./$(TEST_BIN_DIR)/test_restoration
 	./$(TEST_BIN_DIR)/test_resampler
 	./$(TEST_BIN_DIR)/test_ssb
@@ -284,15 +302,15 @@ check-tui:
 	@printf '#include <curses.h>\nint main(void) { initscr(); endwin(); return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/check-tui -lncurses >/dev/null 2>&1 || { printf 'error: missing ncurses development package/library. Install ncurses (for example libncurses-dev, ncurses-devel, or ncurses).\n'; exit 1; }
 	@rm -f $(BUILD_DIR)/check-tui
 
-$(APP_OBJ_DIR)/src/%.o: src/%.c | $(BACKEND_ORDER)
+$(APP_OBJ_DIR)/src/%.o: src/%.c $(HEADERS) | $(BACKEND_ORDER)
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
-$(TEST_OBJ_DIR)/src/%.o: src/%.c | $(BACKEND_ORDER)
+$(TEST_OBJ_DIR)/src/%.o: src/%.c $(HEADERS) | $(BACKEND_ORDER)
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
-$(TEST_OBJ_DIR)/tests/%.o: tests/%.c | $(BACKEND_ORDER)
+$(TEST_OBJ_DIR)/tests/%.o: tests/%.c $(HEADERS) | $(BACKEND_ORDER)
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
@@ -305,8 +323,9 @@ clean:
 	rm -f tests/test_compressor tests/test_crossover
 	rm -f tests/test_control
 	rm -f tests/test_dc_blocker tests/test_declipper tests/test_dehummer
-	rm -f tests/test_limiter tests/test_meter
+	rm -f tests/test_limiter tests/test_low_level_boost tests/test_meter
 	rm -f tests/test_monitor tests/test_multiband
+	rm -f tests/test_natural_dynamics
 	rm -f tests/test_quality_report
 	rm -f tests/test_resampler tests/test_restoration tests/test_ssb
 	rm -f tests/test_playout tests/test_validation tests/test_wav

@@ -1,10 +1,10 @@
 # CarrierPress
 
-CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.1 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, an optional dehummer, a simple optional multiband compressor foundation, optional static bass EQ, an optional restoration analysis tap, an optional conservative declipper research stage, and a safe peak limiter.
+CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.1 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, optional dehummer, optional natural dynamics and low-level boost stages, a simple optional multiband compressor foundation, optional static bass EQ, an optional restoration analysis tap, an optional conservative declipper research stage, and a safe peak limiter.
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
-Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.3 adds an optional analysis-gated declipper research stage for clear hard-clipping and low-ceiling clipping cases. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
+Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.4 adds optional conservative natural dynamics and low-level boost stages before AGC. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
 
 ## Table of Contents
 
@@ -128,6 +128,24 @@ Run the self-test with the conservative declipper research stage enabled:
 default and only repairs analysis-confident hard-clipping or low-ceiling
 clipping blocks. Transient-like blocks and low-confidence blocks are bypassed.
 
+Run the self-test with M9.4 natural dynamics and low-level boost enabled:
+
+```sh
+./carrierpress --self-test --natural-dynamics --low-level-boost
+```
+
+Natural dynamics is a conservative wideband stage that gently reduces loud
+blocks before AGC. Low-level boost raises quiet but non-silent program material
+within a configured limit and leaves silence gated. Both stages are disabled by
+default.
+
+Useful starting controls are:
+
+```sh
+./carrierpress --self-test --natural-dynamics --natural-threshold-db -18 --natural-ratio 1.5 --natural-max-reduction-db 4
+./carrierpress --self-test --low-level-boost --low-level-target-rms 0.12 --low-level-max-boost-db 6
+```
+
 Run the same self-test with the dehummer enabled:
 
 ```sh
@@ -206,8 +224,8 @@ Play a WAV file through CarrierPress and send the processed result to the defaul
 ```
 
 Play mode uses the same DSP chain controls as live mode. Dehummer, multiband,
-AM shaping, AGC, limiter, and metering are applied to fixed-size WAV blocks
-before they are sent to the output device.
+natural dynamics, low-level boost, AM shaping, AGC, limiter, and metering are
+applied to fixed-size WAV blocks before they are sent to the output device.
 
 Choose an output device for WAV playout:
 
@@ -373,6 +391,12 @@ Run live processing with analysis metrics:
 ./carrierpress --live --analyze --meter-interval-ms 1000
 ```
 
+Run live processing with the M9.4 pre-AGC dynamics stages:
+
+```sh
+./carrierpress --live --natural-dynamics --low-level-boost
+```
+
 Run live processing with AM-safe output shaping:
 
 ```sh
@@ -418,7 +442,7 @@ TUI support requires a `WITH_TUI=1` build. Without it, `--tui` exits with:
 TUI support not enabled. Rebuild with WITH_TUI=1.
 ```
 
-Live mode is experimental. It is a sound-card backend for testing the existing DC blocker, AGC, limiter, and metering chain. It is not a broadcast-quality processor.
+Live mode is experimental. It is a sound-card backend for testing the existing DC blocker, dehummer, dynamics, AGC, multiband, AM/SSB shaping, limiter, and metering chain. It is not a broadcast-quality processor.
 
 PortAudio may print ALSA or JACK probe warnings while listing or opening devices.
 Those warnings are not always fatal. Use the final CarrierPress status line and
@@ -487,8 +511,9 @@ The core library has no optional audio backend dependency. WAV support lives in 
 WAV playout reads fixed-size blocks from libsndfile, processes them through the normal CarrierPress chain, reports live-style meters from the processor state, and writes processed float32 blocks to a PortAudio output stream. It does not load the whole file into memory. This milestone uses blocking PortAudio output for file playout; live input mode still uses the callback backend.
 
 Live mode and playout use the same host-to-DSP config mapping for dehummer,
-multiband, AM, SSB, and sample-rate-dependent settings. Their monitor views use
-the same processor snapshot fields before live mode hands them to atomics.
+natural dynamics, low-level boost, multiband, AM, SSB, and sample-rate-dependent
+settings. Their monitor views use the same processor snapshot fields before
+live mode hands them to atomics.
 
 When playout resampling is active, CarrierPress runs the DSP chain at the output
 stream rate so AGC and filter timing match playback. Offline `--input` and
@@ -506,9 +531,9 @@ music-like harmonic content, clipped sine, DC offset, 50 Hz hum, 60 Hz hum,
 burst transients, high-frequency content, and stereo imbalance. It prints RMS,
 peak, crest factor, DC, hum-bin, stereo-balance, clipping indicator, and
 high-frequency-loss indicator measurements for the current default, dehummer,
-multiband plus bass EQ, AM, and SSB profiles. This is a repeatable QA report
-for tuning and regression review, not a listening test, spectrum measurement,
-restoration-quality claim, or compliance claim.
+dynamics, multiband plus bass EQ, AM, and SSB profiles. This is a repeatable QA
+report for tuning and regression review, not a listening test, spectrum
+measurement, restoration-quality claim, or compliance claim.
 
 TUI control is preset-only for DSP changes in this milestone. It can switch the
 dehummer on or off, cycle multiband between off, speech, and music, switch the

@@ -108,6 +108,25 @@ cp_monitor_snapshot_from_processor(const struct cp_block_processor *processor,
 	    (int)processor->declipper.metrics.bypass_reason;
 	snapshot->declipper_finite =
 	    processor->declipper.metrics.finite ? 1u : 0u;
+	snapshot->natural_dynamics_enabled =
+	    processor->natural_dynamics.config.enabled ? 1u : 0u;
+	snapshot->natural_dynamics_rms =
+	    cp_monitor_sample_to_level(processor->natural_dynamics.last_rms);
+	snapshot->natural_dynamics_gain =
+	    cp_monitor_sample_to_level(processor->natural_dynamics.gain);
+	snapshot->natural_dynamics_gr_db_centibel =
+	    cp_monitor_db_to_centibel(
+	    processor->natural_dynamics.gain_reduction_db);
+	snapshot->low_level_boost_enabled =
+	    processor->low_level_boost.config.enabled ? 1u : 0u;
+	snapshot->low_level_boost_rms =
+	    cp_monitor_sample_to_level(processor->low_level_boost.last_rms);
+	snapshot->low_level_boost_gain =
+	    cp_monitor_sample_to_level(processor->low_level_boost.gain);
+	snapshot->low_level_boost_gain_db_centibel =
+	    cp_monitor_db_to_centibel(processor->low_level_boost.gain_db);
+	snapshot->low_level_boost_state =
+	    (int)processor->low_level_boost.gate_state;
 	snapshot->multiband_enabled =
 	    processor->multiband.config.enabled ? 1u : 0u;
 	snapshot->multiband_preset = processor->multiband.config.preset;

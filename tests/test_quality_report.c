@@ -37,6 +37,7 @@ enum qr_profile {
 	QR_PROFILE_DEHUM_50,
 	QR_PROFILE_DEHUM_60,
 	QR_PROFILE_DECLIPPER,
+	QR_PROFILE_DYNAMICS,
 	QR_PROFILE_MB_BASS,
 	QR_PROFILE_AM_SHORTWAVE,
 	QR_PROFILE_SSB_NARROW
@@ -80,6 +81,8 @@ struct qr_metrics {
 	cp_sample_t analysis_observed_peak;
 	cp_sample_t analysis_crest_factor;
 	cp_sample_t declipper_max_delta;
+	cp_sample_t natural_dynamics_gr_db;
+	cp_sample_t low_level_boost_gain_db;
 	enum cp_restoration_source_profile analysis_source_profile;
 	unsigned int analysis_reason_flags;
 	size_t declipper_repaired_samples;
@@ -125,6 +128,10 @@ main(void)
 		    "declipper-low-ceiling" },
 		{ QR_PROFILE_DECLIPPER, QR_FIXTURE_BURST,
 		    "declipper-burst" },
+		{ QR_PROFILE_DYNAMICS, QR_FIXTURE_SILENCE,
+		    "dynamics-silence" },
+		{ QR_PROFILE_DYNAMICS, QR_FIXTURE_SPEECH_STEPS,
+		    "dynamics-speech" },
 		{ QR_PROFILE_MB_BASS, QR_FIXTURE_MUSIC_MIX, "mb-music" },
 		{ QR_PROFILE_MB_BASS, QR_FIXTURE_STEREO_IMBALANCE, "stereo" },
 		{ QR_PROFILE_AM_SHORTWAVE, QR_FIXTURE_HIGH_TONE, "am-lpf" },
@@ -209,6 +216,17 @@ qr_check_case(const struct qr_case *test, const struct qr_metrics *metrics)
 		    CP_DECLIPPER_BYPASS_LOW_CONFIDENCE)
 			return 0;
 	}
+	if (test->profile == QR_PROFILE_DYNAMICS &&
+	    test->fixture == QR_FIXTURE_SILENCE) {
+		if (metrics->low_level_boost_gain_db > 0.10f)
+			return 0;
+	}
+	if (test->profile == QR_PROFILE_DYNAMICS &&
+	    test->fixture == QR_FIXTURE_SPEECH_STEPS) {
+		if (metrics->natural_dynamics_gr_db < 0.10f &&
+		    metrics->low_level_boost_gain_db < 0.10f)
+			return 0;
+	}
 	if (test->check[0] == 'a' && test->fixture == QR_FIXTURE_HIGH_TONE &&
 	    metrics->output_square >= metrics->input_square * 0.45)
 		return 0;
@@ -277,6 +295,15 @@ qr_config(struct cp_block_config *config, enum qr_profile profile)
 		config->declipper_config.enabled = 1;
 		config->declipper_config.repair_strength = 0.35f;
 		config->declipper_config.max_repair_samples = 16u;
+		break;
+	case QR_PROFILE_DYNAMICS:
+		config->natural_dynamics_config.enabled = 1;
+		config->natural_dynamics_config.threshold_db = -18.0f;
+		config->natural_dynamics_config.ratio = 1.5f;
+		config->natural_dynamics_config.max_gain_reduction_db = 4.0f;
+		config->low_level_boost_config.enabled = 1;
+		config->low_level_boost_config.target_rms = 0.12f;
+		config->low_level_boost_config.max_boost_db = 5.0f;
 		break;
 	case QR_PROFILE_MB_BASS:
 		config->multiband_enabled = 1;
@@ -537,6 +564,8 @@ qr_profile_name(enum qr_profile profile)
 		return "dehum-60";
 	case QR_PROFILE_DECLIPPER:
 		return "declipper";
+	case QR_PROFILE_DYNAMICS:
+		return "dynamics";
 	case QR_PROFILE_MB_BASS:
 		return "multiband-bass";
 	case QR_PROFILE_AM_SHORTWAVE:
@@ -606,6 +635,8 @@ qr_run_case(const struct qr_case *test)
 	metrics.analysis_observed_peak = 0.0f;
 	metrics.analysis_crest_factor = 0.0f;
 	metrics.declipper_max_delta = 0.0f;
+	metrics.natural_dynamics_gr_db = 0.0f;
+	metrics.low_level_boost_gain_db = 0.0f;
 	metrics.analysis_source_profile = CP_RESTORATION_SOURCE_UNKNOWN;
 	metrics.analysis_reason_flags = 0u;
 	metrics.declipper_repaired_samples = 0;
@@ -680,6 +711,10 @@ qr_run_case(const struct qr_case *test)
 	    processor.declipper.metrics.max_repair_delta;
 	metrics.declipper_bypass_reason =
 	    processor.declipper.metrics.bypass_reason;
+	metrics.natural_dynamics_gr_db =
+	    processor.natural_dynamics.gain_reduction_db;
+	metrics.low_level_boost_gain_db =
+	    processor.low_level_boost.gain_db;
 	pass = qr_check_case(test, &metrics);
 
 	printf("quality profile=%s fixture=%s check=%s input_rms=%0.6f "
@@ -697,7 +732,8 @@ qr_run_case(const struct qr_case *test)
 	    "analysis_crest=%0.6f analysis_profile=%s "
 	    "analysis_reason_flags=0x%08x declipper_samples=%zu "
 	    "declipper_runs=%zu declipper_delta=%0.6f "
-	    "declipper_bypass=%s status=%s\n",
+	    "declipper_bypass=%s natural_gr_db=%0.6f "
+	    "low_boost_gain_db=%0.6f status=%s\n",
 	    qr_profile_name(test->profile), qr_fixture_name(test->fixture),
 	    test->check, metrics.input_square, metrics.output_square,
 	    metrics.input_peak, metrics.output_peak, metrics.output_min,
@@ -725,6 +761,8 @@ qr_run_case(const struct qr_case *test)
 	    cp_declipper_bypass_reason_string(
 	    (enum cp_declipper_bypass_reason)
 	    metrics.declipper_bypass_reason),
+	    metrics.natural_dynamics_gr_db,
+	    metrics.low_level_boost_gain_db,
 	    pass ? "pass" : "fail");
 
 	return pass;

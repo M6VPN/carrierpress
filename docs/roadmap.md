@@ -120,6 +120,16 @@ delta, bypass reason, and finite-output state in self-test, live meters,
 playout meters, TUI snapshots, and `make quality`. It is not a general
 restoration processor.
 
+## M9.4 natural dynamics and low-level boost foundation
+
+Partially implemented. CarrierPress now has optional conservative natural
+dynamics and low-level boost stages after declipper and before AGC. Natural
+dynamics gently reduces loud wideband blocks. Low-level boost raises quiet
+non-silent program within a bounded gain limit and gates silence. Both stages
+are disabled by default and expose self-test, live meter, playout meter, TUI,
+and `make quality` diagnostics. They are not final broadcast loudness
+processing.
+
 ## M10 sndio backend
 
 Add optional sndio live audio support for OpenBSD.

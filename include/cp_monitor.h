@@ -43,6 +43,15 @@ struct cp_monitor_snapshot {
 	unsigned int declipper_max_delta;
 	int declipper_bypass_reason;
 	unsigned int declipper_finite;
+	unsigned int natural_dynamics_enabled;
+	unsigned int natural_dynamics_rms;
+	unsigned int natural_dynamics_gain;
+	int natural_dynamics_gr_db_centibel;
+	unsigned int low_level_boost_enabled;
+	unsigned int low_level_boost_rms;
+	unsigned int low_level_boost_gain;
+	int low_level_boost_gain_db_centibel;
+	int low_level_boost_state;
 	unsigned int multiband_enabled;
 	int multiband_preset;
 	unsigned int restoration_enabled;

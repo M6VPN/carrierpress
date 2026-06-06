@@ -32,6 +32,8 @@ static void	cp_tui_draw_declipper(int,
 static void	cp_tui_draw_flags(int, unsigned int);
 static void	cp_tui_draw_header(const struct cp_tui_view *);
 static void	cp_tui_draw_multiband(int, const struct cp_monitor_snapshot *);
+static void	cp_tui_draw_natural(int,
+		    const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_restoration(int,
 		    const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_ssb(int, const struct cp_monitor_snapshot *);
@@ -124,21 +126,15 @@ cp_tui_update_view(struct cp_tui *tui, const struct cp_tui_view *view,
 	    cp_agc_state_string((enum cp_agc_gate_state)snapshot->agc_state));
 
 	cp_tui_draw_dehummer(11, snapshot);
-	cp_tui_draw_multiband(12, snapshot);
-	cp_tui_draw_bass_eq(17, snapshot);
+	cp_tui_draw_natural(12, snapshot);
+	cp_tui_draw_multiband(13, snapshot);
+	cp_tui_draw_bass_eq(18, snapshot);
 
-	cp_tui_draw_am(18, snapshot);
-	cp_tui_draw_ssb(19, snapshot);
-	cp_tui_draw_restoration(20, snapshot);
-	cp_tui_draw_declipper(21, snapshot);
-	cp_tui_draw_flags(22, snapshot->stream_flags);
-	mvprintw(23, 2, "Control bank %s  DSP status %d  control %s "
-	    "status %d",
-	    cp_control_bank_string(tui->control_bank),
-	    snapshot->dsp_status,
-	    cp_control_command_string(
-	    (enum cp_control_command_type)snapshot->control_command),
-	    snapshot->control_status);
+	cp_tui_draw_am(19, snapshot);
+	cp_tui_draw_ssb(20, snapshot);
+	cp_tui_draw_restoration(21, snapshot);
+	cp_tui_draw_declipper(22, snapshot);
+	cp_tui_draw_flags(23, snapshot->stream_flags);
 	cp_tui_draw_keys(view, tui->control_bank);
 	refresh();
 
@@ -370,6 +366,22 @@ cp_tui_draw_multiband(int row, const struct cp_monitor_snapshot *snapshot)
 		    cp_monitor_level_to_sample(snapshot->band_rms[band]),
 		    cp_monitor_centibel_to_db(snapshot->band_gr_db_centibel[band]));
 	}
+}
+
+static void
+cp_tui_draw_natural(int row, const struct cp_monitor_snapshot *snapshot)
+{
+	mvprintw(row, 2, "Natural %s GR %0.2f dB  Low boost %s gain %0.3f "
+	    "%0.2f dB %s",
+	    snapshot->natural_dynamics_enabled ? "on" : "off",
+	    cp_monitor_centibel_to_db(
+	    snapshot->natural_dynamics_gr_db_centibel),
+	    snapshot->low_level_boost_enabled ? "on" : "off",
+	    cp_monitor_level_to_sample(snapshot->low_level_boost_gain),
+	    cp_monitor_centibel_to_db(
+	    snapshot->low_level_boost_gain_db_centibel),
+	    cp_agc_state_string((enum cp_agc_gate_state)
+	    snapshot->low_level_boost_state));
 }
 
 static void

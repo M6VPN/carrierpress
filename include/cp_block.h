@@ -11,8 +11,10 @@
 #include "cp_declipper.h"
 #include "cp_dehummer.h"
 #include "cp_limiter.h"
+#include "cp_low_level_boost.h"
 #include "cp_meter.h"
 #include "cp_multiband.h"
+#include "cp_natural_dynamics.h"
 #include "cp_restoration.h"
 #include "cp_ssb.h"
 #include "cp_types.h"
@@ -46,6 +48,8 @@ struct cp_block_config {
 	struct cp_bass_eq_config bass_eq_config;
 	struct cp_am_config am_config;
 	struct cp_declipper_config declipper_config;
+	struct cp_natural_dynamics_config natural_dynamics_config;
+	struct cp_low_level_boost_config low_level_boost_config;
 	struct cp_restoration_config restoration_config;
 	struct cp_ssb_config ssb_config;
 	cp_sample_t limiter_ceiling;
@@ -61,6 +65,8 @@ struct cp_block_processor {
 	struct cp_am am;
 	struct cp_restoration restoration;
 	struct cp_declipper declipper;
+	struct cp_natural_dynamics natural_dynamics;
+	struct cp_low_level_boost low_level_boost;
 	struct cp_ssb ssb;
 	struct cp_limiter limiter;
 	struct cp_meter input_meter;

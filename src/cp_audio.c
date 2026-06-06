@@ -11,6 +11,8 @@
 #include "cp_bass_eq.h"
 #include "cp_declipper.h"
 #include "cp_dehummer.h"
+#include "cp_low_level_boost.h"
+#include "cp_natural_dynamics.h"
 #include "cp_restoration.h"
 
 static int	cp_audio_candidate_full_duplex(
@@ -134,6 +136,14 @@ cp_audio_default_config(struct cp_audio_config *config)
 	config->declipper_config.channel_count = config->channels;
 	config->declipper_config.sample_rate =
 	    (cp_sample_t)config->sample_rate;
+	cp_natural_dynamics_default_config(&config->natural_dynamics_config);
+	config->natural_dynamics_config.channel_count = config->channels;
+	config->natural_dynamics_config.sample_rate =
+	    (cp_sample_t)config->sample_rate;
+	cp_low_level_boost_default_config(&config->low_level_boost_config);
+	config->low_level_boost_config.channel_count = config->channels;
+	config->low_level_boost_config.sample_rate =
+	    (cp_sample_t)config->sample_rate;
 	cp_restoration_default_config(&config->restoration_config);
 	config->restoration_config.channel_count = config->channels;
 	config->restoration_config.sample_rate =
@@ -231,6 +241,10 @@ cp_audio_status_string(int status)
 		return "invalid restoration analysis settings";
 	case CP_AUDIO_ERR_DECLIPPER:
 		return "invalid declipper settings";
+	case CP_AUDIO_ERR_NATURAL_DYNAMICS:
+		return "invalid natural dynamics settings";
+	case CP_AUDIO_ERR_LOW_LEVEL_BOOST:
+		return "invalid low-level boost settings";
 	default:
 		return "unknown audio error";
 	}
@@ -242,6 +256,8 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 	struct cp_am am;
 	struct cp_bass_eq bass_eq;
 	struct cp_declipper declipper;
+	struct cp_low_level_boost low_level_boost;
+	struct cp_natural_dynamics natural_dynamics;
 	struct cp_restoration restoration;
 	struct cp_ssb ssb;
 
@@ -308,6 +324,18 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 	if (config->declipper_config.sample_rate !=
 	    (cp_sample_t)config->sample_rate)
 		return CP_AUDIO_ERR_DECLIPPER;
+	if (config->natural_dynamics_config.channel_count !=
+	    config->channels)
+		return CP_AUDIO_ERR_NATURAL_DYNAMICS;
+	if (config->natural_dynamics_config.sample_rate !=
+	    (cp_sample_t)config->sample_rate)
+		return CP_AUDIO_ERR_NATURAL_DYNAMICS;
+	if (config->low_level_boost_config.channel_count !=
+	    config->channels)
+		return CP_AUDIO_ERR_LOW_LEVEL_BOOST;
+	if (config->low_level_boost_config.sample_rate !=
+	    (cp_sample_t)config->sample_rate)
+		return CP_AUDIO_ERR_LOW_LEVEL_BOOST;
 	if (config->ssb_config.channel_count != config->channels)
 		return CP_AUDIO_ERR_SSB;
 	if (config->ssb_config.sample_rate != (cp_sample_t)config->sample_rate)
@@ -332,6 +360,16 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 		if (cp_declipper_init(&declipper,
 		    &config->declipper_config) != CP_OK)
 			return CP_AUDIO_ERR_DECLIPPER;
+	}
+	if (config->natural_dynamics_config.enabled) {
+		if (cp_natural_dynamics_init(&natural_dynamics,
+		    &config->natural_dynamics_config) != CP_OK)
+			return CP_AUDIO_ERR_NATURAL_DYNAMICS;
+	}
+	if (config->low_level_boost_config.enabled) {
+		if (cp_low_level_boost_init(&low_level_boost,
+		    &config->low_level_boost_config) != CP_OK)
+			return CP_AUDIO_ERR_LOW_LEVEL_BOOST;
 	}
 	if (config->ssb_config.enabled) {
 		if (cp_ssb_init(&ssb, &config->ssb_config) != CP_OK)

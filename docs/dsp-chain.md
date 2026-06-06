@@ -20,7 +20,38 @@ final limiter / clipper
 output
 ```
 
-v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, first multiband compressor scaffold, static bass EQ foundation, AM output-chain foundation, SSB output-chain foundation, restoration analysis, a conservative declipper research stage, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, conservative natural dynamics and low-level boost stages, first multiband compressor scaffold, static bass EQ foundation, AM output-chain foundation, SSB output-chain foundation, restoration analysis, a conservative declipper research stage, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+
+## M9.4 Natural Dynamics And Low-Level Boost Behavior
+
+The active M9.4 chain adds optional program dynamics stages before AGC:
+
+```text
+input
+DC blocker
+dehummer
+restoration analysis tap
+declipper
+natural dynamics
+low-level boost
+AGC
+multiband compressor 1
+bass EQ
+AM or SSB output chain
+limiter
+meter
+output
+```
+
+Natural dynamics is disabled by default. When enabled, it is a conservative
+linked wideband compressor intended to smooth sudden loud blocks before the AGC
+gain rider. Low-level boost is also disabled by default. When enabled, it raises
+quiet non-silent program material within a bounded gain limit and gates silence
+so noise floor and dead air do not climb endlessly.
+
+These stages are first foundations for the final natural dynamics and
+low-level boost goals. They are not multiband loudness processing and do not
+claim final broadcast-processor behavior.
 
 ## M9.3 Declipper Behavior
 
@@ -32,6 +63,8 @@ DC blocker
 dehummer
 restoration analysis tap
 declipper
+natural dynamics
+low-level boost
 AGC
 multiband compressor 1
 bass EQ
