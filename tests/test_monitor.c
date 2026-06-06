@@ -105,6 +105,7 @@ test_snapshot_from_processor(void)
 	config.multiband2_preset = CP_MULTIBAND_PRESET_SPEECH;
 	config.restoration_config.enabled = 1;
 	config.declipper_config.enabled = 1;
+	config.auto_eq_config.enabled = 1;
 	config.natural_dynamics_config.enabled = 1;
 	config.low_level_boost_config.enabled = 1;
 	config.bass_eq_config.enabled = 1;
@@ -131,6 +132,7 @@ test_snapshot_from_processor(void)
 	    snapshot.band2_count != 4 ||
 	    !snapshot.restoration_enabled ||
 	    !snapshot.declipper_enabled ||
+	    !snapshot.auto_eq_enabled ||
 	    !snapshot.natural_dynamics_enabled ||
 	    !snapshot.low_level_boost_enabled ||
 	    !snapshot.bass_eq_enabled ||

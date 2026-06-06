@@ -108,6 +108,36 @@ cp_monitor_snapshot_from_processor(const struct cp_block_processor *processor,
 	    (int)processor->declipper.metrics.bypass_reason;
 	snapshot->declipper_finite =
 	    processor->declipper.metrics.finite ? 1u : 0u;
+	snapshot->auto_eq_enabled =
+	    processor->auto_eq.config.enabled ? 1u : 0u;
+	snapshot->auto_eq_total_rms =
+	    cp_monitor_sample_to_level(processor->auto_eq.metrics.total_rms);
+	snapshot->auto_eq_spectral_tilt_db_centibel =
+	    cp_monitor_db_to_centibel(
+	    processor->auto_eq.metrics.spectral_tilt_db);
+	snapshot->auto_eq_low_weight =
+	    cp_monitor_sample_to_level(
+	    processor->auto_eq.metrics.low_frequency_weight);
+	snapshot->auto_eq_presence_weight =
+	    cp_monitor_sample_to_level(
+	    processor->auto_eq.metrics.presence_weight);
+	snapshot->auto_eq_high_weight =
+	    cp_monitor_sample_to_level(
+	    processor->auto_eq.metrics.high_frequency_weight);
+	snapshot->auto_eq_source_hint =
+	    (int)processor->auto_eq.metrics.source_hint;
+	snapshot->auto_eq_finite =
+	    processor->auto_eq.metrics.finite ? 1u : 0u;
+	for (band = 0; band < CP_MONITOR_AUTO_EQ_BANDS; band++) {
+		snapshot->auto_eq_band_rms[band] =
+		    cp_monitor_sample_to_level(
+		    processor->auto_eq.metrics.band_rms[band]);
+		snapshot->auto_eq_band_relative_db_centibel[band] =
+		    cp_monitor_db_to_centibel(
+		    processor->auto_eq.metrics.band_relative_db[band]);
+		snapshot->auto_eq_band_enabled[band] =
+		    processor->auto_eq.metrics.band_enabled[band] ? 1u : 0u;
+	}
 	snapshot->natural_dynamics_enabled =
 	    processor->natural_dynamics.config.enabled ? 1u : 0u;
 	snapshot->natural_dynamics_rms =

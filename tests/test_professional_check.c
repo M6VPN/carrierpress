@@ -39,6 +39,7 @@ enum pc_profile {
 	PC_PROFILE_DEHUM_60,
 	PC_PROFILE_DECLIPPER,
 	PC_PROFILE_DYNAMICS,
+	PC_PROFILE_AUTO_EQ,
 	PC_PROFILE_MB_BASS,
 	PC_PROFILE_MB2,
 	PC_PROFILE_AM_SAFE,
@@ -63,6 +64,8 @@ enum pc_check {
 	PC_CHECK_DECLIPPER_BURST,
 	PC_CHECK_DYNAMICS_SILENCE,
 	PC_CHECK_DYNAMICS_SPEECH,
+	PC_CHECK_AUTO_EQ_MUSIC,
+	PC_CHECK_AUTO_EQ_LIMITED,
 	PC_CHECK_AM_LOWPASS,
 	PC_CHECK_AM_HIGHPASS,
 	PC_CHECK_SSB_LOWPASS,
@@ -104,7 +107,13 @@ struct pc_metrics {
 	cp_sample_t declipper_max_delta;
 	cp_sample_t natural_dynamics_gr_db;
 	cp_sample_t low_level_boost_gain_db;
+	cp_sample_t auto_eq_total_rms;
+	cp_sample_t auto_eq_spectral_tilt_db;
+	cp_sample_t auto_eq_low_weight;
+	cp_sample_t auto_eq_presence_weight;
+	cp_sample_t auto_eq_high_weight;
 	enum cp_agc_gate_state final_gate_state;
+	enum cp_auto_eq_source_hint auto_eq_source_hint;
 	enum cp_restoration_source_profile analysis_source_profile;
 	unsigned int analysis_reason_flags;
 	size_t declipper_repaired_samples;
@@ -162,6 +171,10 @@ main(void)
 		    PC_CHECK_DYNAMICS_SILENCE },
 		{ PC_PROFILE_DYNAMICS, PC_FIXTURE_SPEECH_STEPS,
 		    PC_CHECK_DYNAMICS_SPEECH },
+		{ PC_PROFILE_AUTO_EQ, PC_FIXTURE_MUSIC_MIX,
+		    PC_CHECK_AUTO_EQ_MUSIC },
+		{ PC_PROFILE_AUTO_EQ, PC_FIXTURE_AM_LIMITED,
+		    PC_CHECK_AUTO_EQ_LIMITED },
 		{ PC_PROFILE_MB_BASS, PC_FIXTURE_MUSIC_MIX,
 		    PC_CHECK_MUSIC_RMS },
 		{ PC_PROFILE_MB_BASS, PC_FIXTURE_STEREO_IMBALANCE,
@@ -331,6 +344,19 @@ pc_check_case(const struct pc_case *test, const struct pc_metrics *metrics,
 		    metrics->low_level_boost_gain_db < 0.10f)
 			return pc_fail(test, metrics, "dynamics-speech");
 		break;
+	case PC_CHECK_AUTO_EQ_MUSIC:
+		if (metrics->auto_eq_total_rms <= 0.0f ||
+		    !isfinite(metrics->auto_eq_spectral_tilt_db) ||
+		    metrics->auto_eq_source_hint ==
+		    CP_AUTO_EQ_SOURCE_SILENCE)
+			return pc_fail(test, metrics, "auto-eq-music");
+		break;
+	case PC_CHECK_AUTO_EQ_LIMITED:
+		if (metrics->auto_eq_total_rms <= 0.0f ||
+		    metrics->auto_eq_source_hint == CP_AUTO_EQ_SOURCE_BRIGHT ||
+		    metrics->auto_eq_source_hint == CP_AUTO_EQ_SOURCE_SILENCE)
+			return pc_fail(test, metrics, "auto-eq-limited");
+		break;
 	case PC_CHECK_AM_LOWPASS:
 		if (test->profile == PC_PROFILE_AM_WIDE) {
 			if (metrics->output_square >= metrics->input_square *
@@ -410,6 +436,11 @@ pc_config(struct cp_block_config *config, enum pc_profile profile)
 		config->low_level_boost_config.enabled = 1;
 		config->low_level_boost_config.target_rms = 0.12f;
 		config->low_level_boost_config.max_boost_db = 5.0f;
+		break;
+	case PC_PROFILE_AUTO_EQ:
+		config->auto_eq_config.enabled = 1;
+		config->auto_eq_config.analysis_window_frames =
+		    PC_TOTAL_FRAMES;
 		break;
 	case PC_PROFILE_MB_BASS:
 		config->multiband_enabled = 1;
@@ -510,7 +541,8 @@ pc_fail(const struct pc_case *test, const struct pc_metrics *metrics,
 	    "reason=%s input_rms=%0.6f output_rms=%0.6f "
 	    "output_peak=%0.6f output_min=%0.6f output_crest=%0.6f "
 	    "gain=%0.6f gate=%d natural_gr_db=%0.6f "
-	    "low_boost_gain_db=%0.6f declipper_samples=%zu "
+	    "low_boost_gain_db=%0.6f auto_eq_source=%s "
+	    "auto_eq_rms=%0.6f declipper_samples=%zu "
 	    "declipper_runs=%zu\n",
 	    pc_profile_name(test->profile), pc_fixture_name(test->fixture),
 	    reason, metrics->input_square, metrics->output_square,
@@ -518,6 +550,8 @@ pc_fail(const struct pc_case *test, const struct pc_metrics *metrics,
 	    metrics->final_gain, metrics->final_gate_state,
 	    metrics->natural_dynamics_gr_db,
 	    metrics->low_level_boost_gain_db,
+	    cp_auto_eq_source_hint_string(metrics->auto_eq_source_hint),
+	    metrics->auto_eq_total_rms,
 	    metrics->declipper_repaired_samples,
 	    metrics->declipper_repaired_runs);
 	return 0;
@@ -772,7 +806,13 @@ pc_process(const struct pc_case *test)
 	metrics.declipper_max_delta = 0.0f;
 	metrics.natural_dynamics_gr_db = 0.0f;
 	metrics.low_level_boost_gain_db = 0.0f;
+	metrics.auto_eq_total_rms = 0.0f;
+	metrics.auto_eq_spectral_tilt_db = 0.0f;
+	metrics.auto_eq_low_weight = 0.0f;
+	metrics.auto_eq_presence_weight = 0.0f;
+	metrics.auto_eq_high_weight = 0.0f;
 	metrics.final_gate_state = CP_AGC_STATE_OPEN;
+	metrics.auto_eq_source_hint = CP_AUTO_EQ_SOURCE_UNKNOWN;
 	metrics.analysis_source_profile = CP_RESTORATION_SOURCE_UNKNOWN;
 	metrics.analysis_reason_flags = 0u;
 	metrics.declipper_repaired_samples = 0;
@@ -834,6 +874,17 @@ pc_process(const struct pc_case *test)
 	    processor.natural_dynamics.gain_reduction_db;
 	metrics.low_level_boost_gain_db =
 	    processor.low_level_boost.gain_db;
+	metrics.auto_eq_total_rms = processor.auto_eq.metrics.total_rms;
+	metrics.auto_eq_spectral_tilt_db =
+	    processor.auto_eq.metrics.spectral_tilt_db;
+	metrics.auto_eq_low_weight =
+	    processor.auto_eq.metrics.low_frequency_weight;
+	metrics.auto_eq_presence_weight =
+	    processor.auto_eq.metrics.presence_weight;
+	metrics.auto_eq_high_weight =
+	    processor.auto_eq.metrics.high_frequency_weight;
+	metrics.auto_eq_source_hint =
+	    processor.auto_eq.metrics.source_hint;
 
 	pass = pc_check_case(test, &metrics, &config);
 	if (pass) {
@@ -863,6 +914,8 @@ pc_profile_name(enum pc_profile profile)
 		return "declipper";
 	case PC_PROFILE_DYNAMICS:
 		return "dynamics";
+	case PC_PROFILE_AUTO_EQ:
+		return "auto-eq";
 	case PC_PROFILE_MB_BASS:
 		return "multiband-bass";
 	case PC_PROFILE_MB2:

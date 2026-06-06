@@ -6,6 +6,7 @@
 
 #include "cp_agc.h"
 #include "cp_am.h"
+#include "cp_auto_eq.h"
 #include "cp_bass_eq.h"
 #include "cp_dc_blocker.h"
 #include "cp_declipper.h"
@@ -51,6 +52,7 @@ struct cp_block_config {
 	struct cp_bass_eq_config bass_eq_config;
 	struct cp_am_config am_config;
 	struct cp_declipper_config declipper_config;
+	struct cp_auto_eq_config auto_eq_config;
 	struct cp_natural_dynamics_config natural_dynamics_config;
 	struct cp_low_level_boost_config low_level_boost_config;
 	struct cp_restoration_config restoration_config;
@@ -69,6 +71,7 @@ struct cp_block_processor {
 	struct cp_am am;
 	struct cp_restoration restoration;
 	struct cp_declipper declipper;
+	struct cp_auto_eq auto_eq;
 	struct cp_natural_dynamics natural_dynamics;
 	struct cp_low_level_boost low_level_boost;
 	struct cp_ssb ssb;

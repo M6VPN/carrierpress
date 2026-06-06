@@ -95,8 +95,8 @@ M8.3 adds a deterministic audio QA report. It processes these sources:
 - stereo imbalance
 
 The report covers default, 50 Hz dehummer, 60 Hz dehummer, declipper,
-natural dynamics plus low-level boost, multiband plus bass EQ, second
-multiband, AM shortwave, and SSB narrow profiles. Each line
+natural dynamics plus low-level boost, auto EQ analysis, multiband plus bass
+EQ, second multiband, AM shortwave, and SSB narrow profiles. Each line
 prints:
 
 - input and output RMS
@@ -113,6 +113,7 @@ prints:
 - declipper repaired samples, repaired runs, maximum delta, and bypass reason
 - natural dynamics gain reduction
 - low-level boost gain
+- auto EQ source hint, RMS, spectral tilt, and broad tonal weights
 - pass or fail status
 
 The M8.3 thresholds are conservative regression checks for finite output,
@@ -139,12 +140,18 @@ and stepped speech exercises at least one pre-AGC dynamics stage.
 
 M9.5 adds `make professional-check`. This is a stricter pass/fail target for
 the current chain. It runs deterministic fixtures through default, dehummer,
-declipper, natural dynamics plus low-level boost, multiband plus bass EQ,
-second multiband, AM, and SSB profiles. It fails on non-finite output, limiter
+declipper, natural dynamics plus low-level boost, auto EQ analysis, multiband
+plus bass EQ, second multiband, AM, and SSB profiles. It fails on non-finite output, limiter
 violations, AM/SSB peak-limit failures, silence instability, weak DC or hum
 reduction, weak high-pass or low-pass behavior, stereo instability, AGC
-gain-limit regressions, restoration-analysis regressions, declipper-gating
-regressions, and missing dynamics-stage activity.
+gain-limit regressions, restoration-analysis regressions, auto EQ analysis
+regressions, declipper-gating regressions, and missing dynamics-stage activity.
+
+M10.3 adds an analysis-only auto EQ tap. Unit tests cover disabled operation,
+invalid config rejection, silence, bass-heavy, thin, bright, limited-band,
+stereo, and non-finite input cases. `make quality` and
+`make professional-check` include auto EQ profiles that verify finite metrics
+and reject obvious limited-band misclassification as bright.
 
 These fields are diagnostic and regression signals only. They do not prove
 clipping, lossy encoding, clean source quality, or restored source quality.

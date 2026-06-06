@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "cp_audio.h"
+#include "cp_auto_eq.h"
 #include "cp_bass_eq.h"
 #include "cp_declipper.h"
 #include "cp_dehummer.h"
@@ -145,6 +146,10 @@ cp_audio_default_config(struct cp_audio_config *config)
 	config->declipper_config.channel_count = config->channels;
 	config->declipper_config.sample_rate =
 	    (cp_sample_t)config->sample_rate;
+	cp_auto_eq_default_config(&config->auto_eq_config);
+	config->auto_eq_config.channel_count = config->channels;
+	config->auto_eq_config.sample_rate =
+	    (cp_sample_t)config->sample_rate;
 	cp_natural_dynamics_default_config(&config->natural_dynamics_config);
 	config->natural_dynamics_config.channel_count = config->channels;
 	config->natural_dynamics_config.sample_rate =
@@ -255,6 +260,8 @@ cp_audio_status_string(int status)
 		return "invalid natural dynamics settings";
 	case CP_AUDIO_ERR_LOW_LEVEL_BOOST:
 		return "invalid low-level boost settings";
+	case CP_AUDIO_ERR_AUTO_EQ:
+		return "invalid auto EQ analysis settings";
 	default:
 		return "unknown audio error";
 	}
@@ -264,6 +271,7 @@ int
 cp_audio_validate_config(const struct cp_audio_config *config)
 {
 	struct cp_am am;
+	struct cp_auto_eq auto_eq;
 	struct cp_bass_eq bass_eq;
 	struct cp_declipper declipper;
 	struct cp_low_level_boost low_level_boost;
@@ -341,6 +349,11 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 	if (config->declipper_config.sample_rate !=
 	    (cp_sample_t)config->sample_rate)
 		return CP_AUDIO_ERR_DECLIPPER;
+	if (config->auto_eq_config.channel_count != config->channels)
+		return CP_AUDIO_ERR_AUTO_EQ;
+	if (config->auto_eq_config.sample_rate !=
+	    (cp_sample_t)config->sample_rate)
+		return CP_AUDIO_ERR_AUTO_EQ;
 	if (config->natural_dynamics_config.channel_count !=
 	    config->channels)
 		return CP_AUDIO_ERR_NATURAL_DYNAMICS;
@@ -377,6 +390,11 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 		if (cp_declipper_init(&declipper,
 		    &config->declipper_config) != CP_OK)
 			return CP_AUDIO_ERR_DECLIPPER;
+	}
+	if (config->auto_eq_config.enabled) {
+		if (cp_auto_eq_init(&auto_eq,
+		    &config->auto_eq_config) != CP_OK)
+			return CP_AUDIO_ERR_AUTO_EQ;
 	}
 	if (config->natural_dynamics_config.enabled) {
 		if (cp_natural_dynamics_init(&natural_dynamics,

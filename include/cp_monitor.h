@@ -4,6 +4,7 @@
 #ifndef CP_MONITOR_H
 #define CP_MONITOR_H
 
+#include "cp_auto_eq.h"
 #include "cp_bass_eq.h"
 #include "cp_multiband.h"
 #include "cp_types.h"
@@ -13,6 +14,7 @@
 #define CP_MONITOR_MAX_DB		9600
 #define CP_MONITOR_MIN_DB		(-9600)
 #define CP_MONITOR_MAX_BANDS		CP_MULTIBAND_M5_MAX_BANDS
+#define CP_MONITOR_AUTO_EQ_BANDS	CP_AUTO_EQ_BAND_COUNT
 
 struct cp_block_processor;
 
@@ -43,6 +45,17 @@ struct cp_monitor_snapshot {
 	unsigned int declipper_max_delta;
 	int declipper_bypass_reason;
 	unsigned int declipper_finite;
+	unsigned int auto_eq_enabled;
+	unsigned int auto_eq_total_rms;
+	int auto_eq_spectral_tilt_db_centibel;
+	unsigned int auto_eq_low_weight;
+	unsigned int auto_eq_presence_weight;
+	unsigned int auto_eq_high_weight;
+	int auto_eq_source_hint;
+	unsigned int auto_eq_finite;
+	unsigned int auto_eq_band_rms[CP_MONITOR_AUTO_EQ_BANDS];
+	int auto_eq_band_relative_db_centibel[CP_MONITOR_AUTO_EQ_BANDS];
+	unsigned int auto_eq_band_enabled[CP_MONITOR_AUTO_EQ_BANDS];
 	unsigned int natural_dynamics_enabled;
 	unsigned int natural_dynamics_rms;
 	unsigned int natural_dynamics_gain;

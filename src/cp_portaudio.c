@@ -45,6 +45,17 @@ struct cp_portaudio_runtime {
 	atomic_uint declipper_max_delta;
 	atomic_int declipper_bypass_reason;
 	atomic_uint declipper_finite;
+	atomic_uint auto_eq_enabled;
+	atomic_uint auto_eq_total_rms;
+	atomic_int auto_eq_spectral_tilt_db_centibel;
+	atomic_uint auto_eq_low_weight;
+	atomic_uint auto_eq_presence_weight;
+	atomic_uint auto_eq_high_weight;
+	atomic_int auto_eq_source_hint;
+	atomic_uint auto_eq_finite;
+	atomic_uint auto_eq_band_rms[CP_MONITOR_AUTO_EQ_BANDS];
+	atomic_int auto_eq_band_relative_db_centibel[CP_MONITOR_AUTO_EQ_BANDS];
+	atomic_uint auto_eq_band_enabled[CP_MONITOR_AUTO_EQ_BANDS];
 	atomic_uint natural_dynamics_enabled;
 	atomic_uint natural_dynamics_rms;
 	atomic_uint natural_dynamics_gain;
@@ -527,6 +538,21 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	atomic_init(&runtime->declipper_bypass_reason,
 	    (int)CP_DECLIPPER_BYPASS_DISABLED);
 	atomic_init(&runtime->declipper_finite, 1u);
+	atomic_init(&runtime->auto_eq_enabled, 0u);
+	atomic_init(&runtime->auto_eq_total_rms, 0u);
+	atomic_init(&runtime->auto_eq_spectral_tilt_db_centibel, 0);
+	atomic_init(&runtime->auto_eq_low_weight, 0u);
+	atomic_init(&runtime->auto_eq_presence_weight, 0u);
+	atomic_init(&runtime->auto_eq_high_weight, 0u);
+	atomic_init(&runtime->auto_eq_source_hint,
+	    (int)CP_AUTO_EQ_SOURCE_UNKNOWN);
+	atomic_init(&runtime->auto_eq_finite, 1u);
+	for (band = 0; band < CP_MONITOR_AUTO_EQ_BANDS; band++) {
+		atomic_init(&runtime->auto_eq_band_rms[band], 0u);
+		atomic_init(&runtime->auto_eq_band_relative_db_centibel[band],
+		    0);
+		atomic_init(&runtime->auto_eq_band_enabled[band], 0u);
+	}
 	atomic_init(&runtime->natural_dynamics_enabled, 0u);
 	atomic_init(&runtime->natural_dynamics_rms, 0u);
 	atomic_init(&runtime->natural_dynamics_gain, 0u);
@@ -655,6 +681,31 @@ cp_pa_load_snapshot(struct cp_portaudio_runtime *runtime,
 	    atomic_load(&runtime->declipper_bypass_reason);
 	snapshot->declipper_finite =
 	    atomic_load(&runtime->declipper_finite);
+	snapshot->auto_eq_enabled =
+	    atomic_load(&runtime->auto_eq_enabled);
+	snapshot->auto_eq_total_rms =
+	    atomic_load(&runtime->auto_eq_total_rms);
+	snapshot->auto_eq_spectral_tilt_db_centibel =
+	    atomic_load(&runtime->auto_eq_spectral_tilt_db_centibel);
+	snapshot->auto_eq_low_weight =
+	    atomic_load(&runtime->auto_eq_low_weight);
+	snapshot->auto_eq_presence_weight =
+	    atomic_load(&runtime->auto_eq_presence_weight);
+	snapshot->auto_eq_high_weight =
+	    atomic_load(&runtime->auto_eq_high_weight);
+	snapshot->auto_eq_source_hint =
+	    atomic_load(&runtime->auto_eq_source_hint);
+	snapshot->auto_eq_finite =
+	    atomic_load(&runtime->auto_eq_finite);
+	for (band = 0; band < CP_MONITOR_AUTO_EQ_BANDS; band++) {
+		snapshot->auto_eq_band_rms[band] =
+		    atomic_load(&runtime->auto_eq_band_rms[band]);
+		snapshot->auto_eq_band_relative_db_centibel[band] =
+		    atomic_load(
+		    &runtime->auto_eq_band_relative_db_centibel[band]);
+		snapshot->auto_eq_band_enabled[band] =
+		    atomic_load(&runtime->auto_eq_band_enabled[band]);
+	}
 	snapshot->natural_dynamics_enabled =
 	    atomic_load(&runtime->natural_dynamics_enabled);
 	snapshot->natural_dynamics_rms =
@@ -838,6 +889,33 @@ cp_pa_print_meters(const struct cp_monitor_snapshot *snapshot)
 		    (enum cp_declipper_bypass_reason)
 		    snapshot->declipper_bypass_reason),
 		    snapshot->declipper_finite ? "yes" : "no");
+	}
+	if (snapshot->auto_eq_enabled) {
+		printf("auto_eq=on source=%s total_rms=%0.6f "
+		    "tilt_db=%0.2f low=%0.6f presence=%0.6f high=%0.6f "
+		    "finite=%s\n",
+		    cp_auto_eq_source_hint_string(
+		    (enum cp_auto_eq_source_hint)snapshot->auto_eq_source_hint),
+		    cp_monitor_level_to_sample(snapshot->auto_eq_total_rms),
+		    cp_monitor_centibel_to_db(
+		    snapshot->auto_eq_spectral_tilt_db_centibel),
+		    cp_monitor_level_to_sample(snapshot->auto_eq_low_weight),
+		    cp_monitor_level_to_sample(
+		    snapshot->auto_eq_presence_weight),
+		    cp_monitor_level_to_sample(snapshot->auto_eq_high_weight),
+		    snapshot->auto_eq_finite ? "yes" : "no");
+		for (band = 0; band < CP_MONITOR_AUTO_EQ_BANDS; band++) {
+			printf("auto_eq_band%zu_rms=%0.6f "
+			    "auto_eq_band%zu_relative_db=%0.2f enabled=%s\n",
+			    band + 1,
+			    cp_monitor_level_to_sample(
+			    snapshot->auto_eq_band_rms[band]),
+			    band + 1,
+			    cp_monitor_centibel_to_db(
+			    snapshot->auto_eq_band_relative_db_centibel[band]),
+			    snapshot->auto_eq_band_enabled[band] ? "yes" :
+			    "no");
+		}
 	}
 	if (snapshot->natural_dynamics_enabled) {
 		printf("natural_dynamics=on rms=%0.6f gain=%0.6f "
@@ -1040,6 +1118,31 @@ cp_pa_store_meters(struct cp_portaudio_runtime *runtime)
 	    snapshot.declipper_bypass_reason);
 	atomic_store(&runtime->declipper_finite,
 	    snapshot.declipper_finite);
+	atomic_store(&runtime->auto_eq_enabled,
+	    snapshot.auto_eq_enabled);
+	atomic_store(&runtime->auto_eq_total_rms,
+	    snapshot.auto_eq_total_rms);
+	atomic_store(&runtime->auto_eq_spectral_tilt_db_centibel,
+	    snapshot.auto_eq_spectral_tilt_db_centibel);
+	atomic_store(&runtime->auto_eq_low_weight,
+	    snapshot.auto_eq_low_weight);
+	atomic_store(&runtime->auto_eq_presence_weight,
+	    snapshot.auto_eq_presence_weight);
+	atomic_store(&runtime->auto_eq_high_weight,
+	    snapshot.auto_eq_high_weight);
+	atomic_store(&runtime->auto_eq_source_hint,
+	    snapshot.auto_eq_source_hint);
+	atomic_store(&runtime->auto_eq_finite,
+	    snapshot.auto_eq_finite);
+	for (band = 0; band < CP_MONITOR_AUTO_EQ_BANDS; band++) {
+		atomic_store(&runtime->auto_eq_band_rms[band],
+		    snapshot.auto_eq_band_rms[band]);
+		atomic_store(
+		    &runtime->auto_eq_band_relative_db_centibel[band],
+		    snapshot.auto_eq_band_relative_db_centibel[band]);
+		atomic_store(&runtime->auto_eq_band_enabled[band],
+		    snapshot.auto_eq_band_enabled[band]);
+	}
 	atomic_store(&runtime->natural_dynamics_enabled,
 	    snapshot.natural_dynamics_enabled);
 	atomic_store(&runtime->natural_dynamics_rms,

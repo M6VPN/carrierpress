@@ -75,6 +75,8 @@ test_block_config_from_audio(void)
 	audio_config.restoration_config.clip_threshold = 0.97f;
 	audio_config.declipper_config.enabled = 1;
 	audio_config.declipper_config.repair_strength = 0.25f;
+	audio_config.auto_eq_config.enabled = 1;
+	audio_config.auto_eq_config.analysis_window_frames = 2048;
 	audio_config.natural_dynamics_config.enabled = 1;
 	audio_config.natural_dynamics_config.threshold_db = -16.0f;
 	audio_config.low_level_boost_config.enabled = 1;
@@ -107,6 +109,9 @@ test_block_config_from_audio(void)
 	    !block_config.declipper_config.enabled ||
 	    block_config.declipper_config.repair_strength != 0.25f ||
 	    block_config.declipper_config.channel_count != CP_CHANNELS_MONO ||
+	    !block_config.auto_eq_config.enabled ||
+	    block_config.auto_eq_config.analysis_window_frames != 2048 ||
+	    block_config.auto_eq_config.channel_count != CP_CHANNELS_MONO ||
 	    !block_config.natural_dynamics_config.enabled ||
 	    block_config.natural_dynamics_config.threshold_db != -16.0f ||
 	    block_config.natural_dynamics_config.channel_count !=
@@ -302,6 +307,15 @@ test_validate_config(void)
 	config.declipper_config.repair_strength = 2.0f;
 	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_DECLIPPER) {
 		printf("test_audio: invalid declipper config accepted\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&config);
+	config.auto_eq_config.enabled = 1;
+	config.auto_eq_config.analysis_window_frames =
+	    CP_AUTO_EQ_MAX_WINDOW_FRAMES + 1;
+	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_AUTO_EQ) {
+		printf("test_audio: invalid auto EQ config accepted\n");
 		return 0;
 	}
 

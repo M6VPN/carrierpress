@@ -1,10 +1,10 @@
 # CarrierPress
 
-CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.1 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, optional dehummer, optional natural dynamics and low-level boost stages, optional multiband compressor foundations, optional static bass EQ, an optional restoration analysis tap, an optional conservative declipper research stage, and a safe peak limiter.
+CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.1 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, optional dehummer, optional natural dynamics and low-level boost stages, optional multiband compressor foundations, optional static bass EQ, optional restoration and auto EQ analysis taps, an optional conservative declipper research stage, and a safe peak limiter.
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
-Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional sndio support exists as an OpenBSD-style foundation, but remaining sndio work is deferred while Linux-host core processing quality is the active focus. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.4 adds optional conservative natural dynamics and low-level boost stages before AGC. M10.2 adds an optional second conservative multiband polish stage after bass EQ and before AM or SSB shaping. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
+Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional sndio support exists as an OpenBSD-style foundation, but remaining sndio work is deferred while Linux-host core processing quality is the active focus. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.4 adds optional conservative natural dynamics and low-level boost stages before AGC. M10.2 adds an optional second conservative multiband polish stage after bass EQ and before AM or SSB shaping. M10.3 adds an optional analysis-only auto EQ tap for tonal-balance diagnostics. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
 
 ## Table of Contents
 
@@ -203,6 +203,16 @@ The second multiband stage is disabled by default. It reuses the current 2 to 4
 band splitter and compressor, but uses gentler final-polish settings than the
 first multiband stage. It is not final broadcast loudness processing.
 
+Run the self-test with the M10.3 auto EQ analyzer enabled:
+
+```sh
+./carrierpress --self-test --auto-eq-analyze
+```
+
+The auto EQ analyzer is disabled by default. It measures fixed tonal bands,
+relative band levels, spectral tilt, and a source hint. It does not change
+audio samples and does not implement adaptive EQ.
+
 Run the self-test with the M8.1 static bass EQ enabled:
 
 ```sh
@@ -269,9 +279,9 @@ Play a WAV file through CarrierPress and send the processed result to the defaul
 ```
 
 Play mode uses the same DSP chain controls as live mode. Dehummer, multiband,
-second multiband, natural dynamics, low-level boost, AM shaping, AGC, limiter,
-and metering are applied to fixed-size WAV blocks before they are sent to the
-output device.
+second multiband, auto EQ analysis, natural dynamics, low-level boost, AM
+shaping, AGC, limiter, and metering are applied to fixed-size WAV blocks before
+they are sent to the output device.
 
 Choose an output device for WAV playout:
 
@@ -307,6 +317,7 @@ Print analysis metrics while playing:
 
 ```sh
 ./carrierpress --play input.wav --analyze --meter-interval-ms 1000
+./carrierpress --play input.wav --auto-eq-analyze --meter-interval-ms 1000
 ```
 
 Run playout through the conservative declipper research stage:
@@ -454,6 +465,7 @@ Run live processing with analysis metrics:
 
 ```sh
 ./carrierpress --live --analyze --meter-interval-ms 1000
+./carrierpress --live --auto-eq-analyze --meter-interval-ms 1000
 ```
 
 Run live processing with the M9.4 pre-AGC dynamics stages:
@@ -514,7 +526,7 @@ TUI support requires a `WITH_TUI=1` build. Without it, `--tui` exits with:
 TUI support not enabled. Rebuild with WITH_TUI=1.
 ```
 
-Live mode is experimental. It is a sound-card backend for testing the existing DC blocker, dehummer, dynamics, AGC, multiband, AM/SSB shaping, limiter, and metering chain. It is not a broadcast-quality processor.
+Live mode is experimental. It is a sound-card backend for testing the existing DC blocker, dehummer, analysis taps, dynamics, AGC, multiband, AM/SSB shaping, limiter, and metering chain. It is not a broadcast-quality processor.
 
 PortAudio may print ALSA or JACK probe warnings while listing or opening devices.
 Those warnings are not always fatal. Use the final CarrierPress status line and
@@ -766,6 +778,26 @@ gentler final-polish compression. Enable it with `--multiband2`.
 The second multiband stage is disabled by default and does not add 5 to 9 band
 support yet.
 
+## Auto EQ Analysis
+
+The M10.3 auto EQ analysis tap runs after restoration and declipper analysis
+and before dynamics, low-level boost, AGC, and compression. It measures fixed
+tonal bands for bass, low midrange, midrange, presence, and high frequencies.
+It reports total RMS, per-band RMS, relative band dB, spectral tilt, broad
+weights, and a source hint such as silence, bass-heavy, thin, dark, bright,
+balanced, or limited-band.
+
+Enable it with `--auto-eq-analyze`:
+
+```sh
+./carrierpress --input input.wav --output output.wav --auto-eq-analyze
+./carrierpress --live --auto-eq-analyze --meter-interval-ms 1000
+./carrierpress --play input.wav --auto-eq-analyze --meter-interval-ms 1000
+```
+
+M10.3 is analysis-only. It does not apply automatic EQ, change bass EQ
+settings, or claim tonal correction quality.
+
 ## Bass EQ
 
 The M8.1 bass EQ mode is a static two-shelf tone-shaping foundation. It runs after the first multiband compressor and before the optional second multiband stage. It is disabled by default and leaves audio unchanged unless `--bass-eq` is selected.
@@ -784,7 +816,7 @@ Enable it with `--bass-eq`. Presets are conservative starting points:
 ./carrierpress --input input.wav --output output.wav --bass-eq --bass-gain-db 2.0 --bass-frequency 120 --presence-gain-db 0.5
 ```
 
-M8.1 does not implement automatic EQ, immersive bass, true bass, subharmonic synthesis, or adaptive source analysis. It is a static, bounded bass and presence EQ stage for later tuning work.
+M8.1 does not implement automatic EQ, immersive bass, true bass, or subharmonic synthesis. It is a static, bounded bass and presence EQ stage for later tuning work.
 
 ## AM Mode
 

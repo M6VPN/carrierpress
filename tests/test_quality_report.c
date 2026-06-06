@@ -38,6 +38,7 @@ enum qr_profile {
 	QR_PROFILE_DEHUM_60,
 	QR_PROFILE_DECLIPPER,
 	QR_PROFILE_DYNAMICS,
+	QR_PROFILE_AUTO_EQ,
 	QR_PROFILE_MB_BASS,
 	QR_PROFILE_MB2,
 	QR_PROFILE_AM_SHORTWAVE,
@@ -84,6 +85,12 @@ struct qr_metrics {
 	cp_sample_t declipper_max_delta;
 	cp_sample_t natural_dynamics_gr_db;
 	cp_sample_t low_level_boost_gain_db;
+	cp_sample_t auto_eq_total_rms;
+	cp_sample_t auto_eq_low_weight;
+	cp_sample_t auto_eq_presence_weight;
+	cp_sample_t auto_eq_high_weight;
+	cp_sample_t auto_eq_spectral_tilt_db;
+	enum cp_auto_eq_source_hint auto_eq_source_hint;
 	enum cp_restoration_source_profile analysis_source_profile;
 	unsigned int analysis_reason_flags;
 	size_t declipper_repaired_samples;
@@ -133,6 +140,9 @@ main(void)
 		    "dynamics-silence" },
 		{ QR_PROFILE_DYNAMICS, QR_FIXTURE_SPEECH_STEPS,
 		    "dynamics-speech" },
+		{ QR_PROFILE_AUTO_EQ, QR_FIXTURE_MUSIC_MIX, "auto-eq-music" },
+		{ QR_PROFILE_AUTO_EQ, QR_FIXTURE_AM_LIMITED,
+		    "auto-eq-am-limited" },
 		{ QR_PROFILE_MB_BASS, QR_FIXTURE_MUSIC_MIX, "mb-music" },
 		{ QR_PROFILE_MB_BASS, QR_FIXTURE_STEREO_IMBALANCE, "stereo" },
 		{ QR_PROFILE_MB2, QR_FIXTURE_MUSIC_MIX, "mb2-music" },
@@ -229,6 +239,16 @@ qr_check_case(const struct qr_case *test, const struct qr_metrics *metrics)
 		    metrics->low_level_boost_gain_db < 0.10f)
 			return 0;
 	}
+	if (test->profile == QR_PROFILE_AUTO_EQ) {
+		if (metrics->auto_eq_total_rms <= 0.0f ||
+		    !isfinite(metrics->auto_eq_spectral_tilt_db))
+			return 0;
+		if (test->fixture == QR_FIXTURE_AM_LIMITED &&
+		    (metrics->auto_eq_source_hint ==
+		    CP_AUTO_EQ_SOURCE_BRIGHT ||
+		    metrics->auto_eq_source_hint == CP_AUTO_EQ_SOURCE_SILENCE))
+			return 0;
+	}
 	if (test->check[0] == 'a' && test->fixture == QR_FIXTURE_HIGH_TONE &&
 	    metrics->output_square >= metrics->input_square * 0.45)
 		return 0;
@@ -306,6 +326,11 @@ qr_config(struct cp_block_config *config, enum qr_profile profile)
 		config->low_level_boost_config.enabled = 1;
 		config->low_level_boost_config.target_rms = 0.12f;
 		config->low_level_boost_config.max_boost_db = 5.0f;
+		break;
+	case QR_PROFILE_AUTO_EQ:
+		config->auto_eq_config.enabled = 1;
+		config->auto_eq_config.analysis_window_frames =
+		    QR_TOTAL_FRAMES;
 		break;
 	case QR_PROFILE_MB_BASS:
 		config->multiband_enabled = 1;
@@ -579,6 +604,8 @@ qr_profile_name(enum qr_profile profile)
 		return "declipper";
 	case QR_PROFILE_DYNAMICS:
 		return "dynamics";
+	case QR_PROFILE_AUTO_EQ:
+		return "auto-eq";
 	case QR_PROFILE_MB_BASS:
 		return "multiband-bass";
 	case QR_PROFILE_MB2:
@@ -652,6 +679,12 @@ qr_run_case(const struct qr_case *test)
 	metrics.declipper_max_delta = 0.0f;
 	metrics.natural_dynamics_gr_db = 0.0f;
 	metrics.low_level_boost_gain_db = 0.0f;
+	metrics.auto_eq_total_rms = 0.0f;
+	metrics.auto_eq_low_weight = 0.0f;
+	metrics.auto_eq_presence_weight = 0.0f;
+	metrics.auto_eq_high_weight = 0.0f;
+	metrics.auto_eq_spectral_tilt_db = 0.0f;
+	metrics.auto_eq_source_hint = CP_AUTO_EQ_SOURCE_UNKNOWN;
 	metrics.analysis_source_profile = CP_RESTORATION_SOURCE_UNKNOWN;
 	metrics.analysis_reason_flags = 0u;
 	metrics.declipper_repaired_samples = 0;
@@ -730,6 +763,17 @@ qr_run_case(const struct qr_case *test)
 	    processor.natural_dynamics.gain_reduction_db;
 	metrics.low_level_boost_gain_db =
 	    processor.low_level_boost.gain_db;
+	metrics.auto_eq_total_rms = processor.auto_eq.metrics.total_rms;
+	metrics.auto_eq_low_weight =
+	    processor.auto_eq.metrics.low_frequency_weight;
+	metrics.auto_eq_presence_weight =
+	    processor.auto_eq.metrics.presence_weight;
+	metrics.auto_eq_high_weight =
+	    processor.auto_eq.metrics.high_frequency_weight;
+	metrics.auto_eq_spectral_tilt_db =
+	    processor.auto_eq.metrics.spectral_tilt_db;
+	metrics.auto_eq_source_hint =
+	    processor.auto_eq.metrics.source_hint;
 	pass = qr_check_case(test, &metrics);
 
 	printf("quality profile=%s fixture=%s check=%s input_rms=%0.6f "
@@ -748,7 +792,10 @@ qr_run_case(const struct qr_case *test)
 	    "analysis_reason_flags=0x%08x declipper_samples=%zu "
 	    "declipper_runs=%zu declipper_delta=%0.6f "
 	    "declipper_bypass=%s natural_gr_db=%0.6f "
-	    "low_boost_gain_db=%0.6f status=%s\n",
+	    "low_boost_gain_db=%0.6f auto_eq_source=%s "
+	    "auto_eq_rms=%0.6f auto_eq_tilt_db=%0.6f "
+	    "auto_eq_low=%0.6f auto_eq_presence=%0.6f "
+	    "auto_eq_high=%0.6f status=%s\n",
 	    qr_profile_name(test->profile), qr_fixture_name(test->fixture),
 	    test->check, metrics.input_square, metrics.output_square,
 	    metrics.input_peak, metrics.output_peak, metrics.output_min,
@@ -778,6 +825,12 @@ qr_run_case(const struct qr_case *test)
 	    metrics.declipper_bypass_reason),
 	    metrics.natural_dynamics_gr_db,
 	    metrics.low_level_boost_gain_db,
+	    cp_auto_eq_source_hint_string(metrics.auto_eq_source_hint),
+	    metrics.auto_eq_total_rms,
+	    metrics.auto_eq_spectral_tilt_db,
+	    metrics.auto_eq_low_weight,
+	    metrics.auto_eq_presence_weight,
+	    metrics.auto_eq_high_weight,
 	    pass ? "pass" : "fail");
 
 	return pass;

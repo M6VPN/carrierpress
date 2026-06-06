@@ -47,6 +47,7 @@ static int	run_playout_playlist(const char *, const struct cp_audio_config *,
 static int	run_wav_process(const char *, const char *,
 		    const struct cp_block_config *);
 static int	run_self_test(const struct cp_block_config *);
+static void	print_auto_eq_metrics(const struct cp_auto_eq_metrics *);
 static void	print_restoration_metrics(const struct cp_restoration_metrics *);
 static void	usage(const char *);
 
@@ -125,6 +126,9 @@ main(int argc, char *argv[])
 			    parsed_size;
 			audio_config.declipper_config.max_repair_samples =
 			    parsed_size;
+		} else if (strcmp(argv[arg], "--auto-eq-analyze") == 0) {
+			block_config.auto_eq_config.enabled = 1;
+			audio_config.auto_eq_config.enabled = 1;
 		} else if (strcmp(argv[arg], "--natural-dynamics") == 0) {
 			block_config.natural_dynamics_config.enabled = 1;
 			audio_config.natural_dynamics_config.enabled = 1;
@@ -495,6 +499,9 @@ main(int argc, char *argv[])
 	    (cp_sample_t)audio_config.sample_rate;
 	audio_config.declipper_config.channel_count = audio_config.channels;
 	audio_config.declipper_config.sample_rate =
+	    (cp_sample_t)audio_config.sample_rate;
+	audio_config.auto_eq_config.channel_count = audio_config.channels;
+	audio_config.auto_eq_config.sample_rate =
 	    (cp_sample_t)audio_config.sample_rate;
 	audio_config.natural_dynamics_config.channel_count =
 	    audio_config.channels;
@@ -937,6 +944,8 @@ run_self_test(const struct cp_block_config *self_config)
 	config.sample_rate = CP_SELF_TEST_RATE;
 	config.declipper_config.channel_count = CP_CHANNELS_MONO;
 	config.declipper_config.sample_rate = CP_SELF_TEST_RATE;
+	config.auto_eq_config.channel_count = CP_CHANNELS_MONO;
+	config.auto_eq_config.sample_rate = CP_SELF_TEST_RATE;
 	config.natural_dynamics_config.channel_count = CP_CHANNELS_MONO;
 	config.natural_dynamics_config.sample_rate = CP_SELF_TEST_RATE;
 	config.low_level_boost_config.channel_count = CP_CHANNELS_MONO;
@@ -1060,8 +1069,39 @@ run_self_test(const struct cp_block_config *self_config)
 		    processor.declipper.metrics.bypass_reason),
 		    processor.declipper.metrics.finite ? "yes" : "no");
 	}
+	if (processor.auto_eq.config.enabled)
+		print_auto_eq_metrics(&processor.auto_eq.metrics);
 
 	return 0;
+}
+
+static void
+print_auto_eq_metrics(const struct cp_auto_eq_metrics *metrics)
+{
+	size_t band;
+
+	if (metrics == NULL)
+		return;
+
+	printf("auto_eq=on source=%s total_rms=%0.6f spectral_tilt_db=%0.2f "
+	    "low_weight=%0.6f presence_weight=%0.6f high_weight=%0.6f "
+	    "finite=%s\n",
+	    cp_auto_eq_source_hint_string(metrics->source_hint),
+	    metrics->total_rms,
+	    metrics->spectral_tilt_db,
+	    metrics->low_frequency_weight,
+	    metrics->presence_weight,
+	    metrics->high_frequency_weight,
+	    metrics->finite ? "yes" : "no");
+	for (band = 0; band < CP_AUTO_EQ_BAND_COUNT; band++) {
+		printf("auto_eq_band%zu_rms=%0.6f "
+		    "auto_eq_band%zu_relative_db=%0.2f enabled=%s\n",
+		    band + 1,
+		    metrics->band_rms[band],
+		    band + 1,
+		    metrics->band_relative_db[band],
+		    metrics->band_enabled[band] ? "yes" : "no");
+	}
 }
 
 static void
@@ -1102,6 +1142,7 @@ usage(const char *program)
 	printf("usage: %s --self-test --dehummer --hum-frequency 50 "
 	    "--hum-harmonics 4\n", program);
 	printf("usage: %s --self-test --analyze --declipper\n", program);
+	printf("usage: %s --self-test --auto-eq-analyze\n", program);
 	printf("usage: %s --self-test --natural-dynamics "
 	    "--low-level-boost\n", program);
 	printf("usage: %s --self-test --ssb --ssb-preset ssb-speech\n",
@@ -1121,6 +1162,7 @@ usage(const char *program)
 	printf("usage: %s --live --meter-interval-ms 1000\n", program);
 	printf("usage: %s --live --tui\n", program);
 	printf("analysis option: --analyze\n");
+	printf("auto EQ analysis option: --auto-eq-analyze\n");
 	printf("declipper options: --declipper --declipper-strength FLOAT "
 	    "--declipper-max-samples N\n");
 	printf("natural dynamics options: --natural-dynamics "

@@ -975,6 +975,33 @@ cp_playout_print_meters(const struct cp_monitor_snapshot *snapshot)
 			    snapshot->band2_gr_db_centibel[band]));
 		}
 	}
+	if (snapshot->auto_eq_enabled) {
+		printf("auto_eq=on source=%s total_rms=%0.6f "
+		    "tilt_db=%0.2f low=%0.6f presence=%0.6f high=%0.6f "
+		    "finite=%s\n",
+		    cp_auto_eq_source_hint_string(
+		    (enum cp_auto_eq_source_hint)snapshot->auto_eq_source_hint),
+		    cp_monitor_level_to_sample(snapshot->auto_eq_total_rms),
+		    cp_monitor_centibel_to_db(
+		    snapshot->auto_eq_spectral_tilt_db_centibel),
+		    cp_monitor_level_to_sample(snapshot->auto_eq_low_weight),
+		    cp_monitor_level_to_sample(
+		    snapshot->auto_eq_presence_weight),
+		    cp_monitor_level_to_sample(snapshot->auto_eq_high_weight),
+		    snapshot->auto_eq_finite ? "yes" : "no");
+		for (band = 0; band < CP_MONITOR_AUTO_EQ_BANDS; band++) {
+			printf("auto_eq_band%zu_rms=%0.6f "
+			    "auto_eq_band%zu_relative_db=%0.2f enabled=%s\n",
+			    band + 1,
+			    cp_monitor_level_to_sample(
+			    snapshot->auto_eq_band_rms[band]),
+			    band + 1,
+			    cp_monitor_centibel_to_db(
+			    snapshot->auto_eq_band_relative_db_centibel[band]),
+			    snapshot->auto_eq_band_enabled[band] ? "yes" :
+			    "no");
+		}
+	}
 	if (snapshot->am_enabled) {
 		printf("am=on preset=%s highpass=%u lowpass=%u "
 		    "positive_peak=%0.2f negative_peak=%0.2f "

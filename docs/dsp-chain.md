@@ -20,7 +20,36 @@ final limiter / clipper
 output
 ```
 
-v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, conservative natural dynamics and low-level boost stages, first multiband compressor scaffold, static bass EQ foundation, second multiband polish scaffold, AM output-chain foundation, SSB output-chain foundation, restoration analysis, a conservative declipper research stage, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, conservative natural dynamics and low-level boost stages, first multiband compressor scaffold, static bass EQ foundation, second multiband polish scaffold, AM output-chain foundation, SSB output-chain foundation, restoration analysis, auto EQ analysis, a conservative declipper research stage, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+
+## M10.3 Auto EQ Analysis Behavior
+
+The active M10.3 chain adds an optional analysis-only auto EQ tap after the
+declipper:
+
+```text
+input
+DC blocker
+dehummer
+restoration analysis tap
+declipper
+auto EQ analysis tap
+natural dynamics
+low-level boost
+AGC
+multiband compressor 1
+bass EQ
+multiband compressor 2
+AM or SSB output chain
+limiter
+meter
+output
+```
+
+The auto EQ analyzer is disabled by default. It measures fixed tonal bands and
+reports total RMS, per-band RMS, relative band dB, spectral tilt, broad tonal
+weights, and a source hint. It does not change samples, set EQ gains, add
+adaptive EQ, or claim tonal correction quality.
 
 ## M10.2 Multiband Compressor 2 Behavior
 
@@ -32,6 +61,7 @@ DC blocker
 dehummer
 restoration analysis tap
 declipper
+auto EQ analysis tap
 natural dynamics
 low-level boost
 AGC
@@ -133,8 +163,8 @@ output
 The bass EQ stage is disabled by default. When enabled, it applies conservative
 low-shelf and high-shelf filters after the first multiband compressor and before
 AM or SSB shaping. This gives later AM/SSB presets a simple tone-shaping stage
-without adding automatic EQ, subharmonic synthesis, immersive bass, or true bass
-processing yet.
+without adding automatic EQ processing, subharmonic synthesis, immersive bass,
+or true bass processing yet.
 
 ## M9.2 Restoration Analysis Behavior
 

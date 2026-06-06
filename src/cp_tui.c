@@ -10,6 +10,7 @@
 #include <curses.h>
 
 #include "cp_agc.h"
+#include "cp_auto_eq.h"
 #include "cp_bass_eq.h"
 #include "cp_declipper.h"
 #include "cp_multiband.h"
@@ -23,6 +24,8 @@
 static void	cp_tui_draw_bar(int, int, const char *, cp_sample_t,
 		    cp_sample_t);
 static void	cp_tui_draw_am(int, const struct cp_monitor_snapshot *);
+static void	cp_tui_draw_auto_eq(int,
+		    const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_bass_eq(int,
 		    const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_dehummer(int,
@@ -138,9 +141,10 @@ cp_tui_update_view(struct cp_tui *tui, const struct cp_tui_view *view,
 
 	cp_tui_draw_am(16, snapshot);
 	cp_tui_draw_ssb(17, snapshot);
-	cp_tui_draw_restoration(18, snapshot);
-	cp_tui_draw_declipper(19, snapshot);
-	cp_tui_draw_flags(20, snapshot->stream_flags);
+	cp_tui_draw_auto_eq(18, snapshot);
+	cp_tui_draw_restoration(19, snapshot);
+	cp_tui_draw_declipper(20, snapshot);
+	cp_tui_draw_flags(21, snapshot->stream_flags);
 	cp_tui_draw_keys(view, tui->control_bank);
 	refresh();
 
@@ -185,6 +189,27 @@ cp_tui_draw_am(int row, const struct cp_monitor_snapshot *snapshot)
 	    cp_monitor_level_to_sample(snapshot->am_negative_peak),
 	    snapshot->am_asymmetry_enabled ? "on" : "off",
 	    cp_monitor_level_to_sample(snapshot->am_asymmetry_ratio));
+}
+
+static void
+cp_tui_draw_auto_eq(int row, const struct cp_monitor_snapshot *snapshot)
+{
+	if (!snapshot->auto_eq_enabled) {
+		mvprintw(row, 2, "Auto EQ analysis off");
+		return;
+	}
+
+	mvprintw(row, 2, "Auto EQ %s rms %0.4f tilt %0.2f dB low %0.3f "
+	    "presence %0.3f high %0.3f finite %s",
+	    cp_auto_eq_source_hint_string(
+	    (enum cp_auto_eq_source_hint)snapshot->auto_eq_source_hint),
+	    cp_monitor_level_to_sample(snapshot->auto_eq_total_rms),
+	    cp_monitor_centibel_to_db(
+	    snapshot->auto_eq_spectral_tilt_db_centibel),
+	    cp_monitor_level_to_sample(snapshot->auto_eq_low_weight),
+	    cp_monitor_level_to_sample(snapshot->auto_eq_presence_weight),
+	    cp_monitor_level_to_sample(snapshot->auto_eq_high_weight),
+	    snapshot->auto_eq_finite ? "yes" : "no");
 }
 
 static void

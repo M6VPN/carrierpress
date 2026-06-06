@@ -78,11 +78,11 @@ Partially implemented. CarrierPress now has an optional static bass EQ foundatio
 
 ## M8.2 professional validation gate
 
-Implemented as a deterministic validation pass for the current chain. It checks default, dehummer, multiband plus bass EQ, second multiband, AM, and SSB profiles against finite output, limiter bounds, AM/SSB peak limits, silence stability, DC reduction, hum reduction, low-pass rejection, stereo stability, and AGC gain limits. It is an engineering regression gate, not a broadcast-quality or compliance claim.
+Implemented as a deterministic validation pass for the current chain. It checks default, dehummer, multiband plus bass EQ, second multiband, auto EQ analysis, AM, and SSB profiles against finite output, limiter bounds, AM/SSB peak limits, silence stability, DC reduction, hum reduction, low-pass rejection, stereo stability, and AGC gain limits. It is an engineering regression gate, not a broadcast-quality or compliance claim.
 
 ## M8.3 audio QA measurement harness
 
-Implemented as a deterministic measurement pass for the current chain. `make quality` prints machine-readable RMS, peak, crest factor, DC offset, hum-bin, and stereo-balance measurements for selected default, dehummer, multiband plus bass EQ, second multiband, AM, and SSB profiles. It is intended to support tuning and regression review before M9 restoration research. It is not a listening test, spectrum measurement, transmitter test, or compliance claim.
+Implemented as a deterministic measurement pass for the current chain. `make quality` prints machine-readable RMS, peak, crest factor, DC offset, hum-bin, stereo-balance, restoration-analysis, and auto-EQ-analysis measurements for selected default, dehummer, multiband plus bass EQ, second multiband, auto EQ analysis, AM, and SSB profiles. It is intended to support tuning and regression review before M9 restoration research. It is not a listening test, spectrum measurement, transmitter test, or compliance claim.
 
 ## M9 declipper and delossifier research
 
@@ -134,12 +134,12 @@ processing.
 
 Implemented as a stricter deterministic regression gate for the current chain.
 `make professional-check` covers default, dehummer, declipper, natural dynamics
-plus low-level boost, multiband plus bass EQ, second multiband, AM, and SSB
-profiles. It checks finite output, limiter bounds, AM/SSB peak limits, silence
-stability, DC reduction, hum reduction, high-pass and low-pass behavior, stereo
-stability, AGC limits, restoration analysis, declipper gating, and
-dynamics-stage activity. It is not a listening test, compliance test, or
-broadcast-quality claim.
+plus low-level boost, auto EQ analysis, multiband plus bass EQ, second
+multiband, AM, and SSB profiles. It checks finite output, limiter bounds,
+AM/SSB peak limits, silence stability, DC reduction, hum reduction, high-pass
+and low-pass behavior, stereo stability, AGC limits, restoration analysis,
+auto EQ analysis, declipper gating, and dynamics-stage activity. It is not a
+listening test, compliance test, or broadcast-quality claim.
 
 ## M10 sndio backend
 
@@ -167,8 +167,12 @@ default. 5 to 9 band support remains planned.
 
 ## M10.3 automatic EQ analysis foundation
 
-Planned. Add analysis-only source and tonal-balance measurements before any
-automatic EQ processing. Do not change samples in this milestone.
+Partially implemented. CarrierPress now has an optional analysis-only auto EQ
+tap after declipper and before dynamics, low-level boost, AGC, and compression.
+It reports fixed-band RMS, relative band dB, tonal weights, spectral tilt, and
+source hints in self-test, live meters, playout meters, TUI snapshots,
+`make quality`, and `make professional-check`. It does not change samples or
+implement automatic EQ processing.
 
 ## M10.4 adaptive bass EQ improvements
 

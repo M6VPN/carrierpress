@@ -17,6 +17,7 @@ The gate covers:
 - 60 Hz dehummer
 - declipper
 - natural dynamics plus low-level boost
+- auto EQ analysis
 - multiband plus bass EQ
 - second multiband
 - AM safe, shortwave, wide, and voice presets
@@ -56,6 +57,7 @@ The gate fails on:
 - weak AM or SSB high-pass and low-pass behavior
 - stereo instability
 - restoration analyzer source-profile regressions
+- auto EQ analyzer regressions
 - declipper repair or bypass gating regressions
 - missing natural dynamics or low-level boost activity on stepped speech
 
