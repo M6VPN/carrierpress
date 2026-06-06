@@ -114,6 +114,9 @@ VALIDATION_BINS = \
 QUALITY_BINS = \
 	$(TEST_BIN_DIR)/test_quality_report
 
+PROFESSIONAL_BINS = \
+	$(TEST_BIN_DIR)/test_professional_check
+
 TEST_BINS = \
 	$(TEST_BIN_DIR)/test_agc \
 	$(TEST_BIN_DIR)/test_am \
@@ -244,6 +247,10 @@ $(TEST_BIN_DIR)/test_quality_report: $(TEST_OBJ_DIR)/tests/test_quality_report.o
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_quality_report.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_professional_check: $(TEST_OBJ_DIR)/tests/test_professional_check.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_professional_check.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_wav: $(TEST_OBJ_DIR)/tests/test_wav.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_wav.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -287,6 +294,9 @@ validate: $(VALIDATION_BINS)
 quality: $(QUALITY_BINS)
 	./$(TEST_BIN_DIR)/test_quality_report
 
+professional-check: $(PROFESSIONAL_BINS)
+	./$(TEST_BIN_DIR)/test_professional_check
+
 check-sndfile:
 	@mkdir -p $(BUILD_DIR)
 	@printf '#include <sndfile.h>\nint main(void) { return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/check-sndfile -lsndfile >/dev/null 2>&1 || { printf 'error: missing libsndfile development package/library. Install libsndfile (for example libsndfile1-dev, libsndfile-devel, or libsndfile).\n'; exit 1; }
@@ -326,6 +336,7 @@ clean:
 	rm -f tests/test_limiter tests/test_low_level_boost tests/test_meter
 	rm -f tests/test_monitor tests/test_multiband
 	rm -f tests/test_natural_dynamics
+	rm -f tests/test_professional_check
 	rm -f tests/test_quality_report
 	rm -f tests/test_resampler tests/test_restoration tests/test_ssb
 	rm -f tests/test_playout tests/test_validation tests/test_wav
@@ -333,4 +344,4 @@ clean:
 	rm -f tests/playout_report.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all check-portaudio check-sndfile check-tui clean quality test validate
+.PHONY: all check-portaudio check-sndfile check-tui clean professional-check quality test validate

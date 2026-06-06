@@ -130,6 +130,17 @@ are disabled by default and expose self-test, live meter, playout meter, TUI,
 and `make quality` diagnostics. They are not final broadcast loudness
 processing.
 
+## M9.5 professional validation baseline
+
+Implemented as a stricter deterministic regression gate for the current chain.
+`make professional-check` covers default, dehummer, declipper, natural dynamics
+plus low-level boost, multiband plus bass EQ, AM, and SSB profiles. It checks
+finite output, limiter bounds, AM/SSB peak limits, silence stability, DC
+reduction, hum reduction, high-pass and low-pass behavior, stereo stability,
+AGC limits, restoration analysis, declipper gating, and dynamics-stage
+activity. It is not a listening test, compliance test, or broadcast-quality
+claim.
+
 ## M10 sndio backend
 
 Add optional sndio live audio support for OpenBSD.

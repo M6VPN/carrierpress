@@ -4,7 +4,7 @@ CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB a
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
-Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.4 adds optional conservative natural dynamics and low-level boost stages before AGC. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
+Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.4 adds optional conservative natural dynamics and low-level boost stages before AGC. M9.5 adds a stricter deterministic validation gate for the existing chain. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
 
 ## Table of Contents
 
@@ -55,6 +55,12 @@ Run deterministic audio QA fixtures and print machine-readable measurements:
 
 ```sh
 make quality
+```
+
+Run the stricter professional validation gate:
+
+```sh
+make professional-check
 ```
 
 Build with optional WAV support:
@@ -534,6 +540,14 @@ high-frequency-loss indicator measurements for the current default, dehummer,
 dynamics, multiband plus bass EQ, AM, and SSB profiles. This is a repeatable QA
 report for tuning and regression review, not a listening test, spectrum
 measurement, restoration-quality claim, or compliance claim.
+
+`make professional-check` is the stricter M9.5 gate. It runs deterministic
+fixtures through default, dehummer, declipper, natural dynamics plus low-level
+boost, multiband plus bass EQ, AM, and SSB profiles. It fails on non-finite
+output, limiter violations, AM/SSB peak-limit failures, silence instability,
+weak DC or hum reduction, filter regressions, stereo instability, restoration
+analysis regressions, declipper gating regressions, and missing dynamics-stage
+activity. See [docs/professional-validation.md](docs/professional-validation.md).
 
 TUI control is preset-only for DSP changes in this milestone. It can switch the
 dehummer on or off, cycle multiband between off, speech, and music, switch the

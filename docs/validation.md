@@ -17,6 +17,12 @@ Run the measurement-oriented QA report:
 make quality
 ```
 
+Run the stricter professional validation gate:
+
+```sh
+make professional-check
+```
+
 The first validation executable generates these synthetic sources:
 
 - silence
@@ -128,6 +134,15 @@ passthrough, invalid config rejection, linked stereo gain, finite output under
 non-finite input, loud-block reduction, quiet-program boost, and silence gating.
 It also extends `make quality` with a dynamics profile so silence stays gated
 and stepped speech exercises at least one pre-AGC dynamics stage.
+
+M9.5 adds `make professional-check`. This is a stricter pass/fail target for
+the current chain. It runs deterministic fixtures through default, dehummer,
+declipper, natural dynamics plus low-level boost, multiband plus bass EQ, AM,
+and SSB profiles. It fails on non-finite output, limiter violations, AM/SSB
+peak-limit failures, silence instability, weak DC or hum reduction, weak
+high-pass or low-pass behavior, stereo instability, AGC gain-limit regressions,
+restoration-analysis regressions, declipper-gating regressions, and missing
+dynamics-stage activity.
 
 These fields are diagnostic and regression signals only. They do not prove
 clipping, lossy encoding, clean source quality, or restored source quality.
