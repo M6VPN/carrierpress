@@ -22,6 +22,7 @@ static int	test_enabled_bounded(void);
 static int	test_gain_reduction_meter(void);
 static int	test_invalid_bands(void);
 static int	test_nonfinite_safe(void);
+static int	test_polish_stage_gentler(void);
 
 int
 main(void)
@@ -35,6 +36,8 @@ main(void)
 	if (!test_gain_reduction_meter())
 		return 1;
 	if (!test_nonfinite_safe())
+		return 1;
+	if (!test_polish_stage_gentler())
 		return 1;
 
 	return 0;
@@ -165,6 +168,46 @@ test_invalid_bands(void)
 	    1);
 	if (cp_multiband_init(&multiband, &config) != CP_ERR_RANGE)
 		return 0;
+
+	return 1;
+}
+
+static int
+test_polish_stage_gentler(void)
+{
+	struct cp_multiband_config config;
+	struct cp_multiband polish;
+	struct cp_multiband primary;
+	cp_sample_t polish_gr;
+	cp_sample_t primary_gr;
+	size_t band;
+
+	fill_mix(TEST_FRAMES, CP_CHANNELS_MONO, 1.0f);
+	test_config(&config, CP_CHANNELS_MONO, 3, 1);
+	config.stage = CP_MULTIBAND_STAGE_PRIMARY;
+	if (cp_multiband_init(&primary, &config) != CP_OK)
+		return 0;
+	if (cp_multiband_process(&primary, input, output,
+	    TEST_FRAMES) != CP_OK)
+		return 0;
+
+	config.stage = CP_MULTIBAND_STAGE_POLISH;
+	if (cp_multiband_init(&polish, &config) != CP_OK)
+		return 0;
+	if (cp_multiband_process(&polish, input, output,
+	    TEST_FRAMES) != CP_OK)
+		return 0;
+
+	primary_gr = 0.0f;
+	polish_gr = 0.0f;
+	for (band = 0; band < primary.band_count; band++) {
+		primary_gr += primary.band_gain_reduction_db[band];
+		polish_gr += polish.band_gain_reduction_db[band];
+	}
+	if (polish_gr <= 0.0f || polish_gr >= primary_gr) {
+		printf("test_multiband: polish stage not gentler\n");
+		return 0;
+	}
 
 	return 1;
 }

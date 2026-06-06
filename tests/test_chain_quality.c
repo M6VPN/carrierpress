@@ -34,6 +34,7 @@ enum cq_profile {
 	CQ_PROFILE_DEHUM_50,
 	CQ_PROFILE_DEHUM_60,
 	CQ_PROFILE_MB_BASS,
+	CQ_PROFILE_MB2,
 	CQ_PROFILE_AM_VOICE,
 	CQ_PROFILE_AM_SHORTWAVE,
 	CQ_PROFILE_AM_WIDE,
@@ -134,6 +135,17 @@ cq_config(struct cp_block_config *config, enum cq_profile profile)
 		config->bass_eq_config.enabled = 1;
 		(void)cp_bass_eq_apply_preset(&config->bass_eq_config,
 		    "music");
+		break;
+	case CQ_PROFILE_MB2:
+		config->multiband_enabled = 1;
+		config->multiband_band_count = 3;
+		config->multiband_preset = CP_MULTIBAND_PRESET_MUSIC;
+		config->bass_eq_config.enabled = 1;
+		(void)cp_bass_eq_apply_preset(&config->bass_eq_config,
+		    "music");
+		config->multiband2_enabled = 1;
+		config->multiband2_band_count = 3;
+		config->multiband2_preset = CP_MULTIBAND_PRESET_MUSIC;
 		break;
 	case CQ_PROFILE_AM_VOICE:
 	case CQ_PROFILE_AM_SHORTWAVE:
@@ -418,6 +430,8 @@ cq_profile_name(enum cq_profile profile)
 		return "dehum-60";
 	case CQ_PROFILE_MB_BASS:
 		return "multiband-bass";
+	case CQ_PROFILE_MB2:
+		return "multiband2";
 	case CQ_PROFILE_AM_VOICE:
 		return "am-voice";
 	case CQ_PROFILE_AM_SHORTWAVE:

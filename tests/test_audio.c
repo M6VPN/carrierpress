@@ -68,6 +68,9 @@ test_block_config_from_audio(void)
 	audio_config.multiband_enabled = 1;
 	audio_config.multiband_band_count = 3;
 	audio_config.multiband_preset = CP_MULTIBAND_PRESET_MUSIC;
+	audio_config.multiband2_enabled = 1;
+	audio_config.multiband2_band_count = 4;
+	audio_config.multiband2_preset = CP_MULTIBAND_PRESET_SPEECH;
 	audio_config.restoration_config.enabled = 1;
 	audio_config.restoration_config.clip_threshold = 0.97f;
 	audio_config.declipper_config.enabled = 1;
@@ -95,6 +98,9 @@ test_block_config_from_audio(void)
 	    !block_config.multiband_enabled ||
 	    block_config.multiband_band_count != 3 ||
 	    block_config.multiband_preset != CP_MULTIBAND_PRESET_MUSIC ||
+	    !block_config.multiband2_enabled ||
+	    block_config.multiband2_band_count != 4 ||
+	    block_config.multiband2_preset != CP_MULTIBAND_PRESET_SPEECH ||
 	    !block_config.restoration_config.enabled ||
 	    block_config.restoration_config.clip_threshold != 0.97f ||
 	    block_config.restoration_config.channel_count != CP_CHANNELS_MONO ||
@@ -252,6 +258,13 @@ test_validate_config(void)
 	config.block_size = CP_AUDIO_MAX_BLOCK_SIZE + 1;
 	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_BLOCK) {
 		printf("test_audio: invalid block size accepted\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&config);
+	config.multiband2_band_count = CP_MULTIBAND_M5_MAX_BANDS + 1;
+	if (cp_audio_validate_config(&config) != CP_AUDIO_ERR_MB) {
+		printf("test_audio: invalid multiband2 accepted\n");
 		return 0;
 	}
 

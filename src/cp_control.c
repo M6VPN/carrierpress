@@ -47,6 +47,23 @@ cp_control_apply(struct cp_block_processor *processor,
 		}
 		return cp_multiband_init(&processor->multiband,
 		    &multiband_config);
+	case CP_CONTROL_COMMAND_MULTIBAND2_CYCLE:
+		multiband_config = processor->multiband2.config;
+		multiband_config.channels = processor->channels;
+		multiband_config.stage = CP_MULTIBAND_STAGE_POLISH;
+		if (!processor->multiband2.config.enabled) {
+			multiband_config.enabled = 1;
+			multiband_config.preset = CP_MULTIBAND_PRESET_SPEECH;
+		} else if (processor->multiband2.config.preset ==
+		    CP_MULTIBAND_PRESET_SPEECH) {
+			multiband_config.enabled = 1;
+			multiband_config.preset = CP_MULTIBAND_PRESET_MUSIC;
+		} else {
+			multiband_config.enabled = 0;
+			multiband_config.preset = CP_MULTIBAND_PRESET_SPEECH;
+		}
+		return cp_multiband_init(&processor->multiband2,
+		    &multiband_config);
 	case CP_CONTROL_COMMAND_AM_OFF:
 		processor->am.config.enabled = 0;
 		processor->am.enabled = 0;
@@ -127,6 +144,10 @@ cp_control_command_from_key(int key, enum cp_control_bank bank,
 	case 'M':
 		command->type = CP_CONTROL_COMMAND_MULTIBAND_CYCLE;
 		return CP_OK;
+	case 'b':
+	case 'B':
+		command->type = CP_CONTROL_COMMAND_MULTIBAND2_CYCLE;
+		return CP_OK;
 	case 'a':
 	case 'A':
 		command->type = CP_CONTROL_COMMAND_SELECT_AM;
@@ -184,6 +205,8 @@ cp_control_command_string(enum cp_control_command_type type)
 		return "dehummer-toggle";
 	case CP_CONTROL_COMMAND_MULTIBAND_CYCLE:
 		return "multiband-cycle";
+	case CP_CONTROL_COMMAND_MULTIBAND2_CYCLE:
+		return "multiband2-cycle";
 	case CP_CONTROL_COMMAND_SELECT_AM:
 		return "select-am";
 	case CP_CONTROL_COMMAND_SELECT_SSB:

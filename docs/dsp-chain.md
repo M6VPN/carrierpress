@@ -20,7 +20,35 @@ final limiter / clipper
 output
 ```
 
-v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, conservative natural dynamics and low-level boost stages, first multiband compressor scaffold, static bass EQ foundation, AM output-chain foundation, SSB output-chain foundation, restoration analysis, a conservative declipper research stage, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, conservative natural dynamics and low-level boost stages, first multiband compressor scaffold, static bass EQ foundation, second multiband polish scaffold, AM output-chain foundation, SSB output-chain foundation, restoration analysis, a conservative declipper research stage, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+
+## M10.2 Multiband Compressor 2 Behavior
+
+The active M10.2 chain adds an optional second multiband stage after bass EQ:
+
+```text
+input
+DC blocker
+dehummer
+restoration analysis tap
+declipper
+natural dynamics
+low-level boost
+AGC
+multiband compressor 1
+bass EQ
+multiband compressor 2
+AM or SSB output chain
+limiter
+meter
+output
+```
+
+The second multiband stage is disabled by default. It reuses the same 2 to 4
+band crossover and compressor scaffold as the first multiband stage, but applies
+gentler speech and music presets intended for final polish before AM or SSB
+output shaping. It is not a final loudness processor and does not add 5 to 9
+band support yet.
 
 ## M9.4 Natural Dynamics And Low-Level Boost Behavior
 

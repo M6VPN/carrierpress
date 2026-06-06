@@ -40,6 +40,7 @@ enum pc_profile {
 	PC_PROFILE_DECLIPPER,
 	PC_PROFILE_DYNAMICS,
 	PC_PROFILE_MB_BASS,
+	PC_PROFILE_MB2,
 	PC_PROFILE_AM_SAFE,
 	PC_PROFILE_AM_SHORTWAVE,
 	PC_PROFILE_AM_WIDE,
@@ -164,6 +165,10 @@ main(void)
 		{ PC_PROFILE_MB_BASS, PC_FIXTURE_MUSIC_MIX,
 		    PC_CHECK_MUSIC_RMS },
 		{ PC_PROFILE_MB_BASS, PC_FIXTURE_STEREO_IMBALANCE,
+		    PC_CHECK_STEREO },
+		{ PC_PROFILE_MB2, PC_FIXTURE_MUSIC_MIX,
+		    PC_CHECK_MUSIC_RMS },
+		{ PC_PROFILE_MB2, PC_FIXTURE_STEREO_IMBALANCE,
 		    PC_CHECK_STEREO },
 		{ PC_PROFILE_AM_SAFE, PC_FIXTURE_SPEECH_STEPS,
 		    PC_CHECK_SPEECH_RMS },
@@ -413,6 +418,17 @@ pc_config(struct cp_block_config *config, enum pc_profile profile)
 		config->bass_eq_config.enabled = 1;
 		(void)cp_bass_eq_apply_preset(&config->bass_eq_config,
 		    "music");
+		break;
+	case PC_PROFILE_MB2:
+		config->multiband_enabled = 1;
+		config->multiband_band_count = 3;
+		config->multiband_preset = CP_MULTIBAND_PRESET_MUSIC;
+		config->bass_eq_config.enabled = 1;
+		(void)cp_bass_eq_apply_preset(&config->bass_eq_config,
+		    "music");
+		config->multiband2_enabled = 1;
+		config->multiband2_band_count = 3;
+		config->multiband2_preset = CP_MULTIBAND_PRESET_MUSIC;
 		break;
 	case PC_PROFILE_AM_SAFE:
 	case PC_PROFILE_AM_SHORTWAVE:
@@ -849,6 +865,8 @@ pc_profile_name(enum pc_profile profile)
 		return "dynamics";
 	case PC_PROFILE_MB_BASS:
 		return "multiband-bass";
+	case PC_PROFILE_MB2:
+		return "multiband2";
 	case PC_PROFILE_AM_SAFE:
 		return "am-safe";
 	case PC_PROFILE_AM_SHORTWAVE:

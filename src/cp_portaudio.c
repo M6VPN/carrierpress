@@ -56,6 +56,8 @@ struct cp_portaudio_runtime {
 	atomic_int low_level_boost_state;
 	atomic_uint multiband_enabled;
 	atomic_int multiband_preset;
+	atomic_uint multiband2_enabled;
+	atomic_int multiband2_preset;
 	atomic_uint restoration_enabled;
 	atomic_uint restoration_clipped_ratio;
 	atomic_uint restoration_hf_ratio;
@@ -80,6 +82,9 @@ struct cp_portaudio_runtime {
 	atomic_uint band_count;
 	atomic_uint band_rms[CP_MONITOR_MAX_BANDS];
 	atomic_int band_gr_db_centibel[CP_MONITOR_MAX_BANDS];
+	atomic_uint band2_count;
+	atomic_uint band2_rms[CP_MONITOR_MAX_BANDS];
+	atomic_int band2_gr_db_centibel[CP_MONITOR_MAX_BANDS];
 	atomic_uint am_enabled;
 	atomic_uint am_highpass_hz;
 	atomic_uint am_lowpass_hz;
@@ -535,6 +540,9 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	atomic_init(&runtime->multiband_enabled, 0u);
 	atomic_init(&runtime->multiband_preset,
 	    (int)CP_MULTIBAND_PRESET_SPEECH);
+	atomic_init(&runtime->multiband2_enabled, 0u);
+	atomic_init(&runtime->multiband2_preset,
+	    (int)CP_MULTIBAND_PRESET_SPEECH);
 	atomic_init(&runtime->restoration_enabled, 0u);
 	atomic_init(&runtime->restoration_clipped_ratio, 0u);
 	atomic_init(&runtime->restoration_hf_ratio, 0u);
@@ -561,6 +569,11 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	for (band = 0; band < CP_MONITOR_MAX_BANDS; band++) {
 		atomic_init(&runtime->band_rms[band], 0u);
 		atomic_init(&runtime->band_gr_db_centibel[band], 0);
+	}
+	atomic_init(&runtime->band2_count, 0u);
+	for (band = 0; band < CP_MONITOR_MAX_BANDS; band++) {
+		atomic_init(&runtime->band2_rms[band], 0u);
+		atomic_init(&runtime->band2_gr_db_centibel[band], 0);
 	}
 	atomic_init(&runtime->am_enabled, 0u);
 	atomic_init(&runtime->am_highpass_hz, 0u);
@@ -664,6 +677,10 @@ cp_pa_load_snapshot(struct cp_portaudio_runtime *runtime,
 	    atomic_load(&runtime->multiband_enabled);
 	snapshot->multiband_preset =
 	    atomic_load(&runtime->multiband_preset);
+	snapshot->multiband2_enabled =
+	    atomic_load(&runtime->multiband2_enabled);
+	snapshot->multiband2_preset =
+	    atomic_load(&runtime->multiband2_preset);
 	snapshot->restoration_enabled =
 	    atomic_load(&runtime->restoration_enabled);
 	snapshot->restoration_clipped_ratio =
@@ -733,6 +750,16 @@ cp_pa_load_snapshot(struct cp_portaudio_runtime *runtime,
 		snapshot->band_gr_db_centibel[band] =
 		    atomic_load(&runtime->band_gr_db_centibel[band]);
 	}
+	band_count = atomic_load(&runtime->band2_count);
+	if (band_count > CP_MONITOR_MAX_BANDS)
+		band_count = CP_MONITOR_MAX_BANDS;
+	snapshot->band2_count = band_count;
+	for (band = 0; band < snapshot->band2_count; band++) {
+		snapshot->band2_rms[band] =
+		    atomic_load(&runtime->band2_rms[band]);
+		snapshot->band2_gr_db_centibel[band] =
+		    atomic_load(&runtime->band2_gr_db_centibel[band]);
+	}
 }
 
 static void
@@ -758,6 +785,8 @@ cp_pa_print_flags(unsigned int flags)
 static void
 cp_pa_print_meters(const struct cp_monitor_snapshot *snapshot)
 {
+	size_t band;
+
 	printf("input_peak=%0.6f input_rms=%0.6f output_peak=%0.6f "
 	    "output_rms=%0.6f\n",
 	    cp_monitor_level_to_sample(snapshot->input_peak),
@@ -829,6 +858,20 @@ cp_pa_print_meters(const struct cp_monitor_snapshot *snapshot)
 		    snapshot->low_level_boost_gain_db_centibel),
 		    cp_agc_state_string((enum cp_agc_gate_state)
 		    snapshot->low_level_boost_state));
+	}
+	for (band = 0; band < snapshot->band_count; band++) {
+		printf("band%zu_rms=%0.6f band%zu_gr_db=%0.2f\n",
+		    band + 1, cp_monitor_level_to_sample(
+		    snapshot->band_rms[band]), band + 1,
+		    cp_monitor_centibel_to_db(
+		    snapshot->band_gr_db_centibel[band]));
+	}
+	for (band = 0; band < snapshot->band2_count; band++) {
+		printf("band2_%zu_rms=%0.6f band2_%zu_gr_db=%0.2f\n",
+		    band + 1, cp_monitor_level_to_sample(
+		    snapshot->band2_rms[band]), band + 1,
+		    cp_monitor_centibel_to_db(
+		    snapshot->band2_gr_db_centibel[band]));
 	}
 }
 
@@ -1019,6 +1062,10 @@ cp_pa_store_meters(struct cp_portaudio_runtime *runtime)
 	    snapshot.multiband_enabled);
 	atomic_store(&runtime->multiband_preset,
 	    snapshot.multiband_preset);
+	atomic_store(&runtime->multiband2_enabled,
+	    snapshot.multiband2_enabled);
+	atomic_store(&runtime->multiband2_preset,
+	    snapshot.multiband2_preset);
 	atomic_store(&runtime->restoration_enabled,
 	    snapshot.restoration_enabled);
 	atomic_store(&runtime->restoration_clipped_ratio,
@@ -1068,6 +1115,14 @@ cp_pa_store_meters(struct cp_portaudio_runtime *runtime)
 		    snapshot.band_rms[band]);
 		atomic_store(&runtime->band_gr_db_centibel[band],
 		    snapshot.band_gr_db_centibel[band]);
+	}
+	atomic_store(&runtime->band2_count,
+	    (unsigned int)snapshot.band2_count);
+	for (band = 0; band < snapshot.band2_count; band++) {
+		atomic_store(&runtime->band2_rms[band],
+		    snapshot.band2_rms[band]);
+		atomic_store(&runtime->band2_gr_db_centibel[band],
+		    snapshot.band2_gr_db_centibel[band]);
 	}
 
 	atomic_store(&runtime->am_enabled,

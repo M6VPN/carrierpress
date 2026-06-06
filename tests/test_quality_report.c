@@ -39,6 +39,7 @@ enum qr_profile {
 	QR_PROFILE_DECLIPPER,
 	QR_PROFILE_DYNAMICS,
 	QR_PROFILE_MB_BASS,
+	QR_PROFILE_MB2,
 	QR_PROFILE_AM_SHORTWAVE,
 	QR_PROFILE_SSB_NARROW
 };
@@ -134,6 +135,7 @@ main(void)
 		    "dynamics-speech" },
 		{ QR_PROFILE_MB_BASS, QR_FIXTURE_MUSIC_MIX, "mb-music" },
 		{ QR_PROFILE_MB_BASS, QR_FIXTURE_STEREO_IMBALANCE, "stereo" },
+		{ QR_PROFILE_MB2, QR_FIXTURE_MUSIC_MIX, "mb2-music" },
 		{ QR_PROFILE_AM_SHORTWAVE, QR_FIXTURE_HIGH_TONE, "am-lpf" },
 		{ QR_PROFILE_AM_SHORTWAVE, QR_FIXTURE_SPEECH_STEPS,
 		    "am-speech" },
@@ -312,6 +314,17 @@ qr_config(struct cp_block_config *config, enum qr_profile profile)
 		config->bass_eq_config.enabled = 1;
 		(void)cp_bass_eq_apply_preset(&config->bass_eq_config,
 		    "music");
+		break;
+	case QR_PROFILE_MB2:
+		config->multiband_enabled = 1;
+		config->multiband_band_count = 3;
+		config->multiband_preset = CP_MULTIBAND_PRESET_MUSIC;
+		config->bass_eq_config.enabled = 1;
+		(void)cp_bass_eq_apply_preset(&config->bass_eq_config,
+		    "music");
+		config->multiband2_enabled = 1;
+		config->multiband2_band_count = 3;
+		config->multiband2_preset = CP_MULTIBAND_PRESET_MUSIC;
 		break;
 	case QR_PROFILE_AM_SHORTWAVE:
 		config->dehummer_enabled = 1;
@@ -568,6 +581,8 @@ qr_profile_name(enum qr_profile profile)
 		return "dynamics";
 	case QR_PROFILE_MB_BASS:
 		return "multiband-bass";
+	case QR_PROFILE_MB2:
+		return "multiband2";
 	case QR_PROFILE_AM_SHORTWAVE:
 		return "am-shortwave";
 	case QR_PROFILE_SSB_NARROW:

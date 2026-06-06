@@ -307,6 +307,26 @@ main(int argc, char *argv[])
 			}
 			audio_config.multiband_preset =
 			    block_config.multiband_preset;
+		} else if (strcmp(argv[arg], "--multiband2") == 0) {
+			block_config.multiband2_enabled = 1;
+			audio_config.multiband2_enabled = 1;
+		} else if (strcmp(argv[arg], "--multiband2-bands") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_size_arg(argv[++arg], &parsed_size)) {
+				usage(argv[0]);
+				return 1;
+			}
+			block_config.multiband2_band_count = parsed_size;
+			audio_config.multiband2_band_count = parsed_size;
+		} else if (strcmp(argv[arg], "--multiband2-preset") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_multiband_preset(argv[++arg],
+			    &block_config.multiband2_preset)) {
+				usage(argv[0]);
+				return 1;
+			}
+			audio_config.multiband2_preset =
+			    block_config.multiband2_preset;
 		} else if (strcmp(argv[arg], "--bass-eq") == 0) {
 			block_config.bass_eq_config.enabled = 1;
 			audio_config.bass_eq_config.enabled = 1;
@@ -964,6 +984,15 @@ run_self_test(const struct cp_block_config *self_config)
 		    processor.multiband.band_rms[band], band + 1,
 		    processor.multiband.band_gain_reduction_db[band]);
 	}
+	printf("multiband2=%s bands=%zu preset=%s\n",
+	    config.multiband2_enabled ? "on" : "off",
+	    processor.multiband2.band_count,
+	    cp_multiband_preset_string(processor.multiband2.config.preset));
+	for (band = 0; band < processor.multiband2.band_count; band++) {
+		printf("band2_%zu_rms=%0.6f band2_%zu_gr_db=%0.2f\n",
+		    band + 1, processor.multiband2.band_rms[band], band + 1,
+		    processor.multiband2.band_gain_reduction_db[band]);
+	}
 	printf("bass_eq=%s preset=%s bass_hz=%0.1f bass_gain_db=%0.2f "
 	    "presence_hz=%0.1f presence_gain_db=%0.2f\n",
 	    processor.bass_eq.config.enabled ? "on" : "off",
@@ -1104,6 +1133,8 @@ usage(const char *program)
 	    "--hum-harmonics N --hum-q Q\n");
 	printf("multiband options: --multiband --multiband-bands 2|3|4 "
 	    "--multiband-preset speech|music\n");
+	printf("multiband2 options: --multiband2 --multiband2-bands 2|3|4 "
+	    "--multiband2-preset speech|music\n");
 	printf("bass EQ options: --bass-eq --bass-eq-preset "
 	    "flat|speech|music|warm --bass-gain-db DB "
 	    "--bass-frequency HZ --presence-gain-db DB\n");

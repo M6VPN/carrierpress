@@ -38,6 +38,9 @@ cp_block_default_config(struct cp_block_config *config, size_t channels)
 	config->multiband_enabled = CP_MULTIBAND_DEFAULT_ENABLED;
 	config->multiband_band_count = CP_MULTIBAND_DEFAULT_BANDS;
 	config->multiband_preset = CP_MULTIBAND_PRESET_SPEECH;
+	config->multiband2_enabled = CP_MULTIBAND_DEFAULT_ENABLED;
+	config->multiband2_band_count = CP_MULTIBAND_DEFAULT_BANDS;
+	config->multiband2_preset = CP_MULTIBAND_PRESET_SPEECH;
 	cp_bass_eq_default_config(&config->bass_eq_config);
 	cp_am_default_config(&config->am_config);
 	cp_declipper_default_config(&config->declipper_config);
@@ -80,6 +83,10 @@ cp_block_config_from_audio(struct cp_block_config *block_config,
 	block_config->multiband_band_count =
 	    audio_config->multiband_band_count;
 	block_config->multiband_preset = audio_config->multiband_preset;
+	block_config->multiband2_enabled = audio_config->multiband2_enabled;
+	block_config->multiband2_band_count =
+	    audio_config->multiband2_band_count;
+	block_config->multiband2_preset = audio_config->multiband2_preset;
 	block_config->bass_eq_config = audio_config->bass_eq_config;
 	block_config->bass_eq_config.channel_count = channels;
 	block_config->bass_eq_config.sample_rate = sample_rate;
@@ -218,6 +225,18 @@ cp_block_init(struct cp_block_processor *processor,
 	if (status != CP_OK)
 		return status;
 
+	cp_multiband_default_config(&multiband_config);
+	multiband_config.channels   = config->channels;
+	multiband_config.sample_rate = config->sample_rate;
+	multiband_config.enabled    = config->multiband2_enabled;
+	multiband_config.band_count = config->multiband2_band_count;
+	multiband_config.preset     = config->multiband2_preset;
+	multiband_config.stage      = CP_MULTIBAND_STAGE_POLISH;
+
+	status = cp_multiband_init(&processor->multiband2, &multiband_config);
+	if (status != CP_OK)
+		return status;
+
 	processor->am.config = config->am_config;
 	processor->am.config.channel_count = config->channels;
 	processor->am.config.sample_rate = config->sample_rate;
@@ -315,6 +334,11 @@ cp_block_process(struct cp_block_processor *processor,
 	if (status != CP_OK)
 		return status;
 
+	status = cp_multiband_process(&processor->multiband2, output, output,
+	    frames);
+	if (status != CP_OK)
+		return status;
+
 	status = cp_am_process(&processor->am, output, output, frames);
 	if (status != CP_OK)
 		return status;
@@ -375,6 +399,10 @@ cp_block_reset(struct cp_block_processor *processor)
 		return status;
 
 	status = cp_bass_eq_reset(&processor->bass_eq);
+	if (status != CP_OK)
+		return status;
+
+	status = cp_multiband_reset(&processor->multiband2);
 	if (status != CP_OK)
 		return status;
 

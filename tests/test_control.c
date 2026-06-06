@@ -11,6 +11,7 @@
 static int	test_apply_am_off(void);
 static int	test_apply_am_preset(void);
 static int	test_apply_dehummer_toggle(void);
+static int	test_apply_multiband2_cycle(void);
 static int	test_apply_multiband_cycle(void);
 static int	test_apply_mutual_exclusion(void);
 static int	test_apply_ssb_off(void);
@@ -39,6 +40,10 @@ main(void)
 	}
 	if (!test_apply_multiband_cycle()) {
 		printf("test_control: multiband cycle failed\n");
+		return 1;
+	}
+	if (!test_apply_multiband2_cycle()) {
+		printf("test_control: multiband2 cycle failed\n");
 		return 1;
 	}
 	if (!test_apply_ssb_preset()) {
@@ -148,6 +153,45 @@ test_apply_multiband_cycle(void)
 	if (processor.multiband.config.enabled ||
 	    processor.multiband.config.preset != CP_MULTIBAND_PRESET_SPEECH) {
 		printf("test_control: multiband off cycle failed\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_apply_multiband2_cycle(void)
+{
+	struct cp_block_config config;
+	struct cp_block_processor processor;
+	struct cp_control_command command;
+
+	cp_block_default_config(&config, CP_CHANNELS_MONO);
+	if (cp_block_init(&processor, &config) != CP_OK)
+		return 0;
+
+	cp_control_command_clear(&command);
+	command.type = CP_CONTROL_COMMAND_MULTIBAND2_CYCLE;
+	if (cp_control_apply(&processor, &command) != CP_OK)
+		return 0;
+	if (!processor.multiband2.config.enabled ||
+	    processor.multiband2.config.preset != CP_MULTIBAND_PRESET_SPEECH ||
+	    processor.multiband2.config.stage != CP_MULTIBAND_STAGE_POLISH) {
+		printf("test_control: multiband2 speech cycle failed\n");
+		return 0;
+	}
+	if (cp_control_apply(&processor, &command) != CP_OK)
+		return 0;
+	if (!processor.multiband2.config.enabled ||
+	    processor.multiband2.config.preset != CP_MULTIBAND_PRESET_MUSIC) {
+		printf("test_control: multiband2 music cycle failed\n");
+		return 0;
+	}
+	if (cp_control_apply(&processor, &command) != CP_OK)
+		return 0;
+	if (processor.multiband2.config.enabled ||
+	    processor.multiband2.config.preset != CP_MULTIBAND_PRESET_SPEECH) {
+		printf("test_control: multiband2 off cycle failed\n");
 		return 0;
 	}
 
@@ -398,6 +442,11 @@ test_command_keys(void)
 	    &command) != CP_OK)
 		return 0;
 	if (command.type != CP_CONTROL_COMMAND_MULTIBAND_CYCLE)
+		return 0;
+	if (cp_control_command_from_key('b', CP_CONTROL_BANK_SSB,
+	    &command) != CP_OK)
+		return 0;
+	if (command.type != CP_CONTROL_COMMAND_MULTIBAND2_CYCLE)
 		return 0;
 	if (cp_control_command_from_key('N', CP_CONTROL_BANK_SSB,
 	    &command) != CP_OK)

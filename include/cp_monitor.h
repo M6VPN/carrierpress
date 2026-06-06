@@ -54,6 +54,8 @@ struct cp_monitor_snapshot {
 	int low_level_boost_state;
 	unsigned int multiband_enabled;
 	int multiband_preset;
+	unsigned int multiband2_enabled;
+	int multiband2_preset;
 	unsigned int restoration_enabled;
 	unsigned int restoration_clipped_ratio;
 	unsigned int restoration_hf_ratio;
@@ -94,6 +96,9 @@ struct cp_monitor_snapshot {
 	size_t band_count;
 	unsigned int band_rms[CP_MONITOR_MAX_BANDS];
 	int band_gr_db_centibel[CP_MONITOR_MAX_BANDS];
+	size_t band2_count;
+	unsigned int band2_rms[CP_MONITOR_MAX_BANDS];
+	int band2_gr_db_centibel[CP_MONITOR_MAX_BANDS];
 };
 
 int		cp_monitor_db_to_centibel(cp_sample_t);

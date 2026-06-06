@@ -1,10 +1,10 @@
 # CarrierPress
 
-CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.1 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, optional dehummer, optional natural dynamics and low-level boost stages, a simple optional multiband compressor foundation, optional static bass EQ, an optional restoration analysis tap, an optional conservative declipper research stage, and a safe peak limiter.
+CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.1 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, optional dehummer, optional natural dynamics and low-level boost stages, optional multiband compressor foundations, optional static bass EQ, an optional restoration analysis tap, an optional conservative declipper research stage, and a safe peak limiter.
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
-Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional sndio support exists as an OpenBSD-style foundation, but remaining sndio work is deferred while Linux-host core processing quality is the active focus. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.4 adds optional conservative natural dynamics and low-level boost stages before AGC. M9.5 adds a stricter deterministic validation gate for the existing chain. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
+Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional sndio support exists as an OpenBSD-style foundation, but remaining sndio work is deferred while Linux-host core processing quality is the active focus. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.4 adds optional conservative natural dynamics and low-level boost stages before AGC. M10.2 adds an optional second conservative multiband polish stage after bass EQ and before AM or SSB shaping. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
 
 ## Table of Contents
 
@@ -192,6 +192,17 @@ Run the self-test with the M5 multiband compressor enabled:
 ./carrierpress --self-test --multiband --multiband-bands 3 --multiband-preset speech
 ```
 
+Run the self-test with the M10.2 second multiband polish stage enabled:
+
+```sh
+./carrierpress --self-test --multiband2 --multiband2-bands 3 --multiband2-preset speech
+./carrierpress --self-test --multiband --bass-eq --multiband2 --multiband2-bands 3 --multiband2-preset music
+```
+
+The second multiband stage is disabled by default. It reuses the current 2 to 4
+band splitter and compressor, but uses gentler final-polish settings than the
+first multiband stage. It is not final broadcast loudness processing.
+
 Run the self-test with the M8.1 static bass EQ enabled:
 
 ```sh
@@ -258,8 +269,9 @@ Play a WAV file through CarrierPress and send the processed result to the defaul
 ```
 
 Play mode uses the same DSP chain controls as live mode. Dehummer, multiband,
-natural dynamics, low-level boost, AM shaping, AGC, limiter, and metering are
-applied to fixed-size WAV blocks before they are sent to the output device.
+second multiband, natural dynamics, low-level boost, AM shaping, AGC, limiter,
+and metering are applied to fixed-size WAV blocks before they are sent to the
+output device.
 
 Choose an output device for WAV playout:
 
@@ -426,6 +438,12 @@ Run live processing with the simple speech multiband preset:
 ./carrierpress --live --multiband --multiband-bands 3 --multiband-preset speech
 ```
 
+Run live processing with the second multiband polish stage:
+
+```sh
+./carrierpress --live --multiband --bass-eq --multiband2 --multiband2-preset music
+```
+
 Run live processing with static bass EQ:
 
 ```sh
@@ -464,8 +482,9 @@ Run live AM processing with the ncurses monitor and preset keys:
 
 The live TUI supports safe AM and SSB preset switching while audio is running.
 Press `d` to toggle the dehummer. Press `m` to cycle multiband mode through off,
-speech, and music. Press `a` for the AM control bank or `s` for the SSB control
-bank. In the AM bank, press `0` for AM off, `1` for `am-safe`, `2` for
+speech, and music. Press `b` to cycle the second multiband polish stage through
+off, speech, and music. Press `a` for the AM control bank or `s` for the SSB
+control bank. In the AM bank, press `0` for AM off, `1` for `am-safe`, `2` for
 `am-shortwave`, `3` for `am-wide`, and `4` for `am-voice`. In the SSB bank,
 press `0` for SSB off, `1` for `ssb-speech`, `2` for `ssb-narrow`, `3` for
 `ssb-wide`, and `4` for `ssb-gentle`. Press `q` to stop. Preset changes are
@@ -607,35 +626,37 @@ stream rate so AGC and filter timing match playback. Offline `--input` and
 `--output` WAV processing still preserves the input file sample rate.
 
 `make validate` runs deterministic synthetic fixtures through default, dehummer,
-multiband plus bass EQ, AM, and SSB chain profiles. It checks finite output,
-bounded peaks, AM/SSB peak limits, silence stability, DC reduction, hum
-reduction, low-pass rejection, stereo stability, and AGC gain limits. This is an
-engineering gate for regressions, not a claim of broadcast processor quality.
-See [docs/validation.md](docs/validation.md).
+multiband plus bass EQ, second multiband, AM, and SSB chain profiles. It checks
+finite output, bounded peaks, AM/SSB peak limits, silence stability, DC
+reduction, hum reduction, low-pass rejection, stereo stability, and AGC gain
+limits. This is an engineering gate for regressions, not a claim of broadcast
+processor quality. See [docs/validation.md](docs/validation.md).
 
 `make quality` runs a fixed measurement pass over silence, speech-like steps,
 music-like harmonic content, clipped sine, DC offset, 50 Hz hum, 60 Hz hum,
 burst transients, high-frequency content, and stereo imbalance. It prints RMS,
 peak, crest factor, DC, hum-bin, stereo-balance, clipping indicator, and
 high-frequency-loss indicator measurements for the current default, dehummer,
-dynamics, multiband plus bass EQ, AM, and SSB profiles. This is a repeatable QA
-report for tuning and regression review, not a listening test, spectrum
+dynamics, multiband plus bass EQ, second multiband, AM, and SSB profiles. This
+is a repeatable QA report for tuning and regression review, not a listening
+test, spectrum
 measurement, restoration-quality claim, or compliance claim.
 
 `make professional-check` is the stricter M9.5 gate. It runs deterministic
 fixtures through default, dehummer, declipper, natural dynamics plus low-level
-boost, multiband plus bass EQ, AM, and SSB profiles. It fails on non-finite
-output, limiter violations, AM/SSB peak-limit failures, silence instability,
-weak DC or hum reduction, filter regressions, stereo instability, restoration
-analysis regressions, declipper gating regressions, and missing dynamics-stage
-activity. See [docs/professional-validation.md](docs/professional-validation.md).
+boost, multiband plus bass EQ, second multiband, AM, and SSB profiles. It fails
+on non-finite output, limiter violations, AM/SSB peak-limit failures, silence
+instability, weak DC or hum reduction, filter regressions, stereo instability,
+restoration analysis regressions, declipper gating regressions, and missing
+dynamics-stage activity. See [docs/professional-validation.md](docs/professional-validation.md).
 
 TUI control is preset-only for DSP changes in this milestone. It can switch the
-dehummer on or off, cycle multiband between off, speech, and music, switch the
-AM and SSB output chains between validated presets, and skip to the next track
-during playlist playout. AM and SSB controls are split into explicit banks so AM
-preset keys do not affect SSB mode, and SSB preset keys do not affect AM mode.
-It does not expose arbitrary DSP parameter editing.
+dehummer on or off, cycle the first and second multiband stages between off,
+speech, and music, switch the AM and SSB output chains between validated
+presets, and skip to the next track during playlist playout. AM and SSB controls
+are split into explicit banks so AM preset keys do not affect SSB mode, and SSB
+preset keys do not affect AM mode. It does not expose arbitrary DSP parameter
+editing.
 
 ## Restoration Analysis And Declipper
 
@@ -733,9 +754,21 @@ Enable it with `--multiband`. The `speech` preset uses slightly stronger conserv
 
 M5 uses cascaded 2nd-order low-pass sections with subtractive band creation for the crossover scaffold. It is bounded and deterministic, but it is not final broadcast processing.
 
+The M10.2 second multiband stage runs after bass EQ and before AM or SSB output
+shaping. It uses the same 2 to 4 band structure as M5, but its presets use
+gentler final-polish compression. Enable it with `--multiband2`.
+
+```sh
+./carrierpress --input input.wav --output output.wav --multiband --bass-eq --multiband2 --multiband2-bands 3 --multiband2-preset speech
+./carrierpress --input input.wav --output output.wav --multiband2 --multiband2-bands 3 --multiband2-preset music
+```
+
+The second multiband stage is disabled by default and does not add 5 to 9 band
+support yet.
+
 ## Bass EQ
 
-The M8.1 bass EQ mode is a static two-shelf tone-shaping foundation. It runs after the first multiband compressor and before AM or SSB output shaping. It is disabled by default and leaves audio unchanged unless `--bass-eq` is selected.
+The M8.1 bass EQ mode is a static two-shelf tone-shaping foundation. It runs after the first multiband compressor and before the optional second multiband stage. It is disabled by default and leaves audio unchanged unless `--bass-eq` is selected.
 
 Enable it with `--bass-eq`. Presets are conservative starting points:
 
@@ -757,7 +790,7 @@ M8.1 does not implement automatic EQ, immersive bass, true bass, subharmonic syn
 
 The M6 AM mode is audio-chain processing for legal AM transmitters and dummy-load testing. It is not an RF exciter, modulator, transmitter controller, or certified compliance tool. Users must obey their licence terms, transmitter limits, occupied bandwidth limits, and local radio regulations.
 
-Enable AM mode with `--am`. The AM chain runs after AGC and the first multiband compressor, then before the final limiter. It provides high-pass filtering, low-pass audio bandwidth limiting, optional phase rotation, positive and negative peak control, and explicitly configured positive asymmetry.
+Enable AM mode with `--am`. The AM chain runs after AGC, multiband, bass EQ, and the optional second multiband stage, then before the final limiter. It provides high-pass filtering, low-pass audio bandwidth limiting, optional phase rotation, positive and negative peak control, and explicitly configured positive asymmetry.
 
 ```sh
 ./carrierpress --input input.wav --output output.wav --am --am-preset am-safe
@@ -780,7 +813,7 @@ Use `--am-asymmetry FLOAT` only when positive asymmetry is explicitly wanted. Th
 
 The M7 SSB mode is audio-chain processing for legal SSB transmitters and dummy-load testing. It is not an RF exciter, USB/LSB modulator, transmitter controller, or certified compliance tool. Users must obey their licence terms, transmitter limits, occupied bandwidth limits, and local radio regulations.
 
-Enable SSB mode with `--ssb`. The SSB chain runs after AGC and the first multiband compressor, then before the final limiter. It provides speech-oriented high-pass filtering, low-pass bandwidth limiting, optional phase rotation, and symmetric peak control. AM and SSB modes are mutually exclusive.
+Enable SSB mode with `--ssb`. The SSB chain runs after AGC, multiband, bass EQ, and the optional second multiband stage, then before the final limiter. It provides speech-oriented high-pass filtering, low-pass bandwidth limiting, optional phase rotation, and symmetric peak control. AM and SSB modes are mutually exclusive.
 
 ```sh
 ./carrierpress --input input.wav --output output.wav --ssb --ssb-preset ssb-speech

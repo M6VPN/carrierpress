@@ -83,6 +83,9 @@ struct cp_audio_config {
 	int multiband_enabled;
 	size_t multiband_band_count;
 	enum cp_multiband_preset multiband_preset;
+	int multiband2_enabled;
+	size_t multiband2_band_count;
+	enum cp_multiband_preset multiband2_preset;
 	struct cp_bass_eq_config bass_eq_config;
 	struct cp_am_config am_config;
 	struct cp_declipper_config declipper_config;

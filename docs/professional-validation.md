@@ -18,6 +18,7 @@ The gate covers:
 - declipper
 - natural dynamics plus low-level boost
 - multiband plus bass EQ
+- second multiband
 - AM safe, shortwave, wide, and voice presets
 - SSB speech, narrow, and wide presets
 

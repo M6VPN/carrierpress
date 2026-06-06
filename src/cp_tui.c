@@ -31,7 +31,8 @@ static void	cp_tui_draw_declipper(int,
 		    const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_flags(int, unsigned int);
 static void	cp_tui_draw_header(const struct cp_tui_view *);
-static void	cp_tui_draw_multiband(int, const struct cp_monitor_snapshot *);
+static void	cp_tui_draw_multiband(int, const char *, unsigned int,
+		    int, size_t, const unsigned int *, const int *);
 static void	cp_tui_draw_natural(int,
 		    const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_restoration(int,
@@ -127,14 +128,19 @@ cp_tui_update_view(struct cp_tui *tui, const struct cp_tui_view *view,
 
 	cp_tui_draw_dehummer(11, snapshot);
 	cp_tui_draw_natural(12, snapshot);
-	cp_tui_draw_multiband(13, snapshot);
-	cp_tui_draw_bass_eq(18, snapshot);
+	cp_tui_draw_multiband(13, "MB1", snapshot->multiband_enabled,
+	    snapshot->multiband_preset, snapshot->band_count,
+	    snapshot->band_rms, snapshot->band_gr_db_centibel);
+	cp_tui_draw_multiband(14, "MB2", snapshot->multiband2_enabled,
+	    snapshot->multiband2_preset, snapshot->band2_count,
+	    snapshot->band2_rms, snapshot->band2_gr_db_centibel);
+	cp_tui_draw_bass_eq(15, snapshot);
 
-	cp_tui_draw_am(19, snapshot);
-	cp_tui_draw_ssb(20, snapshot);
-	cp_tui_draw_restoration(21, snapshot);
-	cp_tui_draw_declipper(22, snapshot);
-	cp_tui_draw_flags(23, snapshot->stream_flags);
+	cp_tui_draw_am(16, snapshot);
+	cp_tui_draw_ssb(17, snapshot);
+	cp_tui_draw_restoration(18, snapshot);
+	cp_tui_draw_declipper(19, snapshot);
+	cp_tui_draw_flags(20, snapshot->stream_flags);
 	cp_tui_draw_keys(view, tui->control_bank);
 	refresh();
 
@@ -346,25 +352,25 @@ cp_tui_draw_header(const struct cp_tui_view *view)
 }
 
 static void
-cp_tui_draw_multiband(int row, const struct cp_monitor_snapshot *snapshot)
+cp_tui_draw_multiband(int row, const char *label, unsigned int enabled,
+	int preset, size_t band_count, const unsigned int *band_rms,
+	const int *band_gr_db_centibel)
 {
 	const char *preset_name;
 	size_t band;
 
 	preset_name = cp_multiband_preset_string(
-	    (enum cp_multiband_preset)snapshot->multiband_preset);
+	    (enum cp_multiband_preset)preset);
 	if (preset_name == NULL)
 		preset_name = "unknown";
 
-	mvprintw(row, 2, "Multiband %s bands %zu preset %s",
-	    snapshot->multiband_enabled ? "on" : "off",
-	    snapshot->band_count, preset_name);
-	for (band = 0; band < snapshot->band_count &&
-	    band < CP_MONITOR_MAX_BANDS; band++) {
-		mvprintw(row + 1 + (int)band, 2,
-		    "Band %zu RMS %0.3f  GR %0.2f dB", band + 1,
-		    cp_monitor_level_to_sample(snapshot->band_rms[band]),
-		    cp_monitor_centibel_to_db(snapshot->band_gr_db_centibel[band]));
+	mvprintw(row, 2, "%s %s bands %zu preset %s", label,
+	    enabled ? "on" : "off", band_count, preset_name);
+	for (band = 0; band < band_count && band < CP_MONITOR_MAX_BANDS;
+	    band++) {
+		printw("  B%zu %0.3f/%0.2f", band + 1,
+		    cp_monitor_level_to_sample(band_rms[band]),
+		    cp_monitor_centibel_to_db(band_gr_db_centibel[band]));
 	}
 }
 
@@ -398,11 +404,11 @@ cp_tui_draw_keys(const struct cp_tui_view *view, enum cp_control_bank bank)
 
 	if (view->mode == CP_TUI_MODE_PLAYOUT && view->next_enabled) {
 		mvprintw(24, 2,
-		    "Keys: a AM  s SSB  d hum  m mb  %s  n next  q stop",
+		    "Keys: a AM  s SSB  d hum  m mb1  b mb2  %s  n next  q stop",
 		    preset_keys);
 		return;
 	}
-	mvprintw(24, 2, "Keys: a AM  s SSB  d hum  m mb  %s  q stop",
+	mvprintw(24, 2, "Keys: a AM  s SSB  d hum  m mb1  b mb2  %s  q stop",
 	    preset_keys);
 }
 

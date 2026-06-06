@@ -100,6 +100,9 @@ test_snapshot_from_processor(void)
 	config.multiband_enabled = 1;
 	config.multiband_band_count = 3;
 	config.multiband_preset = CP_MULTIBAND_PRESET_MUSIC;
+	config.multiband2_enabled = 1;
+	config.multiband2_band_count = 4;
+	config.multiband2_preset = CP_MULTIBAND_PRESET_SPEECH;
 	config.restoration_config.enabled = 1;
 	config.declipper_config.enabled = 1;
 	config.natural_dynamics_config.enabled = 1;
@@ -123,6 +126,9 @@ test_snapshot_from_processor(void)
 	    !snapshot.multiband_enabled ||
 	    snapshot.multiband_preset != CP_MULTIBAND_PRESET_MUSIC ||
 	    snapshot.band_count != 3 ||
+	    !snapshot.multiband2_enabled ||
+	    snapshot.multiband2_preset != CP_MULTIBAND_PRESET_SPEECH ||
+	    snapshot.band2_count != 4 ||
 	    !snapshot.restoration_enabled ||
 	    !snapshot.declipper_enabled ||
 	    !snapshot.natural_dynamics_enabled ||

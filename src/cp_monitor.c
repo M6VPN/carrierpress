@@ -130,6 +130,9 @@ cp_monitor_snapshot_from_processor(const struct cp_block_processor *processor,
 	snapshot->multiband_enabled =
 	    processor->multiband.config.enabled ? 1u : 0u;
 	snapshot->multiband_preset = processor->multiband.config.preset;
+	snapshot->multiband2_enabled =
+	    processor->multiband2.config.enabled ? 1u : 0u;
+	snapshot->multiband2_preset = processor->multiband2.config.preset;
 	snapshot->restoration_enabled =
 	    processor->restoration.config.enabled ? 1u : 0u;
 	snapshot->restoration_clipped_ratio = cp_monitor_sample_to_level(
@@ -213,6 +216,16 @@ cp_monitor_snapshot_from_processor(const struct cp_block_processor *processor,
 		snapshot->band_gr_db_centibel[band] =
 		    cp_monitor_db_to_centibel(
 		    processor->multiband.band_gain_reduction_db[band]);
+	}
+	snapshot->band2_count = processor->multiband2.band_count;
+	if (snapshot->band2_count > CP_MONITOR_MAX_BANDS)
+		snapshot->band2_count = CP_MONITOR_MAX_BANDS;
+	for (band = 0; band < snapshot->band2_count; band++) {
+		snapshot->band2_rms[band] = cp_monitor_sample_to_level(
+		    processor->multiband2.band_rms[band]);
+		snapshot->band2_gr_db_centibel[band] =
+		    cp_monitor_db_to_centibel(
+		    processor->multiband2.band_gain_reduction_db[band]);
 	}
 
 	return CP_OK;

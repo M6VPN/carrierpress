@@ -20,12 +20,18 @@ enum cp_multiband_preset {
 	CP_MULTIBAND_PRESET_MUSIC  = 1
 };
 
+enum cp_multiband_stage {
+	CP_MULTIBAND_STAGE_PRIMARY = 0,
+	CP_MULTIBAND_STAGE_POLISH  = 1
+};
+
 struct cp_multiband_config {
 	cp_sample_t sample_rate;
 	size_t channels;
 	size_t band_count;
 	enum cp_multiband_preset preset;
 	int enabled;
+	enum cp_multiband_stage stage;
 };
 
 struct cp_multiband {

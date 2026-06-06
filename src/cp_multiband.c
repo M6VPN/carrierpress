@@ -13,6 +13,12 @@
 static void		cp_multiband_apply_preset(struct cp_compressor_config *,
 			    const struct cp_multiband_config *, size_t);
 static cp_sample_t	cp_multiband_clean(cp_sample_t);
+static void		cp_multiband_polish_preset(
+			    struct cp_compressor_config *,
+			    const struct cp_multiband_config *, size_t);
+static void		cp_multiband_primary_preset(
+			    struct cp_compressor_config *,
+			    const struct cp_multiband_config *, size_t);
 static int		cp_multiband_valid_config(
 			    const struct cp_multiband_config *);
 
@@ -27,6 +33,7 @@ cp_multiband_default_config(struct cp_multiband_config *config)
 	config->band_count  = CP_MULTIBAND_DEFAULT_BANDS;
 	config->preset      = CP_MULTIBAND_PRESET_SPEECH;
 	config->enabled     = CP_MULTIBAND_DEFAULT_ENABLED;
+	config->stage       = CP_MULTIBAND_STAGE_PRIMARY;
 }
 
 int
@@ -208,6 +215,56 @@ static void
 cp_multiband_apply_preset(struct cp_compressor_config *compressor_config,
 	const struct cp_multiband_config *config, size_t band)
 {
+	if (config->stage == CP_MULTIBAND_STAGE_POLISH) {
+		cp_multiband_polish_preset(compressor_config, config, band);
+		return;
+	}
+
+	cp_multiband_primary_preset(compressor_config, config, band);
+}
+
+static void
+cp_multiband_polish_preset(struct cp_compressor_config *compressor_config,
+	const struct cp_multiband_config *config, size_t band)
+{
+	static const cp_sample_t music_ratio[CP_MULTIBAND_M5_MAX_BANDS] = {
+		1.25f, 1.22f, 1.18f, 1.15f
+	};
+	static const cp_sample_t music_threshold[CP_MULTIBAND_M5_MAX_BANDS] = {
+		-12.0f, -11.0f, -10.0f, -10.0f
+	};
+	static const cp_sample_t speech_ratio[CP_MULTIBAND_M5_MAX_BANDS] = {
+		1.35f, 1.30f, 1.22f, 1.15f
+	};
+	static const cp_sample_t speech_threshold[CP_MULTIBAND_M5_MAX_BANDS] = {
+		-16.0f, -14.0f, -12.0f, -12.0f
+	};
+	size_t index;
+
+	index = band;
+	if (index >= CP_MULTIBAND_M5_MAX_BANDS)
+		index = CP_MULTIBAND_M5_MAX_BANDS - 1;
+
+	if (config->preset == CP_MULTIBAND_PRESET_MUSIC) {
+		compressor_config->threshold_db = music_threshold[index];
+		compressor_config->ratio        = music_ratio[index];
+		compressor_config->attack_ms    = 45.0f;
+		compressor_config->release_ms   = 450.0f;
+		compressor_config->knee_db      = 10.0f;
+		return;
+	}
+
+	compressor_config->threshold_db = speech_threshold[index];
+	compressor_config->ratio        = speech_ratio[index];
+	compressor_config->attack_ms    = 30.0f;
+	compressor_config->release_ms   = 320.0f;
+	compressor_config->knee_db      = 8.0f;
+}
+
+static void
+cp_multiband_primary_preset(struct cp_compressor_config *compressor_config,
+	const struct cp_multiband_config *config, size_t band)
+{
 	static const cp_sample_t music_ratio[CP_MULTIBAND_M5_MAX_BANDS] = {
 		1.6f, 1.5f, 1.4f, 1.3f
 	};
@@ -269,6 +326,9 @@ cp_multiband_valid_config(const struct cp_multiband_config *config)
 		return 0;
 	if (config->preset != CP_MULTIBAND_PRESET_SPEECH &&
 	    config->preset != CP_MULTIBAND_PRESET_MUSIC)
+		return 0;
+	if (config->stage != CP_MULTIBAND_STAGE_PRIMARY &&
+	    config->stage != CP_MULTIBAND_STAGE_POLISH)
 		return 0;
 
 	return 1;

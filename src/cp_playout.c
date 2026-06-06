@@ -964,6 +964,17 @@ cp_playout_print_meters(const struct cp_monitor_snapshot *snapshot)
 			    snapshot->band_gr_db_centibel[band]));
 		}
 	}
+	if (snapshot->band2_count > 0) {
+		for (band = 0; band < snapshot->band2_count; band++) {
+			printf("band2_%zu_rms=%0.6f band2_%zu_gr_db=%0.2f\n",
+			    band + 1,
+			    cp_monitor_level_to_sample(
+			    snapshot->band2_rms[band]),
+			    band + 1,
+			    cp_monitor_centibel_to_db(
+			    snapshot->band2_gr_db_centibel[band]));
+		}
+	}
 	if (snapshot->am_enabled) {
 		printf("am=on preset=%s highpass=%u lowpass=%u "
 		    "positive_peak=%0.2f negative_peak=%0.2f "

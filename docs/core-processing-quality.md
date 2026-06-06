@@ -31,6 +31,7 @@ low-level boost
 AGC
 multiband compressor 1
 bass EQ
+multiband compressor 2
 AM or SSB output shaping
 limiter
 meter
@@ -81,12 +82,11 @@ compliance claim.
 
 ## Known Limits
 
-- The first multiband compressor supports only 2 to 4 active bands.
+- The first and second multiband compressors support only 2 to 4 active bands.
 - Bass EQ is static and preset-based. Automatic EQ is not implemented.
 - Natural dynamics and low-level boost are conservative wideband stages, not a
   final loudness processor.
 - The declipper is a bounded research prototype for confident clipping cases.
-- Delossifier, immersive bass, true bass, and a second multiband compressor are
-  not implemented yet.
+- Delossifier, immersive bass, and true bass are not implemented yet.
 - AM and SSB modes shape baseband audio only. CarrierPress is not an RF
   exciter, modulator, transmitter controller, or compliance tool.

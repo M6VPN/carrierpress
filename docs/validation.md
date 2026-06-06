@@ -3,7 +3,7 @@
 CarrierPress uses deterministic validation fixtures to catch DSP regressions before
 operator testing. The validation target is not a quality claim. It is a repeatable
 gate that checks the current block chain stays finite, bounded, and consistent
-across default, AM, and SSB modes.
+across default, second multiband, AM, and SSB modes.
 
 Run:
 
@@ -37,6 +37,7 @@ The first validation executable generates these synthetic sources:
 Each source is processed through:
 
 - default chain
+- multiband, static bass EQ, and second multiband chain
 - dehummer, multiband, static bass EQ, and AM shortwave chain
 - dehummer, multiband, static bass EQ, and SSB narrow chain
 
@@ -54,6 +55,7 @@ these fixed profiles:
 - 50 Hz dehummer
 - 60 Hz dehummer
 - multiband plus static bass EQ
+- second multiband
 - AM voice, shortwave, and wide
 - SSB speech, narrow, and wide
 
@@ -93,8 +95,8 @@ M8.3 adds a deterministic audio QA report. It processes these sources:
 - stereo imbalance
 
 The report covers default, 50 Hz dehummer, 60 Hz dehummer, declipper,
-natural dynamics plus low-level boost, multiband plus bass EQ, AM shortwave,
-and SSB narrow profiles. Each line
+natural dynamics plus low-level boost, multiband plus bass EQ, second
+multiband, AM shortwave, and SSB narrow profiles. Each line
 prints:
 
 - input and output RMS
@@ -137,12 +139,12 @@ and stepped speech exercises at least one pre-AGC dynamics stage.
 
 M9.5 adds `make professional-check`. This is a stricter pass/fail target for
 the current chain. It runs deterministic fixtures through default, dehummer,
-declipper, natural dynamics plus low-level boost, multiband plus bass EQ, AM,
-and SSB profiles. It fails on non-finite output, limiter violations, AM/SSB
-peak-limit failures, silence instability, weak DC or hum reduction, weak
-high-pass or low-pass behavior, stereo instability, AGC gain-limit regressions,
-restoration-analysis regressions, declipper-gating regressions, and missing
-dynamics-stage activity.
+declipper, natural dynamics plus low-level boost, multiband plus bass EQ,
+second multiband, AM, and SSB profiles. It fails on non-finite output, limiter
+violations, AM/SSB peak-limit failures, silence instability, weak DC or hum
+reduction, weak high-pass or low-pass behavior, stereo instability, AGC
+gain-limit regressions, restoration-analysis regressions, declipper-gating
+regressions, and missing dynamics-stage activity.
 
 These fields are diagnostic and regression signals only. They do not prove
 clipping, lossy encoding, clean source quality, or restored source quality.

@@ -28,6 +28,7 @@ enum cp_validation_fixture {
 
 enum cp_validation_mode {
 	CP_VALIDATION_MODE_DEFAULT = 0,
+	CP_VALIDATION_MODE_MB2,
 	CP_VALIDATION_MODE_AM,
 	CP_VALIDATION_MODE_SSB
 };
@@ -90,6 +91,17 @@ cp_validation_config(struct cp_block_config *config,
 	config->sample_rate = CP_VALIDATION_RATE;
 	config->limiter_ceiling = CP_DEFAULT_CEILING;
 
+	if (mode == CP_VALIDATION_MODE_MB2) {
+		config->multiband_enabled = 1;
+		config->multiband_band_count = 3;
+		config->multiband_preset = CP_MULTIBAND_PRESET_MUSIC;
+		config->bass_eq_config.enabled = 1;
+		(void)cp_bass_eq_apply_preset(&config->bass_eq_config,
+		    "music");
+		config->multiband2_enabled = 1;
+		config->multiband2_band_count = 3;
+		config->multiband2_preset = CP_MULTIBAND_PRESET_MUSIC;
+	}
 	if (mode == CP_VALIDATION_MODE_AM) {
 		config->dehummer_enabled = 1;
 		config->hum_base_frequency = 50.0f;
@@ -239,6 +251,8 @@ cp_validation_mode_name(enum cp_validation_mode mode)
 	switch (mode) {
 	case CP_VALIDATION_MODE_DEFAULT:
 		return "default";
+	case CP_VALIDATION_MODE_MB2:
+		return "multiband2";
 	case CP_VALIDATION_MODE_AM:
 		return "am-shortwave";
 	case CP_VALIDATION_MODE_SSB:

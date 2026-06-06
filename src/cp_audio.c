@@ -132,6 +132,9 @@ cp_audio_default_config(struct cp_audio_config *config)
 	config->multiband_enabled = CP_MULTIBAND_DEFAULT_ENABLED;
 	config->multiband_band_count = CP_MULTIBAND_DEFAULT_BANDS;
 	config->multiband_preset  = CP_MULTIBAND_PRESET_SPEECH;
+	config->multiband2_enabled = CP_MULTIBAND_DEFAULT_ENABLED;
+	config->multiband2_band_count = CP_MULTIBAND_DEFAULT_BANDS;
+	config->multiband2_preset = CP_MULTIBAND_PRESET_SPEECH;
 	cp_bass_eq_default_config(&config->bass_eq_config);
 	config->bass_eq_config.channel_count = config->channels;
 	config->bass_eq_config.sample_rate = (cp_sample_t)config->sample_rate;
@@ -317,6 +320,12 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 		return CP_AUDIO_ERR_MB;
 	if (config->multiband_preset != CP_MULTIBAND_PRESET_SPEECH &&
 	    config->multiband_preset != CP_MULTIBAND_PRESET_MUSIC)
+		return CP_AUDIO_ERR_MB;
+	if (config->multiband2_band_count < CP_MULTIBAND_MIN_BANDS ||
+	    config->multiband2_band_count > CP_MULTIBAND_M5_MAX_BANDS)
+		return CP_AUDIO_ERR_MB;
+	if (config->multiband2_preset != CP_MULTIBAND_PRESET_SPEECH &&
+	    config->multiband2_preset != CP_MULTIBAND_PRESET_MUSIC)
 		return CP_AUDIO_ERR_MB;
 	if (config->bass_eq_config.channel_count != config->channels)
 		return CP_AUDIO_ERR_BASS_EQ;
