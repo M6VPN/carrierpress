@@ -78,11 +78,11 @@ Partially implemented. CarrierPress now has an optional static bass EQ foundatio
 
 ## M8.2 professional validation gate
 
-Implemented as a deterministic validation pass for the current chain. It checks default, dehummer, multiband plus bass EQ, second multiband, auto EQ analysis, AM, and SSB profiles against finite output, limiter bounds, AM/SSB peak limits, silence stability, DC reduction, hum reduction, low-pass rejection, stereo stability, and AGC gain limits. It is an engineering regression gate, not a broadcast-quality or compliance claim.
+Implemented as a deterministic validation pass for the current chain. It checks default, dehummer, multiband plus bass EQ, second multiband, auto EQ analysis, bass EQ recommendation, AM, and SSB profiles against finite output, limiter bounds, AM/SSB peak limits, silence stability, DC reduction, hum reduction, low-pass rejection, stereo stability, and AGC gain limits. It is an engineering regression gate, not a broadcast-quality or compliance claim.
 
 ## M8.3 audio QA measurement harness
 
-Implemented as a deterministic measurement pass for the current chain. `make quality` prints machine-readable RMS, peak, crest factor, DC offset, hum-bin, stereo-balance, restoration-analysis, and auto-EQ-analysis measurements for selected default, dehummer, multiband plus bass EQ, second multiband, auto EQ analysis, AM, and SSB profiles. It is intended to support tuning and regression review before M9 restoration research. It is not a listening test, spectrum measurement, transmitter test, or compliance claim.
+Implemented as a deterministic measurement pass for the current chain. `make quality` prints machine-readable RMS, peak, crest factor, DC offset, hum-bin, stereo-balance, restoration-analysis, auto-EQ-analysis, and bass EQ recommendation measurements for selected default, dehummer, multiband plus bass EQ, second multiband, auto EQ analysis, AM, and SSB profiles. It is intended to support tuning and regression review before M9 restoration research. It is not a listening test, spectrum measurement, transmitter test, or compliance claim.
 
 ## M9 declipper and delossifier research
 
@@ -176,7 +176,10 @@ implement automatic EQ processing.
 
 ## M10.4 adaptive bass EQ improvements
 
-Planned. Improve bass EQ controls using measured fixtures and bounded presets.
+Partially implemented. CarrierPress now produces bounded bass EQ
+recommendations from the auto EQ analyzer in self-test, WAV mode, live meters,
+playout meters, TUI snapshots, `make quality`, and `make professional-check`.
+Recommendations are operator guidance only and are not applied automatically.
 Do not add immersive bass, true bass, or subharmonic synthesis yet.
 
 ## M10.5 immersive bass and true bass research

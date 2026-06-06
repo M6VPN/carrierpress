@@ -5,6 +5,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "cp_bass_eq.h"
 
@@ -22,6 +23,12 @@ static int		test_invalid_config(void);
 static int		test_midrange_conservative(void);
 static int		test_non_finite_input(void);
 static int		test_preset_parse(void);
+static int		test_recommendation_bounds(void);
+static int		test_recommendation_bright(void);
+static int		test_recommendation_dark(void);
+static int		test_recommendation_non_finite(void);
+static int		test_recommendation_silence(void);
+static int		test_recommendation_source_shapes(void);
 static int		test_stereo_stable(void);
 
 int
@@ -36,6 +43,18 @@ main(void)
 	if (!test_invalid_config())
 		return 1;
 	if (!test_preset_parse())
+		return 1;
+	if (!test_recommendation_silence())
+		return 1;
+	if (!test_recommendation_source_shapes())
+		return 1;
+	if (!test_recommendation_dark())
+		return 1;
+	if (!test_recommendation_bright())
+		return 1;
+	if (!test_recommendation_bounds())
+		return 1;
+	if (!test_recommendation_non_finite())
 		return 1;
 	if (!test_stereo_stable())
 		return 1;
@@ -279,6 +298,165 @@ test_preset_parse(void)
 		return 0;
 	if (cp_bass_eq_apply_preset(&config, "bad") != CP_ERR_RANGE)
 		return 0;
+
+	return 1;
+}
+
+static int
+test_recommendation_bounds(void)
+{
+	struct cp_auto_eq_metrics metrics;
+	struct cp_bass_eq_recommendation recommendation;
+
+	(void)memset(&metrics, 0, sizeof(metrics));
+	metrics.finite = 1;
+	metrics.total_rms = 0.1f;
+	metrics.source_hint = CP_AUTO_EQ_SOURCE_THIN;
+	metrics.low_frequency_weight = 0.0f;
+	metrics.presence_weight = 0.2f;
+	metrics.high_frequency_weight = 1.0f;
+	metrics.spectral_tilt_db = 30.0f;
+	if (cp_bass_eq_recommend(&metrics, &recommendation) != CP_OK)
+		return 0;
+	if (!recommendation.valid)
+		return 0;
+	if (recommendation.low_gain_db < -3.0f ||
+	    recommendation.low_gain_db > 3.0f ||
+	    recommendation.high_gain_db < -3.0f ||
+	    recommendation.high_gain_db > 3.0f ||
+	    recommendation.output_gain_db < -3.0f ||
+	    recommendation.output_gain_db > 0.0f ||
+	    recommendation.confidence < 0.0f ||
+	    recommendation.confidence > 1.0f) {
+		printf("test_bass_eq: recommendation exceeded bounds\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_recommendation_bright(void)
+{
+	struct cp_auto_eq_metrics metrics;
+	struct cp_bass_eq_recommendation recommendation;
+
+	(void)memset(&metrics, 0, sizeof(metrics));
+	metrics.finite = 1;
+	metrics.total_rms = 0.1f;
+	metrics.source_hint = CP_AUTO_EQ_SOURCE_BRIGHT;
+	metrics.low_frequency_weight = 0.25f;
+	metrics.presence_weight = 0.25f;
+	metrics.high_frequency_weight = 0.55f;
+	metrics.spectral_tilt_db = 12.0f;
+	if (cp_bass_eq_recommend(&metrics, &recommendation) != CP_OK)
+		return 0;
+	if (!recommendation.valid || recommendation.high_gain_db >= 0.0f) {
+		printf("test_bass_eq: bright recommendation unsafe\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_recommendation_dark(void)
+{
+	struct cp_auto_eq_metrics metrics;
+	struct cp_bass_eq_recommendation recommendation;
+
+	(void)memset(&metrics, 0, sizeof(metrics));
+	metrics.finite = 1;
+	metrics.total_rms = 0.1f;
+	metrics.source_hint = CP_AUTO_EQ_SOURCE_DARK;
+	metrics.low_frequency_weight = 0.45f;
+	metrics.presence_weight = 0.06f;
+	metrics.high_frequency_weight = 0.02f;
+	metrics.spectral_tilt_db = -20.0f;
+	if (cp_bass_eq_recommend(&metrics, &recommendation) != CP_OK)
+		return 0;
+	if (!recommendation.valid || recommendation.high_gain_db <= 0.0f) {
+		printf("test_bass_eq: dark recommendation unsafe\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_recommendation_non_finite(void)
+{
+	struct cp_auto_eq_metrics metrics;
+	struct cp_bass_eq_recommendation recommendation;
+
+	(void)memset(&metrics, 0, sizeof(metrics));
+	metrics.finite = 0;
+	metrics.total_rms = NAN;
+	metrics.source_hint = CP_AUTO_EQ_SOURCE_THIN;
+	metrics.low_frequency_weight = NAN;
+	metrics.presence_weight = 0.0f;
+	metrics.high_frequency_weight = 0.0f;
+	metrics.spectral_tilt_db = NAN;
+	if (cp_bass_eq_recommend(&metrics, &recommendation) != CP_OK)
+		return 0;
+	if (recommendation.valid || recommendation.confidence != 0.0f) {
+		printf("test_bass_eq: non-finite recommendation was valid\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_recommendation_silence(void)
+{
+	struct cp_auto_eq_metrics metrics;
+	struct cp_bass_eq_recommendation recommendation;
+
+	(void)memset(&metrics, 0, sizeof(metrics));
+	metrics.finite = 1;
+	metrics.source_hint = CP_AUTO_EQ_SOURCE_SILENCE;
+	if (cp_bass_eq_recommend(&metrics, &recommendation) != CP_OK)
+		return 0;
+	if (recommendation.valid || recommendation.confidence != 0.0f) {
+		printf("test_bass_eq: silence recommendation was valid\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_recommendation_source_shapes(void)
+{
+	struct cp_auto_eq_metrics metrics;
+	struct cp_bass_eq_recommendation recommendation;
+
+	(void)memset(&metrics, 0, sizeof(metrics));
+	metrics.finite = 1;
+	metrics.total_rms = 0.1f;
+	metrics.source_hint = CP_AUTO_EQ_SOURCE_BASS_HEAVY;
+	metrics.low_frequency_weight = 0.70f;
+	metrics.presence_weight = 0.1f;
+	metrics.high_frequency_weight = 0.03f;
+	metrics.spectral_tilt_db = -18.0f;
+	if (cp_bass_eq_recommend(&metrics, &recommendation) != CP_OK)
+		return 0;
+	if (!recommendation.valid || recommendation.low_gain_db >= 0.0f) {
+		printf("test_bass_eq: bass-heavy recommendation unsafe\n");
+		return 0;
+	}
+
+	metrics.source_hint = CP_AUTO_EQ_SOURCE_THIN;
+	metrics.low_frequency_weight = 0.05f;
+	metrics.high_frequency_weight = 0.20f;
+	metrics.spectral_tilt_db = 8.0f;
+	if (cp_bass_eq_recommend(&metrics, &recommendation) != CP_OK)
+		return 0;
+	if (!recommendation.valid || recommendation.low_gain_db <= 0.0f) {
+		printf("test_bass_eq: thin recommendation unsafe\n");
+		return 0;
+	}
 
 	return 1;
 }

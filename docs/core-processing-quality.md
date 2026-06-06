@@ -62,7 +62,8 @@ make WITH_SNDFILE=1 WITH_PORTAUDIO=1 test
 These checks cover deterministic synthetic fixtures, finite output, limiter
 bounds, silence stability, DC reduction, hum reduction, high-pass and low-pass
 behavior, stereo stability, AGC limits, AM and SSB peak limits, restoration and
-auto EQ analyzer metrics, declipper gating, and dynamics-stage activity.
+auto EQ analyzer metrics, bass EQ recommendation bounds, declipper gating, and
+dynamics-stage activity.
 
 ## Acceptance Criteria
 
@@ -76,6 +77,7 @@ The current professional-standard target means:
 - deterministic results across normal and parallel test builds
 - clear diagnostics for analysis, declipper bypass, meters, and TUI snapshots
 - clear tonal-balance diagnostics without automatic EQ sample changes
+- bounded bass EQ recommendations without automatic EQ application
 - no heap allocation in DSP process functions or PortAudio callback processing
 
 This is an engineering quality baseline. It is not a listening test,
@@ -87,7 +89,8 @@ compliance claim.
 - The first and second multiband compressors support only 2 to 4 active bands.
 - Bass EQ is static and preset-based. Automatic EQ processing is not
   implemented.
-- Auto EQ is analysis-only and does not set or apply EQ gains.
+- Auto EQ is analysis-only. It can produce bounded bass EQ recommendations,
+  but it does not set or apply EQ gains.
 - Natural dynamics and low-level boost are conservative wideband stages, not a
   final loudness processor.
 - The declipper is a bounded research prototype for confident clipping cases.

@@ -6,6 +6,7 @@
 
 #include <sys/types.h>
 
+#include "cp_auto_eq.h"
 #include "cp_biquad.h"
 #include "cp_types.h"
 
@@ -26,12 +27,24 @@
 #define CP_BASS_EQ_MAX_GAIN_DB			6.0f
 #define CP_BASS_EQ_MIN_OUTPUT_DB		(-12.0f)
 #define CP_BASS_EQ_MAX_OUTPUT_DB		6.0f
+#define CP_BASS_EQ_RECOMMEND_CONFIDENCE_MIN	0.0f
+#define CP_BASS_EQ_RECOMMEND_CONFIDENCE_MAX	1.0f
 
 enum cp_bass_eq_preset {
 	CP_BASS_EQ_PRESET_FLAT = 0,
 	CP_BASS_EQ_PRESET_SPEECH,
 	CP_BASS_EQ_PRESET_MUSIC,
 	CP_BASS_EQ_PRESET_WARM
+};
+
+struct cp_bass_eq_recommendation {
+	int valid;
+	enum cp_bass_eq_preset preset;
+	cp_sample_t low_gain_db;
+	cp_sample_t high_gain_db;
+	cp_sample_t output_gain_db;
+	cp_sample_t confidence;
+	enum cp_auto_eq_source_hint source_hint;
 };
 
 struct cp_bass_eq_config {
@@ -66,6 +79,9 @@ int		cp_bass_eq_init(struct cp_bass_eq *,
 		    const struct cp_bass_eq_config *);
 int		cp_bass_eq_preset_from_string(const char *,
 		    enum cp_bass_eq_preset *);
+int		cp_bass_eq_recommend(
+		    const struct cp_auto_eq_metrics *,
+		    struct cp_bass_eq_recommendation *);
 const char	*cp_bass_eq_preset_string(enum cp_bass_eq_preset);
 int		cp_bass_eq_process(struct cp_bass_eq *, const cp_sample_t *,
 		    cp_sample_t *, size_t);

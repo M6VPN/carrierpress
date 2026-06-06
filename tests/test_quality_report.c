@@ -90,12 +90,18 @@ struct qr_metrics {
 	cp_sample_t auto_eq_presence_weight;
 	cp_sample_t auto_eq_high_weight;
 	cp_sample_t auto_eq_spectral_tilt_db;
+	cp_sample_t bass_eq_recommend_low_gain_db;
+	cp_sample_t bass_eq_recommend_high_gain_db;
+	cp_sample_t bass_eq_recommend_output_gain_db;
+	cp_sample_t bass_eq_recommend_confidence;
 	enum cp_auto_eq_source_hint auto_eq_source_hint;
 	enum cp_restoration_source_profile analysis_source_profile;
 	unsigned int analysis_reason_flags;
 	size_t declipper_repaired_samples;
 	size_t declipper_repaired_runs;
 	int declipper_bypass_reason;
+	int bass_eq_recommend_valid;
+	int bass_eq_recommend_preset;
 	int finite;
 };
 
@@ -241,7 +247,20 @@ qr_check_case(const struct qr_case *test, const struct qr_metrics *metrics)
 	}
 	if (test->profile == QR_PROFILE_AUTO_EQ) {
 		if (metrics->auto_eq_total_rms <= 0.0f ||
-		    !isfinite(metrics->auto_eq_spectral_tilt_db))
+		    !isfinite(metrics->auto_eq_spectral_tilt_db) ||
+		    !metrics->bass_eq_recommend_valid)
+			return 0;
+		if (!isfinite(metrics->bass_eq_recommend_low_gain_db) ||
+		    !isfinite(metrics->bass_eq_recommend_high_gain_db) ||
+		    !isfinite(metrics->bass_eq_recommend_output_gain_db) ||
+		    metrics->bass_eq_recommend_low_gain_db < -3.0f ||
+		    metrics->bass_eq_recommend_low_gain_db > 3.0f ||
+		    metrics->bass_eq_recommend_high_gain_db < -3.0f ||
+		    metrics->bass_eq_recommend_high_gain_db > 3.0f ||
+		    metrics->bass_eq_recommend_output_gain_db < -3.0f ||
+		    metrics->bass_eq_recommend_output_gain_db > 0.0f ||
+		    metrics->bass_eq_recommend_confidence <= 0.0f ||
+		    metrics->bass_eq_recommend_confidence > 1.0f)
 			return 0;
 		if (test->fixture == QR_FIXTURE_AM_LIMITED &&
 		    (metrics->auto_eq_source_hint ==
@@ -627,6 +646,7 @@ qr_run_case(const struct qr_case *test)
 	cp_sample_t scratch[QR_BLOCK_FRAMES * CP_CHANNELS_STEREO];
 	struct cp_block_config config;
 	struct cp_block_processor processor;
+	struct cp_bass_eq_recommendation recommendation;
 	struct qr_metrics metrics;
 	size_t frames;
 	size_t offset;
@@ -684,12 +704,18 @@ qr_run_case(const struct qr_case *test)
 	metrics.auto_eq_presence_weight = 0.0f;
 	metrics.auto_eq_high_weight = 0.0f;
 	metrics.auto_eq_spectral_tilt_db = 0.0f;
+	metrics.bass_eq_recommend_low_gain_db = 0.0f;
+	metrics.bass_eq_recommend_high_gain_db = 0.0f;
+	metrics.bass_eq_recommend_output_gain_db = 0.0f;
+	metrics.bass_eq_recommend_confidence = 0.0f;
 	metrics.auto_eq_source_hint = CP_AUTO_EQ_SOURCE_UNKNOWN;
 	metrics.analysis_source_profile = CP_RESTORATION_SOURCE_UNKNOWN;
 	metrics.analysis_reason_flags = 0u;
 	metrics.declipper_repaired_samples = 0;
 	metrics.declipper_repaired_runs = 0;
 	metrics.declipper_bypass_reason = CP_DECLIPPER_BYPASS_DISABLED;
+	metrics.bass_eq_recommend_valid = 0;
+	metrics.bass_eq_recommend_preset = CP_BASS_EQ_PRESET_FLAT;
 	metrics.finite = 1;
 
 	for (offset = 0; offset < QR_TOTAL_FRAMES; offset += QR_BLOCK_FRAMES) {
@@ -774,6 +800,19 @@ qr_run_case(const struct qr_case *test)
 	    processor.auto_eq.metrics.spectral_tilt_db;
 	metrics.auto_eq_source_hint =
 	    processor.auto_eq.metrics.source_hint;
+	if (cp_bass_eq_recommend(&processor.auto_eq.metrics,
+	    &recommendation) == CP_OK) {
+		metrics.bass_eq_recommend_valid = recommendation.valid;
+		metrics.bass_eq_recommend_preset = recommendation.preset;
+		metrics.bass_eq_recommend_low_gain_db =
+		    recommendation.low_gain_db;
+		metrics.bass_eq_recommend_high_gain_db =
+		    recommendation.high_gain_db;
+		metrics.bass_eq_recommend_output_gain_db =
+		    recommendation.output_gain_db;
+		metrics.bass_eq_recommend_confidence =
+		    recommendation.confidence;
+	}
 	pass = qr_check_case(test, &metrics);
 
 	printf("quality profile=%s fixture=%s check=%s input_rms=%0.6f "
@@ -795,7 +834,12 @@ qr_run_case(const struct qr_case *test)
 	    "low_boost_gain_db=%0.6f auto_eq_source=%s "
 	    "auto_eq_rms=%0.6f auto_eq_tilt_db=%0.6f "
 	    "auto_eq_low=%0.6f auto_eq_presence=%0.6f "
-	    "auto_eq_high=%0.6f status=%s\n",
+	    "auto_eq_high=%0.6f bass_eq_recommend=%s "
+	    "bass_eq_recommend_preset=%s "
+	    "bass_eq_recommend_low_db=%0.6f "
+	    "bass_eq_recommend_high_db=%0.6f "
+	    "bass_eq_recommend_output_db=%0.6f "
+	    "bass_eq_recommend_confidence=%0.6f status=%s\n",
 	    qr_profile_name(test->profile), qr_fixture_name(test->fixture),
 	    test->check, metrics.input_square, metrics.output_square,
 	    metrics.input_peak, metrics.output_peak, metrics.output_min,
@@ -831,6 +875,13 @@ qr_run_case(const struct qr_case *test)
 	    metrics.auto_eq_low_weight,
 	    metrics.auto_eq_presence_weight,
 	    metrics.auto_eq_high_weight,
+	    metrics.bass_eq_recommend_valid ? "valid" : "invalid",
+	    cp_bass_eq_preset_string(
+	    (enum cp_bass_eq_preset)metrics.bass_eq_recommend_preset),
+	    metrics.bass_eq_recommend_low_gain_db,
+	    metrics.bass_eq_recommend_high_gain_db,
+	    metrics.bass_eq_recommend_output_gain_db,
+	    metrics.bass_eq_recommend_confidence,
 	    pass ? "pass" : "fail");
 
 	return pass;

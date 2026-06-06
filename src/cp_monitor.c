@@ -71,6 +71,7 @@ int
 cp_monitor_snapshot_from_processor(const struct cp_block_processor *processor,
 	struct cp_monitor_snapshot *snapshot)
 {
+	struct cp_bass_eq_recommendation recommendation;
 	size_t band;
 
 	if (processor == NULL || snapshot == NULL)
@@ -212,6 +213,23 @@ cp_monitor_snapshot_from_processor(const struct cp_block_processor *processor,
 	snapshot->bass_eq_high_gain_db_centibel =
 	    cp_monitor_db_to_centibel(processor->bass_eq.config.high_gain_db);
 	snapshot->bass_eq_preset = processor->bass_eq.config.preset;
+	if (cp_bass_eq_recommend(&processor->auto_eq.metrics,
+	    &recommendation) == CP_OK) {
+		snapshot->bass_eq_recommend_valid =
+		    recommendation.valid ? 1u : 0u;
+		snapshot->bass_eq_recommend_preset =
+		    recommendation.preset;
+		snapshot->bass_eq_recommend_low_gain_db_centibel =
+		    cp_monitor_db_to_centibel(recommendation.low_gain_db);
+		snapshot->bass_eq_recommend_high_gain_db_centibel =
+		    cp_monitor_db_to_centibel(recommendation.high_gain_db);
+		snapshot->bass_eq_recommend_output_gain_db_centibel =
+		    cp_monitor_db_to_centibel(recommendation.output_gain_db);
+		snapshot->bass_eq_recommend_confidence =
+		    cp_monitor_sample_to_level(recommendation.confidence);
+		snapshot->bass_eq_recommend_source_hint =
+		    recommendation.source_hint;
+	}
 	snapshot->am_enabled = processor->am.config.enabled ? 1u : 0u;
 	snapshot->am_highpass_hz =
 	    (unsigned int)lrintf(processor->am.config.highpass_hz);

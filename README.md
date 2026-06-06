@@ -4,7 +4,7 @@ CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB a
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
-Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional sndio support exists as an OpenBSD-style foundation, but remaining sndio work is deferred while Linux-host core processing quality is the active focus. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.4 adds optional conservative natural dynamics and low-level boost stages before AGC. M10.2 adds an optional second conservative multiband polish stage after bass EQ and before AM or SSB shaping. M10.3 adds an optional analysis-only auto EQ tap for tonal-balance diagnostics. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
+Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional sndio support exists as an OpenBSD-style foundation, but remaining sndio work is deferred while Linux-host core processing quality is the active focus. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.4 adds optional conservative natural dynamics and low-level boost stages before AGC. M10.2 adds an optional second conservative multiband polish stage after bass EQ and before AM or SSB shaping. M10.3 adds an optional analysis-only auto EQ tap for tonal-balance diagnostics. M10.4 adds bounded bass EQ recommendations from the auto EQ analyzer without applying them automatically. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
 
 ## Table of Contents
 
@@ -207,6 +207,7 @@ Run the self-test with the M10.3 auto EQ analyzer enabled:
 
 ```sh
 ./carrierpress --self-test --auto-eq-analyze
+./carrierpress --self-test --bass-eq-recommend
 ```
 
 The auto EQ analyzer is disabled by default. It measures fixed tonal bands,
@@ -318,6 +319,7 @@ Print analysis metrics while playing:
 ```sh
 ./carrierpress --play input.wav --analyze --meter-interval-ms 1000
 ./carrierpress --play input.wav --auto-eq-analyze --meter-interval-ms 1000
+./carrierpress --play input.wav --bass-eq-recommend --meter-interval-ms 1000
 ```
 
 Run playout through the conservative declipper research stage:
@@ -466,6 +468,7 @@ Run live processing with analysis metrics:
 ```sh
 ./carrierpress --live --analyze --meter-interval-ms 1000
 ./carrierpress --live --auto-eq-analyze --meter-interval-ms 1000
+./carrierpress --live --bass-eq-recommend --meter-interval-ms 1000
 ```
 
 Run live processing with the M9.4 pre-AGC dynamics stages:
@@ -798,6 +801,11 @@ Enable it with `--auto-eq-analyze`:
 M10.3 is analysis-only. It does not apply automatic EQ, change bass EQ
 settings, or claim tonal correction quality.
 
+`--bass-eq-recommend` enables the same analyzer and prints a bounded bass EQ
+recommendation. The recommendation includes a preset, bass shelf gain, presence
+shelf gain, output gain, confidence, and source hint. It is operator guidance
+only. CarrierPress does not apply the recommendation automatically.
+
 ## Bass EQ
 
 The M8.1 bass EQ mode is a static two-shelf tone-shaping foundation. It runs after the first multiband compressor and before the optional second multiband stage. It is disabled by default and leaves audio unchanged unless `--bass-eq` is selected.
@@ -817,6 +825,11 @@ Enable it with `--bass-eq`. Presets are conservative starting points:
 ```
 
 M8.1 does not implement automatic EQ, immersive bass, true bass, or subharmonic synthesis. It is a static, bounded bass and presence EQ stage for later tuning work.
+
+M10.4 adds recommendation output for the static bass EQ stage. Recommendations
+are based on the auto EQ analyzer and are clamped to conservative values. They
+are visible in self-test, WAV mode, live meters, playout meters, the TUI,
+`make quality`, and `make professional-check`.
 
 ## AM Mode
 

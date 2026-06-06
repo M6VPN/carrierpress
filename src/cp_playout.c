@@ -1001,6 +1001,24 @@ cp_playout_print_meters(const struct cp_monitor_snapshot *snapshot)
 			    snapshot->auto_eq_band_enabled[band] ? "yes" :
 			    "no");
 		}
+		printf("bass_eq_recommend=%s preset=%s bass_gain_db=%0.2f "
+		    "presence_gain_db=%0.2f output_gain_db=%0.2f "
+		    "confidence=%0.6f source=%s\n",
+		    snapshot->bass_eq_recommend_valid ? "valid" : "invalid",
+		    cp_bass_eq_preset_string(
+		    (enum cp_bass_eq_preset)
+		    snapshot->bass_eq_recommend_preset),
+		    cp_monitor_centibel_to_db(
+		    snapshot->bass_eq_recommend_low_gain_db_centibel),
+		    cp_monitor_centibel_to_db(
+		    snapshot->bass_eq_recommend_high_gain_db_centibel),
+		    cp_monitor_centibel_to_db(
+		    snapshot->bass_eq_recommend_output_gain_db_centibel),
+		    cp_monitor_level_to_sample(
+		    snapshot->bass_eq_recommend_confidence),
+		    cp_auto_eq_source_hint_string(
+		    (enum cp_auto_eq_source_hint)
+		    snapshot->bass_eq_recommend_source_hint));
 	}
 	if (snapshot->am_enabled) {
 		printf("am=on preset=%s highpass=%u lowpass=%u "

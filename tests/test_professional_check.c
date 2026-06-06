@@ -112,6 +112,10 @@ struct pc_metrics {
 	cp_sample_t auto_eq_low_weight;
 	cp_sample_t auto_eq_presence_weight;
 	cp_sample_t auto_eq_high_weight;
+	cp_sample_t bass_eq_recommend_low_gain_db;
+	cp_sample_t bass_eq_recommend_high_gain_db;
+	cp_sample_t bass_eq_recommend_output_gain_db;
+	cp_sample_t bass_eq_recommend_confidence;
 	enum cp_agc_gate_state final_gate_state;
 	enum cp_auto_eq_source_hint auto_eq_source_hint;
 	enum cp_restoration_source_profile analysis_source_profile;
@@ -119,6 +123,8 @@ struct pc_metrics {
 	size_t declipper_repaired_samples;
 	size_t declipper_repaired_runs;
 	int declipper_bypass_reason;
+	int bass_eq_recommend_valid;
+	int bass_eq_recommend_preset;
 	int finite;
 };
 
@@ -347,12 +353,24 @@ pc_check_case(const struct pc_case *test, const struct pc_metrics *metrics,
 	case PC_CHECK_AUTO_EQ_MUSIC:
 		if (metrics->auto_eq_total_rms <= 0.0f ||
 		    !isfinite(metrics->auto_eq_spectral_tilt_db) ||
+		    !metrics->bass_eq_recommend_valid ||
 		    metrics->auto_eq_source_hint ==
 		    CP_AUTO_EQ_SOURCE_SILENCE)
 			return pc_fail(test, metrics, "auto-eq-music");
+		if (metrics->bass_eq_recommend_low_gain_db < -3.0f ||
+		    metrics->bass_eq_recommend_low_gain_db > 3.0f ||
+		    metrics->bass_eq_recommend_high_gain_db < -3.0f ||
+		    metrics->bass_eq_recommend_high_gain_db > 3.0f ||
+		    metrics->bass_eq_recommend_output_gain_db < -3.0f ||
+		    metrics->bass_eq_recommend_output_gain_db > 0.0f ||
+		    metrics->bass_eq_recommend_confidence <= 0.0f ||
+		    metrics->bass_eq_recommend_confidence > 1.0f)
+			return pc_fail(test, metrics,
+			    "auto-eq-recommend-bounds");
 		break;
 	case PC_CHECK_AUTO_EQ_LIMITED:
 		if (metrics->auto_eq_total_rms <= 0.0f ||
+		    !metrics->bass_eq_recommend_valid ||
 		    metrics->auto_eq_source_hint == CP_AUTO_EQ_SOURCE_BRIGHT ||
 		    metrics->auto_eq_source_hint == CP_AUTO_EQ_SOURCE_SILENCE)
 			return pc_fail(test, metrics, "auto-eq-limited");
@@ -542,8 +560,12 @@ pc_fail(const struct pc_case *test, const struct pc_metrics *metrics,
 	    "output_peak=%0.6f output_min=%0.6f output_crest=%0.6f "
 	    "gain=%0.6f gate=%d natural_gr_db=%0.6f "
 	    "low_boost_gain_db=%0.6f auto_eq_source=%s "
-	    "auto_eq_rms=%0.6f declipper_samples=%zu "
-	    "declipper_runs=%zu\n",
+	    "auto_eq_rms=%0.6f bass_eq_recommend=%s "
+	    "bass_eq_recommend_preset=%s "
+	    "bass_eq_recommend_low_db=%0.6f "
+	    "bass_eq_recommend_high_db=%0.6f "
+	    "bass_eq_recommend_confidence=%0.6f "
+	    "declipper_samples=%zu declipper_runs=%zu\n",
 	    pc_profile_name(test->profile), pc_fixture_name(test->fixture),
 	    reason, metrics->input_square, metrics->output_square,
 	    metrics->output_peak, metrics->output_min, pc_crest(metrics, 0),
@@ -552,6 +574,12 @@ pc_fail(const struct pc_case *test, const struct pc_metrics *metrics,
 	    metrics->low_level_boost_gain_db,
 	    cp_auto_eq_source_hint_string(metrics->auto_eq_source_hint),
 	    metrics->auto_eq_total_rms,
+	    metrics->bass_eq_recommend_valid ? "valid" : "invalid",
+	    cp_bass_eq_preset_string(
+	    (enum cp_bass_eq_preset)metrics->bass_eq_recommend_preset),
+	    metrics->bass_eq_recommend_low_gain_db,
+	    metrics->bass_eq_recommend_high_gain_db,
+	    metrics->bass_eq_recommend_confidence,
 	    metrics->declipper_repaired_samples,
 	    metrics->declipper_repaired_runs);
 	return 0;
@@ -762,6 +790,7 @@ pc_process(const struct pc_case *test)
 	cp_sample_t scratch[PC_BLOCK_FRAMES * CP_CHANNELS_STEREO];
 	struct cp_block_config config;
 	struct cp_block_processor processor;
+	struct cp_bass_eq_recommendation recommendation;
 	struct pc_metrics metrics;
 	size_t frames;
 	size_t offset;
@@ -811,6 +840,10 @@ pc_process(const struct pc_case *test)
 	metrics.auto_eq_low_weight = 0.0f;
 	metrics.auto_eq_presence_weight = 0.0f;
 	metrics.auto_eq_high_weight = 0.0f;
+	metrics.bass_eq_recommend_low_gain_db = 0.0f;
+	metrics.bass_eq_recommend_high_gain_db = 0.0f;
+	metrics.bass_eq_recommend_output_gain_db = 0.0f;
+	metrics.bass_eq_recommend_confidence = 0.0f;
 	metrics.final_gate_state = CP_AGC_STATE_OPEN;
 	metrics.auto_eq_source_hint = CP_AUTO_EQ_SOURCE_UNKNOWN;
 	metrics.analysis_source_profile = CP_RESTORATION_SOURCE_UNKNOWN;
@@ -818,6 +851,8 @@ pc_process(const struct pc_case *test)
 	metrics.declipper_repaired_samples = 0;
 	metrics.declipper_repaired_runs = 0;
 	metrics.declipper_bypass_reason = CP_DECLIPPER_BYPASS_DISABLED;
+	metrics.bass_eq_recommend_valid = 0;
+	metrics.bass_eq_recommend_preset = CP_BASS_EQ_PRESET_FLAT;
 	metrics.finite = 1;
 
 	for (offset = 0; offset < PC_TOTAL_FRAMES; offset += PC_BLOCK_FRAMES) {
@@ -885,6 +920,19 @@ pc_process(const struct pc_case *test)
 	    processor.auto_eq.metrics.high_frequency_weight;
 	metrics.auto_eq_source_hint =
 	    processor.auto_eq.metrics.source_hint;
+	if (cp_bass_eq_recommend(&processor.auto_eq.metrics,
+	    &recommendation) == CP_OK) {
+		metrics.bass_eq_recommend_valid = recommendation.valid;
+		metrics.bass_eq_recommend_preset = recommendation.preset;
+		metrics.bass_eq_recommend_low_gain_db =
+		    recommendation.low_gain_db;
+		metrics.bass_eq_recommend_high_gain_db =
+		    recommendation.high_gain_db;
+		metrics.bass_eq_recommend_output_gain_db =
+		    recommendation.output_gain_db;
+		metrics.bass_eq_recommend_confidence =
+		    recommendation.confidence;
+	}
 
 	pass = pc_check_case(test, &metrics, &config);
 	if (pass) {

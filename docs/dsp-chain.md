@@ -20,7 +20,36 @@ final limiter / clipper
 output
 ```
 
-v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, conservative natural dynamics and low-level boost stages, first multiband compressor scaffold, static bass EQ foundation, second multiband polish scaffold, AM output-chain foundation, SSB output-chain foundation, restoration analysis, auto EQ analysis, a conservative declipper research stage, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, conservative natural dynamics and low-level boost stages, first multiband compressor scaffold, static bass EQ foundation, bounded bass EQ recommendations, second multiband polish scaffold, AM output-chain foundation, SSB output-chain foundation, restoration analysis, auto EQ analysis, a conservative declipper research stage, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+
+## M10.4 Bass EQ Recommendation Behavior
+
+The active M10.4 chain keeps the same processing order as M10.3. The auto EQ
+analysis tap can now feed a bounded bass EQ recommendation:
+
+```text
+input
+DC blocker
+dehummer
+restoration analysis tap
+declipper
+auto EQ analysis tap
+natural dynamics
+low-level boost
+AGC
+multiband compressor 1
+bass EQ
+multiband compressor 2
+AM or SSB output chain
+limiter
+meter
+output
+```
+
+`--bass-eq-recommend` enables auto EQ analysis and reports a suggested static
+bass EQ preset, bass gain, presence gain, output gain, confidence, and source
+hint. The recommendation is not applied automatically and does not change
+samples. It is a measured operator aid for later preset tuning.
 
 ## M10.3 Auto EQ Analysis Behavior
 

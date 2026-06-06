@@ -28,6 +28,8 @@ static void	cp_tui_draw_auto_eq(int,
 		    const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_bass_eq(int,
 		    const struct cp_monitor_snapshot *);
+static void	cp_tui_draw_bass_eq_recommend(int,
+		    const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_dehummer(int,
 		    const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_declipper(int,
@@ -138,13 +140,13 @@ cp_tui_update_view(struct cp_tui *tui, const struct cp_tui_view *view,
 	    snapshot->multiband2_preset, snapshot->band2_count,
 	    snapshot->band2_rms, snapshot->band2_gr_db_centibel);
 	cp_tui_draw_bass_eq(15, snapshot);
-
-	cp_tui_draw_am(16, snapshot);
-	cp_tui_draw_ssb(17, snapshot);
-	cp_tui_draw_auto_eq(18, snapshot);
-	cp_tui_draw_restoration(19, snapshot);
-	cp_tui_draw_declipper(20, snapshot);
-	cp_tui_draw_flags(21, snapshot->stream_flags);
+	cp_tui_draw_bass_eq_recommend(16, snapshot);
+	cp_tui_draw_am(17, snapshot);
+	cp_tui_draw_ssb(18, snapshot);
+	cp_tui_draw_auto_eq(19, snapshot);
+	cp_tui_draw_restoration(20, snapshot);
+	cp_tui_draw_declipper(21, snapshot);
+	cp_tui_draw_flags(22, snapshot->stream_flags);
 	cp_tui_draw_keys(view, tui->control_bank);
 	refresh();
 
@@ -232,6 +234,30 @@ cp_tui_draw_bass_eq(int row, const struct cp_monitor_snapshot *snapshot)
 	    snapshot->bass_eq_high_hz,
 	    cp_monitor_centibel_to_db(
 	    snapshot->bass_eq_high_gain_db_centibel));
+}
+
+static void
+cp_tui_draw_bass_eq_recommend(int row,
+	const struct cp_monitor_snapshot *snapshot)
+{
+	if (!snapshot->auto_eq_enabled) {
+		mvprintw(row, 2, "Bass EQ recommendation off");
+		return;
+	}
+
+	mvprintw(row, 2, "Bass EQ recommend %s preset %s bass %0.2f dB "
+	    "presence %0.2f dB out %0.2f dB confidence %0.3f",
+	    snapshot->bass_eq_recommend_valid ? "valid" : "invalid",
+	    cp_bass_eq_preset_string(
+	    (enum cp_bass_eq_preset)snapshot->bass_eq_recommend_preset),
+	    cp_monitor_centibel_to_db(
+	    snapshot->bass_eq_recommend_low_gain_db_centibel),
+	    cp_monitor_centibel_to_db(
+	    snapshot->bass_eq_recommend_high_gain_db_centibel),
+	    cp_monitor_centibel_to_db(
+	    snapshot->bass_eq_recommend_output_gain_db_centibel),
+	    cp_monitor_level_to_sample(
+	    snapshot->bass_eq_recommend_confidence));
 }
 
 static void

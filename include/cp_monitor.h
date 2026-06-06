@@ -90,6 +90,13 @@ struct cp_monitor_snapshot {
 	unsigned int bass_eq_high_hz;
 	int bass_eq_high_gain_db_centibel;
 	int bass_eq_preset;
+	unsigned int bass_eq_recommend_valid;
+	int bass_eq_recommend_preset;
+	int bass_eq_recommend_low_gain_db_centibel;
+	int bass_eq_recommend_high_gain_db_centibel;
+	int bass_eq_recommend_output_gain_db_centibel;
+	unsigned int bass_eq_recommend_confidence;
+	int bass_eq_recommend_source_hint;
 	unsigned int am_enabled;
 	unsigned int am_highpass_hz;
 	unsigned int am_lowpass_hz;

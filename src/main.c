@@ -48,6 +48,8 @@ static int	run_wav_process(const char *, const char *,
 		    const struct cp_block_config *);
 static int	run_self_test(const struct cp_block_config *);
 static void	print_auto_eq_metrics(const struct cp_auto_eq_metrics *);
+static void	print_bass_eq_recommendation(
+		    const struct cp_auto_eq_metrics *);
 static void	print_restoration_metrics(const struct cp_restoration_metrics *);
 static void	usage(const char *);
 
@@ -127,6 +129,9 @@ main(int argc, char *argv[])
 			audio_config.declipper_config.max_repair_samples =
 			    parsed_size;
 		} else if (strcmp(argv[arg], "--auto-eq-analyze") == 0) {
+			block_config.auto_eq_config.enabled = 1;
+			audio_config.auto_eq_config.enabled = 1;
+		} else if (strcmp(argv[arg], "--bass-eq-recommend") == 0) {
 			block_config.auto_eq_config.enabled = 1;
 			audio_config.auto_eq_config.enabled = 1;
 		} else if (strcmp(argv[arg], "--natural-dynamics") == 0) {
@@ -896,18 +901,22 @@ run_wav_process(const char *input_path, const char *output_path,
 	const struct cp_block_config *config)
 {
 #ifdef CP_WITH_SNDFILE
-	struct cp_restoration_metrics metrics;
+	struct cp_wav_report report;
 	int status;
 
-	status = cp_wav_process_file_config_report(input_path, output_path,
-	    CP_WAV_BLOCK_FRAMES, config, &metrics);
+	status = cp_wav_process_file_config_full_report(input_path,
+	    output_path, CP_WAV_BLOCK_FRAMES, config, &report);
 	if (status != CP_WAV_OK) {
 		printf("carrierpress: WAV processing failed: %s\n",
 		    cp_wav_status_string(status));
 		return 1;
 	}
 	if (config != NULL && config->restoration_config.enabled)
-		print_restoration_metrics(&metrics);
+		print_restoration_metrics(&report.restoration_metrics);
+	if (config != NULL && config->auto_eq_config.enabled) {
+		print_auto_eq_metrics(&report.auto_eq_metrics);
+		print_bass_eq_recommendation(&report.auto_eq_metrics);
+	}
 
 	return 0;
 #else
@@ -1069,8 +1078,10 @@ run_self_test(const struct cp_block_config *self_config)
 		    processor.declipper.metrics.bypass_reason),
 		    processor.declipper.metrics.finite ? "yes" : "no");
 	}
-	if (processor.auto_eq.config.enabled)
+	if (processor.auto_eq.config.enabled) {
 		print_auto_eq_metrics(&processor.auto_eq.metrics);
+		print_bass_eq_recommendation(&processor.auto_eq.metrics);
+	}
 
 	return 0;
 }
@@ -1102,6 +1113,28 @@ print_auto_eq_metrics(const struct cp_auto_eq_metrics *metrics)
 		    metrics->band_relative_db[band],
 		    metrics->band_enabled[band] ? "yes" : "no");
 	}
+}
+
+static void
+print_bass_eq_recommendation(const struct cp_auto_eq_metrics *metrics)
+{
+	struct cp_bass_eq_recommendation recommendation;
+
+	if (metrics == NULL)
+		return;
+	if (cp_bass_eq_recommend(metrics, &recommendation) != CP_OK)
+		return;
+
+	printf("bass_eq_recommend=%s preset=%s bass_gain_db=%0.2f "
+	    "presence_gain_db=%0.2f output_gain_db=%0.2f "
+	    "confidence=%0.6f source=%s\n",
+	    recommendation.valid ? "valid" : "invalid",
+	    cp_bass_eq_preset_string(recommendation.preset),
+	    recommendation.low_gain_db,
+	    recommendation.high_gain_db,
+	    recommendation.output_gain_db,
+	    recommendation.confidence,
+	    cp_auto_eq_source_hint_string(recommendation.source_hint));
 }
 
 static void
@@ -1143,6 +1176,7 @@ usage(const char *program)
 	    "--hum-harmonics 4\n", program);
 	printf("usage: %s --self-test --analyze --declipper\n", program);
 	printf("usage: %s --self-test --auto-eq-analyze\n", program);
+	printf("usage: %s --self-test --bass-eq-recommend\n", program);
 	printf("usage: %s --self-test --natural-dynamics "
 	    "--low-level-boost\n", program);
 	printf("usage: %s --self-test --ssb --ssb-preset ssb-speech\n",
@@ -1162,7 +1196,8 @@ usage(const char *program)
 	printf("usage: %s --live --meter-interval-ms 1000\n", program);
 	printf("usage: %s --live --tui\n", program);
 	printf("analysis option: --analyze\n");
-	printf("auto EQ analysis option: --auto-eq-analyze\n");
+	printf("auto EQ analysis option: --auto-eq-analyze "
+	    "--bass-eq-recommend\n");
 	printf("declipper options: --declipper --declipper-strength FLOAT "
 	    "--declipper-max-samples N\n");
 	printf("natural dynamics options: --natural-dynamics "

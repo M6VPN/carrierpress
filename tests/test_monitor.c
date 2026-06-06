@@ -116,6 +116,13 @@ test_snapshot_from_processor(void)
 		printf("test_monitor: block init failed\n");
 		return 0;
 	}
+	processor.auto_eq.metrics.finite = 1;
+	processor.auto_eq.metrics.total_rms = 0.1f;
+	processor.auto_eq.metrics.source_hint = CP_AUTO_EQ_SOURCE_THIN;
+	processor.auto_eq.metrics.low_frequency_weight = 0.05f;
+	processor.auto_eq.metrics.presence_weight = 0.20f;
+	processor.auto_eq.metrics.high_frequency_weight = 0.20f;
+	processor.auto_eq.metrics.spectral_tilt_db = 8.0f;
 	if (cp_monitor_snapshot_from_processor(&processor, &snapshot) !=
 	    CP_OK) {
 		printf("test_monitor: processor snapshot failed\n");
@@ -138,6 +145,10 @@ test_snapshot_from_processor(void)
 	    !snapshot.bass_eq_enabled ||
 	    snapshot.bass_eq_preset != CP_BASS_EQ_PRESET_MUSIC ||
 	    snapshot.bass_eq_low_hz != 120u ||
+	    !snapshot.bass_eq_recommend_valid ||
+	    snapshot.bass_eq_recommend_preset != CP_BASS_EQ_PRESET_WARM ||
+	    snapshot.bass_eq_recommend_low_gain_db_centibel <= 0 ||
+	    snapshot.bass_eq_recommend_confidence == 0u ||
 	    !snapshot.am_enabled ||
 	    snapshot.am_preset != CP_AM_PRESET_SHORTWAVE ||
 	    snapshot.ssb_enabled) {

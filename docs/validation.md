@@ -114,6 +114,7 @@ prints:
 - natural dynamics gain reduction
 - low-level boost gain
 - auto EQ source hint, RMS, spectral tilt, and broad tonal weights
+- bass EQ recommendation preset, gains, confidence, and validity
 - pass or fail status
 
 The M8.3 thresholds are conservative regression checks for finite output,
@@ -141,17 +142,23 @@ and stepped speech exercises at least one pre-AGC dynamics stage.
 M9.5 adds `make professional-check`. This is a stricter pass/fail target for
 the current chain. It runs deterministic fixtures through default, dehummer,
 declipper, natural dynamics plus low-level boost, auto EQ analysis, multiband
-plus bass EQ, second multiband, AM, and SSB profiles. It fails on non-finite output, limiter
-violations, AM/SSB peak-limit failures, silence instability, weak DC or hum
-reduction, weak high-pass or low-pass behavior, stereo instability, AGC
-gain-limit regressions, restoration-analysis regressions, auto EQ analysis
-regressions, declipper-gating regressions, and missing dynamics-stage activity.
+plus bass EQ, second multiband, AM, and SSB profiles. It fails on non-finite
+output, limiter violations, AM/SSB peak-limit failures, silence instability,
+weak DC or hum reduction, weak high-pass or low-pass behavior, stereo
+instability, AGC gain-limit regressions, restoration-analysis regressions, auto
+EQ analysis regressions, bass EQ recommendation regressions,
+declipper-gating regressions, and missing dynamics-stage activity.
 
 M10.3 adds an analysis-only auto EQ tap. Unit tests cover disabled operation,
 invalid config rejection, silence, bass-heavy, thin, bright, limited-band,
 stereo, and non-finite input cases. `make quality` and
 `make professional-check` include auto EQ profiles that verify finite metrics
 and reject obvious limited-band misclassification as bright.
+
+M10.4 adds bounded bass EQ recommendations derived from auto EQ metrics. Unit
+tests cover silence, bass-heavy, thin, dark, bright, bounded output, and
+non-finite metrics. `make quality` and `make professional-check` fail if auto
+EQ profiles do not produce finite bounded recommendation output.
 
 These fields are diagnostic and regression signals only. They do not prove
 clipping, lossy encoding, clean source quality, or restored source quality.

@@ -18,6 +18,7 @@ The gate covers:
 - declipper
 - natural dynamics plus low-level boost
 - auto EQ analysis
+- bass EQ recommendation
 - multiband plus bass EQ
 - second multiband
 - AM safe, shortwave, wide, and voice presets
@@ -58,6 +59,7 @@ The gate fails on:
 - stereo instability
 - restoration analyzer source-profile regressions
 - auto EQ analyzer regressions
+- bass EQ recommendation validity or bounds regressions
 - declipper repair or bypass gating regressions
 - missing natural dynamics or low-level boost activity on stepped speech
 

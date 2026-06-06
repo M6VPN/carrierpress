@@ -90,6 +90,13 @@ struct cp_portaudio_runtime {
 	atomic_uint bass_eq_high_hz;
 	atomic_int bass_eq_high_gain_db_centibel;
 	atomic_int bass_eq_preset;
+	atomic_uint bass_eq_recommend_valid;
+	atomic_int bass_eq_recommend_preset;
+	atomic_int bass_eq_recommend_low_gain_db_centibel;
+	atomic_int bass_eq_recommend_high_gain_db_centibel;
+	atomic_int bass_eq_recommend_output_gain_db_centibel;
+	atomic_uint bass_eq_recommend_confidence;
+	atomic_int bass_eq_recommend_source_hint;
 	atomic_uint band_count;
 	atomic_uint band_rms[CP_MONITOR_MAX_BANDS];
 	atomic_int band_gr_db_centibel[CP_MONITOR_MAX_BANDS];
@@ -591,6 +598,15 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	atomic_init(&runtime->bass_eq_high_hz, 0u);
 	atomic_init(&runtime->bass_eq_high_gain_db_centibel, 0);
 	atomic_init(&runtime->bass_eq_preset, (int)CP_BASS_EQ_PRESET_FLAT);
+	atomic_init(&runtime->bass_eq_recommend_valid, 0u);
+	atomic_init(&runtime->bass_eq_recommend_preset,
+	    (int)CP_BASS_EQ_PRESET_FLAT);
+	atomic_init(&runtime->bass_eq_recommend_low_gain_db_centibel, 0);
+	atomic_init(&runtime->bass_eq_recommend_high_gain_db_centibel, 0);
+	atomic_init(&runtime->bass_eq_recommend_output_gain_db_centibel, 0);
+	atomic_init(&runtime->bass_eq_recommend_confidence, 0u);
+	atomic_init(&runtime->bass_eq_recommend_source_hint,
+	    (int)CP_AUTO_EQ_SOURCE_UNKNOWN);
 	atomic_init(&runtime->band_count, 0u);
 	for (band = 0; band < CP_MONITOR_MAX_BANDS; band++) {
 		atomic_init(&runtime->band_rms[band], 0u);
@@ -772,6 +788,20 @@ cp_pa_load_snapshot(struct cp_portaudio_runtime *runtime,
 	snapshot->bass_eq_high_gain_db_centibel =
 	    atomic_load(&runtime->bass_eq_high_gain_db_centibel);
 	snapshot->bass_eq_preset = atomic_load(&runtime->bass_eq_preset);
+	snapshot->bass_eq_recommend_valid =
+	    atomic_load(&runtime->bass_eq_recommend_valid);
+	snapshot->bass_eq_recommend_preset =
+	    atomic_load(&runtime->bass_eq_recommend_preset);
+	snapshot->bass_eq_recommend_low_gain_db_centibel =
+	    atomic_load(&runtime->bass_eq_recommend_low_gain_db_centibel);
+	snapshot->bass_eq_recommend_high_gain_db_centibel =
+	    atomic_load(&runtime->bass_eq_recommend_high_gain_db_centibel);
+	snapshot->bass_eq_recommend_output_gain_db_centibel =
+	    atomic_load(&runtime->bass_eq_recommend_output_gain_db_centibel);
+	snapshot->bass_eq_recommend_confidence =
+	    atomic_load(&runtime->bass_eq_recommend_confidence);
+	snapshot->bass_eq_recommend_source_hint =
+	    atomic_load(&runtime->bass_eq_recommend_source_hint);
 	snapshot->am_enabled = atomic_load(&runtime->am_enabled);
 	snapshot->am_highpass_hz = atomic_load(&runtime->am_highpass_hz);
 	snapshot->am_lowpass_hz = atomic_load(&runtime->am_lowpass_hz);
@@ -916,6 +946,24 @@ cp_pa_print_meters(const struct cp_monitor_snapshot *snapshot)
 			    snapshot->auto_eq_band_enabled[band] ? "yes" :
 			    "no");
 		}
+		printf("bass_eq_recommend=%s preset=%s bass_gain_db=%0.2f "
+		    "presence_gain_db=%0.2f output_gain_db=%0.2f "
+		    "confidence=%0.6f source=%s\n",
+		    snapshot->bass_eq_recommend_valid ? "valid" : "invalid",
+		    cp_bass_eq_preset_string(
+		    (enum cp_bass_eq_preset)
+		    snapshot->bass_eq_recommend_preset),
+		    cp_monitor_centibel_to_db(
+		    snapshot->bass_eq_recommend_low_gain_db_centibel),
+		    cp_monitor_centibel_to_db(
+		    snapshot->bass_eq_recommend_high_gain_db_centibel),
+		    cp_monitor_centibel_to_db(
+		    snapshot->bass_eq_recommend_output_gain_db_centibel),
+		    cp_monitor_level_to_sample(
+		    snapshot->bass_eq_recommend_confidence),
+		    cp_auto_eq_source_hint_string(
+		    (enum cp_auto_eq_source_hint)
+		    snapshot->bass_eq_recommend_source_hint));
 	}
 	if (snapshot->natural_dynamics_enabled) {
 		printf("natural_dynamics=on rms=%0.6f gain=%0.6f "
@@ -1211,6 +1259,20 @@ cp_pa_store_meters(struct cp_portaudio_runtime *runtime)
 	    snapshot.bass_eq_high_gain_db_centibel);
 	atomic_store(&runtime->bass_eq_preset,
 	    snapshot.bass_eq_preset);
+	atomic_store(&runtime->bass_eq_recommend_valid,
+	    snapshot.bass_eq_recommend_valid);
+	atomic_store(&runtime->bass_eq_recommend_preset,
+	    snapshot.bass_eq_recommend_preset);
+	atomic_store(&runtime->bass_eq_recommend_low_gain_db_centibel,
+	    snapshot.bass_eq_recommend_low_gain_db_centibel);
+	atomic_store(&runtime->bass_eq_recommend_high_gain_db_centibel,
+	    snapshot.bass_eq_recommend_high_gain_db_centibel);
+	atomic_store(&runtime->bass_eq_recommend_output_gain_db_centibel,
+	    snapshot.bass_eq_recommend_output_gain_db_centibel);
+	atomic_store(&runtime->bass_eq_recommend_confidence,
+	    snapshot.bass_eq_recommend_confidence);
+	atomic_store(&runtime->bass_eq_recommend_source_hint,
+	    snapshot.bass_eq_recommend_source_hint);
 
 	atomic_store(&runtime->band_count, (unsigned int)snapshot.band_count);
 	for (band = 0; band < snapshot.band_count; band++) {

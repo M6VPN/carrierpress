@@ -10,9 +10,22 @@
 #include "cp_bass_eq.h"
 
 #define CP_BASS_EQ_DENORMAL_FLOOR	0.00000000000000000001f
+#define CP_BASS_EQ_RECOMMEND_RMS_MIN	0.0001f
+#define CP_BASS_EQ_RECOMMEND_BASS_LOW	0.18f
+#define CP_BASS_EQ_RECOMMEND_BASS_HIGH	0.55f
+#define CP_BASS_EQ_RECOMMEND_HIGH_LOW	0.06f
+#define CP_BASS_EQ_RECOMMEND_HIGH_HIGH	0.45f
+#define CP_BASS_EQ_RECOMMEND_CONF_LOW	0.45f
+#define CP_BASS_EQ_RECOMMEND_CONF_MED	0.65f
+#define CP_BASS_EQ_RECOMMEND_CONF_HIGH	0.80f
 
 static cp_sample_t	cp_bass_eq_clean(cp_sample_t);
+static cp_sample_t	cp_bass_eq_clamp(cp_sample_t, cp_sample_t,
+			    cp_sample_t);
 static cp_sample_t	cp_bass_eq_db_to_linear(cp_sample_t);
+static void		cp_bass_eq_recommend_invalid(
+			    struct cp_bass_eq_recommendation *,
+			    enum cp_auto_eq_source_hint);
 static int		cp_bass_eq_validate_config(
 			    const struct cp_bass_eq_config *);
 
@@ -152,6 +165,99 @@ cp_bass_eq_preset_from_string(const char *name,
 	return CP_ERR_RANGE;
 }
 
+int
+cp_bass_eq_recommend(const struct cp_auto_eq_metrics *metrics,
+	struct cp_bass_eq_recommendation *recommendation)
+{
+	if (metrics == NULL || recommendation == NULL)
+		return CP_ERR_NULL;
+
+	cp_bass_eq_recommend_invalid(recommendation, metrics->source_hint);
+	if (!metrics->finite || !isfinite(metrics->total_rms) ||
+	    metrics->total_rms < CP_BASS_EQ_RECOMMEND_RMS_MIN)
+		return CP_OK;
+	if (!isfinite(metrics->low_frequency_weight) ||
+	    !isfinite(metrics->presence_weight) ||
+	    !isfinite(metrics->high_frequency_weight) ||
+	    !isfinite(metrics->spectral_tilt_db))
+		return CP_OK;
+
+	recommendation->valid = 1;
+	recommendation->preset = CP_BASS_EQ_PRESET_FLAT;
+	recommendation->confidence = CP_BASS_EQ_RECOMMEND_CONF_LOW;
+	switch (metrics->source_hint) {
+	case CP_AUTO_EQ_SOURCE_BASS_HEAVY:
+		recommendation->preset = CP_BASS_EQ_PRESET_SPEECH;
+		recommendation->low_gain_db = -1.5f;
+		recommendation->high_gain_db = 0.5f;
+		recommendation->output_gain_db = -0.5f;
+		recommendation->confidence = CP_BASS_EQ_RECOMMEND_CONF_HIGH;
+		break;
+	case CP_AUTO_EQ_SOURCE_THIN:
+		recommendation->preset = CP_BASS_EQ_PRESET_WARM;
+		recommendation->low_gain_db = 1.5f;
+		recommendation->high_gain_db = 0.0f;
+		recommendation->output_gain_db = -0.5f;
+		recommendation->confidence = CP_BASS_EQ_RECOMMEND_CONF_HIGH;
+		break;
+	case CP_AUTO_EQ_SOURCE_DARK:
+		recommendation->preset = CP_BASS_EQ_PRESET_SPEECH;
+		recommendation->low_gain_db = -0.5f;
+		recommendation->high_gain_db = 1.5f;
+		recommendation->output_gain_db = -0.5f;
+		recommendation->confidence = CP_BASS_EQ_RECOMMEND_CONF_MED;
+		break;
+	case CP_AUTO_EQ_SOURCE_BRIGHT:
+		recommendation->preset = CP_BASS_EQ_PRESET_WARM;
+		recommendation->low_gain_db = 0.5f;
+		recommendation->high_gain_db = -1.5f;
+		recommendation->output_gain_db = -0.5f;
+		recommendation->confidence = CP_BASS_EQ_RECOMMEND_CONF_HIGH;
+		break;
+	case CP_AUTO_EQ_SOURCE_BALANCED:
+		recommendation->preset = CP_BASS_EQ_PRESET_FLAT;
+		recommendation->low_gain_db = 0.0f;
+		recommendation->high_gain_db = 0.0f;
+		recommendation->output_gain_db = 0.0f;
+		recommendation->confidence = CP_BASS_EQ_RECOMMEND_CONF_MED;
+		break;
+	case CP_AUTO_EQ_SOURCE_LIMITED_BAND:
+		recommendation->preset = CP_BASS_EQ_PRESET_SPEECH;
+		recommendation->low_gain_db = 0.5f;
+		recommendation->high_gain_db = 0.5f;
+		recommendation->output_gain_db = -0.5f;
+		recommendation->confidence = CP_BASS_EQ_RECOMMEND_CONF_LOW;
+		break;
+	case CP_AUTO_EQ_SOURCE_SILENCE:
+	case CP_AUTO_EQ_SOURCE_UNKNOWN:
+	default:
+		cp_bass_eq_recommend_invalid(recommendation,
+		    metrics->source_hint);
+		return CP_OK;
+	}
+
+	if (metrics->low_frequency_weight < CP_BASS_EQ_RECOMMEND_BASS_LOW)
+		recommendation->low_gain_db += 0.5f;
+	if (metrics->low_frequency_weight > CP_BASS_EQ_RECOMMEND_BASS_HIGH)
+		recommendation->low_gain_db -= 0.5f;
+	if (metrics->high_frequency_weight < CP_BASS_EQ_RECOMMEND_HIGH_LOW)
+		recommendation->high_gain_db += 0.5f;
+	if (metrics->high_frequency_weight > CP_BASS_EQ_RECOMMEND_HIGH_HIGH)
+		recommendation->high_gain_db -= 0.5f;
+
+	recommendation->low_gain_db = cp_bass_eq_clamp(
+	    recommendation->low_gain_db, -3.0f, 3.0f);
+	recommendation->high_gain_db = cp_bass_eq_clamp(
+	    recommendation->high_gain_db, -3.0f, 3.0f);
+	recommendation->output_gain_db = cp_bass_eq_clamp(
+	    recommendation->output_gain_db, -3.0f, 0.0f);
+	recommendation->confidence = cp_bass_eq_clamp(
+	    recommendation->confidence, CP_BASS_EQ_RECOMMEND_CONFIDENCE_MIN,
+	    CP_BASS_EQ_RECOMMEND_CONFIDENCE_MAX);
+
+	return CP_OK;
+}
+
 const char *
 cp_bass_eq_preset_string(enum cp_bass_eq_preset preset)
 {
@@ -242,12 +348,42 @@ cp_bass_eq_clean(cp_sample_t sample)
 }
 
 static cp_sample_t
+cp_bass_eq_clamp(cp_sample_t value, cp_sample_t minimum,
+	cp_sample_t maximum)
+{
+	if (!isfinite(value))
+		return minimum;
+	if (value < minimum)
+		return minimum;
+	if (value > maximum)
+		return maximum;
+
+	return value;
+}
+
+static cp_sample_t
 cp_bass_eq_db_to_linear(cp_sample_t db)
 {
 	if (!isfinite(db))
 		return 1.0f;
 
 	return powf(10.0f, db / 20.0f);
+}
+
+static void
+cp_bass_eq_recommend_invalid(struct cp_bass_eq_recommendation *recommendation,
+	enum cp_auto_eq_source_hint hint)
+{
+	if (recommendation == NULL)
+		return;
+
+	recommendation->valid = 0;
+	recommendation->preset = CP_BASS_EQ_PRESET_FLAT;
+	recommendation->low_gain_db = 0.0f;
+	recommendation->high_gain_db = 0.0f;
+	recommendation->output_gain_db = 0.0f;
+	recommendation->confidence = 0.0f;
+	recommendation->source_hint = hint;
 }
 
 static int
