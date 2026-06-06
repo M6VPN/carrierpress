@@ -40,6 +40,9 @@ cp_block_default_config(struct cp_block_config *config, size_t channels)
 	config->multiband_preset = CP_MULTIBAND_PRESET_SPEECH;
 	cp_bass_eq_default_config(&config->bass_eq_config);
 	cp_am_default_config(&config->am_config);
+	cp_declipper_default_config(&config->declipper_config);
+	config->declipper_config.channel_count = channels;
+	config->declipper_config.sample_rate = config->sample_rate;
 	cp_restoration_default_config(&config->restoration_config);
 	config->restoration_config.channel_count = channels;
 	config->restoration_config.sample_rate = config->sample_rate;
@@ -77,6 +80,9 @@ cp_block_config_from_audio(struct cp_block_config *block_config,
 	block_config->am_config = audio_config->am_config;
 	block_config->am_config.channel_count = channels;
 	block_config->am_config.sample_rate = sample_rate;
+	block_config->declipper_config = audio_config->declipper_config;
+	block_config->declipper_config.channel_count = channels;
+	block_config->declipper_config.sample_rate = sample_rate;
 	block_config->restoration_config = audio_config->restoration_config;
 	block_config->restoration_config.channel_count = channels;
 	block_config->restoration_config.sample_rate = sample_rate;
@@ -97,6 +103,7 @@ cp_block_init(struct cp_block_processor *processor,
 {
 	struct cp_agc_config agc_config;
 	struct cp_bass_eq_config bass_eq_config;
+	struct cp_declipper_config declipper_config;
 	struct cp_dehummer_config dehummer_config;
 	struct cp_multiband_config multiband_config;
 	struct cp_restoration_config restoration_config;
@@ -134,6 +141,13 @@ cp_block_init(struct cp_block_processor *processor,
 	restoration_config.sample_rate = config->sample_rate;
 	status = cp_restoration_init(&processor->restoration,
 	    &restoration_config);
+	if (status != CP_OK)
+		return status;
+
+	declipper_config = config->declipper_config;
+	declipper_config.channel_count = config->channels;
+	declipper_config.sample_rate = config->sample_rate;
+	status = cp_declipper_init(&processor->declipper, &declipper_config);
 	if (status != CP_OK)
 		return status;
 
@@ -240,6 +254,11 @@ cp_block_process(struct cp_block_processor *processor,
 	if (status != CP_OK)
 		return status;
 
+	status = cp_declipper_process(&processor->declipper,
+	    &processor->restoration.metrics, scratch, scratch, frames);
+	if (status != CP_OK)
+		return status;
+
 	status = cp_agc_process(&processor->agc, scratch, output, frames);
 	if (status != CP_OK)
 		return status;
@@ -290,6 +309,10 @@ cp_block_reset(struct cp_block_processor *processor)
 		return status;
 
 	status = cp_restoration_reset(&processor->restoration);
+	if (status != CP_OK)
+		return status;
+
+	status = cp_declipper_reset(&processor->declipper);
 	if (status != CP_OK)
 		return status;
 

@@ -8,6 +8,7 @@
 #include "cp_am.h"
 #include "cp_bass_eq.h"
 #include "cp_dc_blocker.h"
+#include "cp_declipper.h"
 #include "cp_dehummer.h"
 #include "cp_limiter.h"
 #include "cp_meter.h"
@@ -44,6 +45,7 @@ struct cp_block_config {
 	enum cp_multiband_preset multiband_preset;
 	struct cp_bass_eq_config bass_eq_config;
 	struct cp_am_config am_config;
+	struct cp_declipper_config declipper_config;
 	struct cp_restoration_config restoration_config;
 	struct cp_ssb_config ssb_config;
 	cp_sample_t limiter_ceiling;
@@ -58,6 +60,7 @@ struct cp_block_processor {
 	struct cp_bass_eq bass_eq;
 	struct cp_am am;
 	struct cp_restoration restoration;
+	struct cp_declipper declipper;
 	struct cp_ssb ssb;
 	struct cp_limiter limiter;
 	struct cp_meter input_meter;

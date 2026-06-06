@@ -86,11 +86,11 @@ Implemented as a deterministic measurement pass for the current chain. `make qua
 
 ## M9 declipper and delossifier research
 
-Partially implemented. M9.2 adds an analysis-only restoration detector and
-calibrated QA fixtures for clipping indicators, low-ceiling clipping
-indicators, transient rejection, limited-band source hints, and
-high-frequency-loss indicators. It does not modify audio or implement
-declipping, delossifying, codec repair, or source reconstruction.
+Partially implemented. M9.3 adds an optional conservative declipper research
+stage gated by the restoration analyzer. It can repair short hard-clipped or
+low-ceiling clipped runs when confidence is high, and bypasses transient-like
+or low-confidence blocks. Delossifying, codec repair, and source reconstruction
+remain deferred.
 
 ## M9.1 restoration analysis foundation
 
@@ -110,6 +110,15 @@ without changing audio samples.
 
 The detector is conservative and diagnostic. Later M9 work must validate any
 actual declipper or delossifier design before adding a processing stage.
+
+## M9.3 conservative declipper prototype
+
+Partially implemented as an optional clean-room repair prototype. `--declipper`
+enables the analyzer and inserts the declipper after the analysis tap and before
+AGC. It exposes repaired sample counts, repaired run counts, maximum sample
+delta, bypass reason, and finite-output state in self-test, live meters,
+playout meters, TUI snapshots, and `make quality`. It is not a general
+restoration processor.
 
 ## M10 sndio backend
 

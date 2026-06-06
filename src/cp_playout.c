@@ -14,6 +14,7 @@
 #include <sndfile.h>
 
 #include "cp_control.h"
+#include "cp_declipper.h"
 #include "cp_playout.h"
 #include "cp_restoration.h"
 #include "cp_resampler.h"
@@ -306,6 +307,10 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	audio_config.bass_eq_config.channel_count = channels;
 	audio_config.am_config.sample_rate = (cp_sample_t)output_rate;
 	audio_config.am_config.channel_count = channels;
+	audio_config.restoration_config.sample_rate = (cp_sample_t)output_rate;
+	audio_config.restoration_config.channel_count = channels;
+	audio_config.declipper_config.sample_rate = (cp_sample_t)output_rate;
+	audio_config.declipper_config.channel_count = channels;
 	audio_config.ssb_config.sample_rate = (cp_sample_t)output_rate;
 	audio_config.ssb_config.channel_count = channels;
 	status = cp_audio_validate_config(&audio_config);
@@ -352,6 +357,10 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 		audio_config.bass_eq_config.sample_rate =
 		    (cp_sample_t)output_rate;
 		audio_config.am_config.sample_rate = (cp_sample_t)output_rate;
+		audio_config.restoration_config.sample_rate =
+		    (cp_sample_t)output_rate;
+		audio_config.declipper_config.sample_rate =
+		    (cp_sample_t)output_rate;
 		audio_config.ssb_config.sample_rate = (cp_sample_t)output_rate;
 		if (cp_audio_validate_config(&audio_config) != CP_AUDIO_OK) {
 			Pa_Terminate();
@@ -990,6 +999,17 @@ cp_playout_print_meters(const struct cp_monitor_snapshot *snapshot)
 		    snapshot->restoration_crest_factor),
 		    snapshot->restoration_flat_runs,
 		    snapshot->restoration_peak_repeats);
+	}
+	if (snapshot->declipper_enabled) {
+		printf("declipper=on repaired_samples=%u repaired_runs=%u "
+		    "max_delta=%0.6f bypass=%s finite=%s\n",
+		    snapshot->declipper_repaired_samples,
+		    snapshot->declipper_repaired_runs,
+		    cp_monitor_level_to_sample(snapshot->declipper_max_delta),
+		    cp_declipper_bypass_reason_string(
+		    (enum cp_declipper_bypass_reason)
+		    snapshot->declipper_bypass_reason),
+		    snapshot->declipper_finite ? "yes" : "no");
 	}
 	if (snapshot->ssb_enabled) {
 		printf("ssb=on preset=%s highpass=%u lowpass=%u "

@@ -96,6 +96,18 @@ cp_monitor_snapshot_from_processor(const struct cp_block_processor *processor,
 	    (unsigned int)lrintf(processor->dehummer.config.base_frequency);
 	snapshot->dehummer_harmonic_count =
 	    (unsigned int)processor->dehummer.config.harmonic_count;
+	snapshot->declipper_enabled =
+	    processor->declipper.config.enabled ? 1u : 0u;
+	snapshot->declipper_repaired_samples =
+	    (unsigned int)processor->declipper.metrics.repaired_sample_count;
+	snapshot->declipper_repaired_runs =
+	    (unsigned int)processor->declipper.metrics.repaired_run_count;
+	snapshot->declipper_max_delta = cp_monitor_sample_to_level(
+	    processor->declipper.metrics.max_repair_delta);
+	snapshot->declipper_bypass_reason =
+	    (int)processor->declipper.metrics.bypass_reason;
+	snapshot->declipper_finite =
+	    processor->declipper.metrics.finite ? 1u : 0u;
 	snapshot->multiband_enabled =
 	    processor->multiband.config.enabled ? 1u : 0u;
 	snapshot->multiband_preset = processor->multiband.config.preset;

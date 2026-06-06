@@ -13,6 +13,7 @@
 
 #include "cp_block.h"
 #include "cp_control.h"
+#include "cp_declipper.h"
 #include "cp_monitor.h"
 #include "cp_portaudio.h"
 #include "cp_restoration.h"
@@ -38,6 +39,12 @@ struct cp_portaudio_runtime {
 	atomic_uint dehummer_enabled;
 	atomic_uint dehummer_base_hz;
 	atomic_uint dehummer_harmonic_count;
+	atomic_uint declipper_enabled;
+	atomic_uint declipper_repaired_samples;
+	atomic_uint declipper_repaired_runs;
+	atomic_uint declipper_max_delta;
+	atomic_int declipper_bypass_reason;
+	atomic_uint declipper_finite;
 	atomic_uint multiband_enabled;
 	atomic_int multiband_preset;
 	atomic_uint restoration_enabled;
@@ -499,6 +506,13 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	atomic_init(&runtime->dehummer_enabled, 0u);
 	atomic_init(&runtime->dehummer_base_hz, 0u);
 	atomic_init(&runtime->dehummer_harmonic_count, 0u);
+	atomic_init(&runtime->declipper_enabled, 0u);
+	atomic_init(&runtime->declipper_repaired_samples, 0u);
+	atomic_init(&runtime->declipper_repaired_runs, 0u);
+	atomic_init(&runtime->declipper_max_delta, 0u);
+	atomic_init(&runtime->declipper_bypass_reason,
+	    (int)CP_DECLIPPER_BYPASS_DISABLED);
+	atomic_init(&runtime->declipper_finite, 1u);
 	atomic_init(&runtime->multiband_enabled, 0u);
 	atomic_init(&runtime->multiband_preset,
 	    (int)CP_MULTIBAND_PRESET_SPEECH);
@@ -597,6 +611,18 @@ cp_pa_load_snapshot(struct cp_portaudio_runtime *runtime,
 	    atomic_load(&runtime->dehummer_base_hz);
 	snapshot->dehummer_harmonic_count =
 	    atomic_load(&runtime->dehummer_harmonic_count);
+	snapshot->declipper_enabled =
+	    atomic_load(&runtime->declipper_enabled);
+	snapshot->declipper_repaired_samples =
+	    atomic_load(&runtime->declipper_repaired_samples);
+	snapshot->declipper_repaired_runs =
+	    atomic_load(&runtime->declipper_repaired_runs);
+	snapshot->declipper_max_delta =
+	    atomic_load(&runtime->declipper_max_delta);
+	snapshot->declipper_bypass_reason =
+	    atomic_load(&runtime->declipper_bypass_reason);
+	snapshot->declipper_finite =
+	    atomic_load(&runtime->declipper_finite);
 	snapshot->multiband_enabled =
 	    atomic_load(&runtime->multiband_enabled);
 	snapshot->multiband_preset =
@@ -735,6 +761,17 @@ cp_pa_print_meters(const struct cp_monitor_snapshot *snapshot)
 		    snapshot->restoration_crest_factor),
 		    snapshot->restoration_flat_runs,
 		    snapshot->restoration_peak_repeats);
+	}
+	if (snapshot->declipper_enabled) {
+		printf("declipper=on repaired_samples=%u repaired_runs=%u "
+		    "max_delta=%0.6f bypass=%s finite=%s\n",
+		    snapshot->declipper_repaired_samples,
+		    snapshot->declipper_repaired_runs,
+		    cp_monitor_level_to_sample(snapshot->declipper_max_delta),
+		    cp_declipper_bypass_reason_string(
+		    (enum cp_declipper_bypass_reason)
+		    snapshot->declipper_bypass_reason),
+		    snapshot->declipper_finite ? "yes" : "no");
 	}
 }
 
@@ -891,6 +928,18 @@ cp_pa_store_meters(struct cp_portaudio_runtime *runtime)
 	    snapshot.dehummer_base_hz);
 	atomic_store(&runtime->dehummer_harmonic_count,
 	    snapshot.dehummer_harmonic_count);
+	atomic_store(&runtime->declipper_enabled,
+	    snapshot.declipper_enabled);
+	atomic_store(&runtime->declipper_repaired_samples,
+	    snapshot.declipper_repaired_samples);
+	atomic_store(&runtime->declipper_repaired_runs,
+	    snapshot.declipper_repaired_runs);
+	atomic_store(&runtime->declipper_max_delta,
+	    snapshot.declipper_max_delta);
+	atomic_store(&runtime->declipper_bypass_reason,
+	    snapshot.declipper_bypass_reason);
+	atomic_store(&runtime->declipper_finite,
+	    snapshot.declipper_finite);
 	atomic_store(&runtime->multiband_enabled,
 	    snapshot.multiband_enabled);
 	atomic_store(&runtime->multiband_preset,

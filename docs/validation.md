@@ -86,8 +86,9 @@ M8.3 adds a deterministic audio QA report. It processes these sources:
 - high-frequency tone
 - stereo imbalance
 
-The report covers default, 50 Hz dehummer, 60 Hz dehummer, multiband plus bass
-EQ, AM shortwave, and SSB narrow profiles. Each line prints:
+The report covers default, 50 Hz dehummer, 60 Hz dehummer, declipper,
+multiband plus bass EQ, AM shortwave, and SSB narrow profiles. Each line
+prints:
 
 - input and output RMS
 - input and output peak
@@ -100,6 +101,7 @@ EQ, AM shortwave, and SSB narrow profiles. Each line prints:
 - low-ceiling and transient indicator metrics
 - high-frequency-loss indicator metrics
 - analysis source profile and reason flags
+- declipper repaired samples, repaired runs, maximum delta, and bypass reason
 - pass or fail status
 
 The M8.3 thresholds are conservative regression checks for finite output,
@@ -113,8 +115,13 @@ and SSB or voice-limited bandwidth. The target fails if obvious clipping is not
 flagged, if a short burst is treated as sustained hard clipping, or if the
 limited-band source profiles regress.
 
-These fields are diagnostic only. They do not prove clipping, lossy encoding,
-or clean source quality, and they do not apply repair.
+M9.3 extends `make quality` with declipper-gating fixtures. Hard-clipped and
+low-ceiling clipped fixtures must produce repaired samples when the declipper
+profile is active. Burst fixtures must remain bypassed. These checks validate
+bounded behavior and bypass logic only.
+
+These fields are diagnostic and regression signals only. They do not prove
+clipping, lossy encoding, clean source quality, or restored source quality.
 
 Validation does not prove regulatory compliance, occupied bandwidth compliance,
 sample-rate conversion quality, or broadcast-processor quality. Live hardware

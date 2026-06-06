@@ -7,6 +7,7 @@
 #include <stdio.h>
 
 #include "cp_block.h"
+#include "cp_declipper.h"
 
 #define QR_BLOCK_FRAMES		256
 #define QR_TOTAL_FRAMES		8192
@@ -35,6 +36,7 @@ enum qr_profile {
 	QR_PROFILE_DEFAULT = 0,
 	QR_PROFILE_DEHUM_50,
 	QR_PROFILE_DEHUM_60,
+	QR_PROFILE_DECLIPPER,
 	QR_PROFILE_MB_BASS,
 	QR_PROFILE_AM_SHORTWAVE,
 	QR_PROFILE_SSB_NARROW
@@ -77,8 +79,12 @@ struct qr_metrics {
 	cp_sample_t analysis_peak_repeat_ratio;
 	cp_sample_t analysis_observed_peak;
 	cp_sample_t analysis_crest_factor;
+	cp_sample_t declipper_max_delta;
 	enum cp_restoration_source_profile analysis_source_profile;
 	unsigned int analysis_reason_flags;
+	size_t declipper_repaired_samples;
+	size_t declipper_repaired_runs;
+	int declipper_bypass_reason;
 	int finite;
 };
 
@@ -113,6 +119,12 @@ main(void)
 		{ QR_PROFILE_DEFAULT, QR_FIXTURE_DC_OFFSET, "dc" },
 		{ QR_PROFILE_DEHUM_50, QR_FIXTURE_HUM_50, "dehum-50" },
 		{ QR_PROFILE_DEHUM_60, QR_FIXTURE_HUM_60, "dehum-60" },
+		{ QR_PROFILE_DECLIPPER, QR_FIXTURE_CLIPPED,
+		    "declipper-clipped" },
+		{ QR_PROFILE_DECLIPPER, QR_FIXTURE_LOW_CEILING_CLIPPED,
+		    "declipper-low-ceiling" },
+		{ QR_PROFILE_DECLIPPER, QR_FIXTURE_BURST,
+		    "declipper-burst" },
 		{ QR_PROFILE_MB_BASS, QR_FIXTURE_MUSIC_MIX, "mb-music" },
 		{ QR_PROFILE_MB_BASS, QR_FIXTURE_STEREO_IMBALANCE, "stereo" },
 		{ QR_PROFILE_AM_SHORTWAVE, QR_FIXTURE_HIGH_TONE, "am-lpf" },
@@ -173,6 +185,28 @@ qr_check_case(const struct qr_case *test, const struct qr_metrics *metrics)
 		input_hum = qr_hum_amp(metrics, 60, 1);
 		output_hum = qr_hum_amp(metrics, 60, 0);
 		if (output_hum >= input_hum * 0.65f)
+			return 0;
+	}
+	if (test->profile == QR_PROFILE_DECLIPPER &&
+	    test->fixture == QR_FIXTURE_CLIPPED) {
+		if (metrics->declipper_repaired_samples == 0 ||
+		    metrics->declipper_repaired_runs == 0)
+			return 0;
+	}
+	if (test->profile == QR_PROFILE_DECLIPPER &&
+	    test->fixture == QR_FIXTURE_LOW_CEILING_CLIPPED) {
+		if (metrics->declipper_repaired_samples == 0 ||
+		    metrics->declipper_max_delta <= 0.0f)
+			return 0;
+	}
+	if (test->profile == QR_PROFILE_DECLIPPER &&
+	    test->fixture == QR_FIXTURE_BURST) {
+		if (metrics->declipper_repaired_samples != 0)
+			return 0;
+		if (metrics->declipper_bypass_reason !=
+		    CP_DECLIPPER_BYPASS_TRANSIENT &&
+		    metrics->declipper_bypass_reason !=
+		    CP_DECLIPPER_BYPASS_LOW_CONFIDENCE)
 			return 0;
 	}
 	if (test->check[0] == 'a' && test->fixture == QR_FIXTURE_HIGH_TONE &&
@@ -238,6 +272,11 @@ qr_config(struct cp_block_config *config, enum qr_profile profile)
 		config->dehummer_enabled = 1;
 		config->hum_base_frequency = 60.0f;
 		config->hum_harmonic_count = 4;
+		break;
+	case QR_PROFILE_DECLIPPER:
+		config->declipper_config.enabled = 1;
+		config->declipper_config.repair_strength = 0.35f;
+		config->declipper_config.max_repair_samples = 16u;
 		break;
 	case QR_PROFILE_MB_BASS:
 		config->multiband_enabled = 1;
@@ -496,6 +535,8 @@ qr_profile_name(enum qr_profile profile)
 		return "dehum-50";
 	case QR_PROFILE_DEHUM_60:
 		return "dehum-60";
+	case QR_PROFILE_DECLIPPER:
+		return "declipper";
 	case QR_PROFILE_MB_BASS:
 		return "multiband-bass";
 	case QR_PROFILE_AM_SHORTWAVE:
@@ -564,8 +605,12 @@ qr_run_case(const struct qr_case *test)
 	metrics.analysis_peak_repeat_ratio = 0.0f;
 	metrics.analysis_observed_peak = 0.0f;
 	metrics.analysis_crest_factor = 0.0f;
+	metrics.declipper_max_delta = 0.0f;
 	metrics.analysis_source_profile = CP_RESTORATION_SOURCE_UNKNOWN;
 	metrics.analysis_reason_flags = 0u;
+	metrics.declipper_repaired_samples = 0;
+	metrics.declipper_repaired_runs = 0;
+	metrics.declipper_bypass_reason = CP_DECLIPPER_BYPASS_DISABLED;
 	metrics.finite = 1;
 
 	for (offset = 0; offset < QR_TOTAL_FRAMES; offset += QR_BLOCK_FRAMES) {
@@ -627,6 +672,14 @@ qr_run_case(const struct qr_case *test)
 	    processor.restoration.metrics.source_profile;
 	metrics.analysis_reason_flags =
 	    processor.restoration.metrics.reason_flags;
+	metrics.declipper_repaired_samples =
+	    processor.declipper.metrics.repaired_sample_count;
+	metrics.declipper_repaired_runs =
+	    processor.declipper.metrics.repaired_run_count;
+	metrics.declipper_max_delta =
+	    processor.declipper.metrics.max_repair_delta;
+	metrics.declipper_bypass_reason =
+	    processor.declipper.metrics.bypass_reason;
 	pass = qr_check_case(test, &metrics);
 
 	printf("quality profile=%s fixture=%s check=%s input_rms=%0.6f "
@@ -642,7 +695,9 @@ qr_run_case(const struct qr_case *test)
 	    "analysis_lossy_confidence=%0.6f analysis_flat_ratio=%0.6f "
 	    "analysis_peak_repeat_ratio=%0.6f analysis_peak=%0.6f "
 	    "analysis_crest=%0.6f analysis_profile=%s "
-	    "analysis_reason_flags=0x%08x status=%s\n",
+	    "analysis_reason_flags=0x%08x declipper_samples=%zu "
+	    "declipper_runs=%zu declipper_delta=%0.6f "
+	    "declipper_bypass=%s status=%s\n",
 	    qr_profile_name(test->profile), qr_fixture_name(test->fixture),
 	    test->check, metrics.input_square, metrics.output_square,
 	    metrics.input_peak, metrics.output_peak, metrics.output_min,
@@ -664,6 +719,12 @@ qr_run_case(const struct qr_case *test)
 	    cp_restoration_source_profile_string(
 	    metrics.analysis_source_profile),
 	    metrics.analysis_reason_flags,
+	    metrics.declipper_repaired_samples,
+	    metrics.declipper_repaired_runs,
+	    metrics.declipper_max_delta,
+	    cp_declipper_bypass_reason_string(
+	    (enum cp_declipper_bypass_reason)
+	    metrics.declipper_bypass_reason),
 	    pass ? "pass" : "fail");
 
 	return pass;

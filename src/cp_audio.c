@@ -9,6 +9,7 @@
 
 #include "cp_audio.h"
 #include "cp_bass_eq.h"
+#include "cp_declipper.h"
 #include "cp_dehummer.h"
 #include "cp_restoration.h"
 
@@ -129,6 +130,10 @@ cp_audio_default_config(struct cp_audio_config *config)
 	cp_am_default_config(&config->am_config);
 	config->am_config.channel_count = config->channels;
 	config->am_config.sample_rate = (cp_sample_t)config->sample_rate;
+	cp_declipper_default_config(&config->declipper_config);
+	config->declipper_config.channel_count = config->channels;
+	config->declipper_config.sample_rate =
+	    (cp_sample_t)config->sample_rate;
 	cp_restoration_default_config(&config->restoration_config);
 	config->restoration_config.channel_count = config->channels;
 	config->restoration_config.sample_rate =
@@ -224,6 +229,8 @@ cp_audio_status_string(int status)
 		return "invalid bass EQ settings";
 	case CP_AUDIO_ERR_RESTORATION:
 		return "invalid restoration analysis settings";
+	case CP_AUDIO_ERR_DECLIPPER:
+		return "invalid declipper settings";
 	default:
 		return "unknown audio error";
 	}
@@ -234,6 +241,7 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 {
 	struct cp_am am;
 	struct cp_bass_eq bass_eq;
+	struct cp_declipper declipper;
 	struct cp_restoration restoration;
 	struct cp_ssb ssb;
 
@@ -295,6 +303,11 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 		return CP_AUDIO_ERR_AM;
 	if (config->am_config.sample_rate != (cp_sample_t)config->sample_rate)
 		return CP_AUDIO_ERR_AM;
+	if (config->declipper_config.channel_count != config->channels)
+		return CP_AUDIO_ERR_DECLIPPER;
+	if (config->declipper_config.sample_rate !=
+	    (cp_sample_t)config->sample_rate)
+		return CP_AUDIO_ERR_DECLIPPER;
 	if (config->ssb_config.channel_count != config->channels)
 		return CP_AUDIO_ERR_SSB;
 	if (config->ssb_config.sample_rate != (cp_sample_t)config->sample_rate)
@@ -314,6 +327,11 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 		if (cp_bass_eq_init(&bass_eq,
 		    &config->bass_eq_config) != CP_OK)
 			return CP_AUDIO_ERR_BASS_EQ;
+	}
+	if (config->declipper_config.enabled) {
+		if (cp_declipper_init(&declipper,
+		    &config->declipper_config) != CP_OK)
+			return CP_AUDIO_ERR_DECLIPPER;
 	}
 	if (config->ssb_config.enabled) {
 		if (cp_ssb_init(&ssb, &config->ssb_config) != CP_OK)

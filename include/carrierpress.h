@@ -14,6 +14,7 @@
 #include "cp_control.h"
 #include "cp_crossover.h"
 #include "cp_dc_blocker.h"
+#include "cp_declipper.h"
 #include "cp_dehummer.h"
 #include "cp_limiter.h"
 #include "cp_meter.h"

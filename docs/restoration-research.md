@@ -1,18 +1,22 @@
 # Restoration Research
 
-CarrierPress M9 restoration work starts with detection, not repair. The M9.2
-analyzer is a diagnostic tap used to identify source material that may need
-later clean-room declipping or delossifier research.
+CarrierPress M9 restoration work starts with detection and conservative repair
+gating. The M9.3 analyzer is a diagnostic tap used to identify source material
+that may need clean-room declipping or delossifier research. The optional
+declipper is a bounded research prototype for clear hard-clipping and
+low-ceiling clipping cases.
 
 ## Placement
 
-The analyzer observes audio after the DC blocker and dehummer, before AGC:
+The analyzer observes audio after the DC blocker and dehummer. The optional
+declipper runs after the analyzer and before AGC:
 
 ```text
 input
 DC blocker
 dehummer
 restoration analysis tap
+declipper
 AGC
 multiband compressor 1
 bass EQ
@@ -23,7 +27,9 @@ output
 ```
 
 This placement measures source-like behavior before gain riding, multiband
-compression, output shaping, and limiting change the signal statistics.
+compression, output shaping, and limiting change the signal statistics. It also
+keeps conservative repair ahead of AGC, so the gain rider does not amplify
+flat-topped damage before the repair gate has a chance to bypass or act.
 
 ## Metrics
 
@@ -53,11 +59,28 @@ transient bursts, AM-limited bandwidth, and SSB or voice-limited bandwidth. The
 fixtures are quality gates for analyzer behavior. They are not listening tests
 or proof of source history.
 
+## Declipper Prototype
+
+Enable the declipper with `--declipper`. The CLI also enables analysis because
+repair decisions depend on analyzer metrics. The stage is disabled by default.
+
+The declipper currently:
+
+- repairs only short clipped runs in analysis-confident blocks
+- handles hard clipping and low-ceiling clipping indicators
+- bypasses transient-like and low-confidence blocks
+- clamps output to the normal safe ceiling
+- reports repaired samples, repaired runs, maximum sample delta, bypass reason,
+  and finite-output state
+
+This is a clean-room bounded interpolation prototype. It is intentionally
+conservative and is expected to miss many real clipped sources.
+
 ## Current Limits
 
-The analyzer does not modify samples. It does not reconstruct clipped peaks,
-replace missing high-frequency content, infer codec history, or undo noise
-reduction artifacts.
+The analyzer does not modify samples by itself. The optional declipper does not
+reconstruct all clipped peaks, replace missing high-frequency content, infer
+codec history, or undo noise reduction artifacts.
 
 The high-frequency-loss score is only a simple indicator. A narrowband voice
 recording, AM-limited file, or SSB-limited file can naturally have low
@@ -73,8 +96,8 @@ not proof of damage.
 
 Later M9 research may evaluate:
 
-- Clean-room declipping using bounded envelope reconstruction.
-- Confidence-gated repair that can be bypassed fully.
+- Better clean-room declipping using bounded envelope reconstruction.
+- More complete confidence-gated repair that can be bypassed fully.
 - Lossy-source detection that separates bandwidth limits from codec artifacts.
 - Measurement fixtures that compare repaired output against known synthetic
   damage.

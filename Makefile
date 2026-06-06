@@ -27,6 +27,7 @@ CORE_SRCS = \
 	src/cp_control.c \
 	src/cp_crossover.c \
 	src/cp_dc_blocker.c \
+	src/cp_declipper.c \
 	src/cp_dehummer.c \
 	src/cp_limiter.c \
 	src/cp_meter.c \
@@ -49,6 +50,7 @@ TEST_SRCS = \
 	tests/test_control.c \
 	tests/test_crossover.c \
 	tests/test_dc_blocker.c \
+	tests/test_declipper.c \
 	tests/test_dehummer.c \
 	tests/test_limiter.c \
 	tests/test_meter.c \
@@ -116,6 +118,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_control \
 	$(TEST_BIN_DIR)/test_crossover \
 	$(TEST_BIN_DIR)/test_dc_blocker \
+	$(TEST_BIN_DIR)/test_declipper \
 	$(TEST_BIN_DIR)/test_dehummer \
 	$(TEST_BIN_DIR)/test_limiter \
 	$(TEST_BIN_DIR)/test_meter \
@@ -181,6 +184,10 @@ $(TEST_BIN_DIR)/test_dc_blocker: $(TEST_OBJ_DIR)/tests/test_dc_blocker.o $(TEST_
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_dc_blocker.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_declipper: $(TEST_OBJ_DIR)/tests/test_declipper.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_declipper.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_dehummer: $(TEST_OBJ_DIR)/tests/test_dehummer.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_dehummer.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -239,6 +246,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_compressor
 	./$(TEST_BIN_DIR)/test_control
 	./$(TEST_BIN_DIR)/test_crossover
+	./$(TEST_BIN_DIR)/test_declipper
 	./$(TEST_BIN_DIR)/test_dehummer
 	./$(TEST_BIN_DIR)/test_limiter
 	./$(TEST_BIN_DIR)/test_meter
@@ -296,7 +304,7 @@ clean:
 	rm -f tests/test_chain_quality
 	rm -f tests/test_compressor tests/test_crossover
 	rm -f tests/test_control
-	rm -f tests/test_dc_blocker tests/test_dehummer
+	rm -f tests/test_dc_blocker tests/test_declipper tests/test_dehummer
 	rm -f tests/test_limiter tests/test_meter
 	rm -f tests/test_monitor tests/test_multiband
 	rm -f tests/test_quality_report

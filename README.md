@@ -1,10 +1,10 @@
 # CarrierPress
 
-CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.1 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, an optional dehummer, a simple optional multiband compressor foundation, optional static bass EQ, an optional restoration analysis tap, and a safe peak limiter.
+CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.1 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, an optional dehummer, a simple optional multiband compressor foundation, optional static bass EQ, an optional restoration analysis tap, an optional conservative declipper research stage, and a safe peak limiter.
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
-Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.2 adds analysis-only clipping, low-ceiling, transient, source-profile, and high-frequency-loss indicators. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
+Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.3 adds an optional analysis-gated declipper research stage for clear hard-clipping and low-ceiling clipping cases. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
 
 ## Table of Contents
 
@@ -109,15 +109,24 @@ Run the built-in synthetic tone through the v0.1 chain:
 
 The command prints input and output meter values plus AGC gain, gain dB, and gate state.
 
-Run the same self-test with the M9.2 restoration analyzer enabled:
+Run the same self-test with the M9.3 restoration analyzer enabled:
 
 ```sh
 ./carrierpress --self-test --analyze
 ```
 
 The analyzer reports clipping, low-ceiling, transient, source-profile, and
-high-frequency-loss indicators only. It does not repair audio, declip samples,
-or replace missing detail.
+high-frequency-loss indicators.
+
+Run the self-test with the conservative declipper research stage enabled:
+
+```sh
+./carrierpress --self-test --analyze --declipper
+```
+
+`--declipper` enables analysis automatically. The declipper is disabled by
+default and only repairs analysis-confident hard-clipping or low-ceiling
+clipping blocks. Transient-like blocks and low-confidence blocks are bypassed.
 
 Run the same self-test with the dehummer enabled:
 
@@ -163,6 +172,13 @@ Process a WAV file and print source analysis metrics:
 
 ```sh
 ./carrierpress --input input.wav --output output.wav --analyze
+```
+
+Process a WAV file with the conservative declipper research stage enabled:
+
+```sh
+./carrierpress --input input.wav --output output.wav --declipper
+./carrierpress --input input.wav --output output.wav --declipper --declipper-strength 0.35
 ```
 
 Process a WAV file with 60 Hz hum notches and four harmonics:
@@ -227,6 +243,12 @@ Print analysis metrics while playing:
 
 ```sh
 ./carrierpress --play input.wav --analyze --meter-interval-ms 1000
+```
+
+Run playout through the conservative declipper research stage:
+
+```sh
+./carrierpress --play input.wav --declipper --meter-interval-ms 1000
 ```
 
 Run playout through static bass EQ:
@@ -495,10 +517,11 @@ during playlist playout. AM and SSB controls are split into explicit banks so AM
 preset keys do not affect SSB mode, and SSB preset keys do not affect AM mode.
 It does not expose arbitrary DSP parameter editing.
 
-## Restoration Analysis
+## Restoration Analysis And Declipper
 
-The M9.2 analyzer is disabled by default. Enable it with `--analyze`. It
-observes the post-DC-blocker and post-dehummer signal before AGC, then reports:
+The M9.3 analyzer is disabled by default. Enable it with `--analyze`. It
+observes the post-DC-blocker and post-dehummer signal before AGC and before the
+optional declipper, then reports:
 
 | Metric                                  | Meaning                                      |
 | --------------------------------------- | -------------------------------------------- |
@@ -515,14 +538,32 @@ observes the post-DC-blocker and post-dehummer signal before AGC, then reports:
 | `flat_runs`                             | Repeated near-peak flat sample runs          |
 | `peak_repeats`                          | Repeated near-peak samples                   |
 
-The analyzer does not modify audio. It is intended to guide later clean-room
-declipper and delossifier research. A high score is not proof of source damage,
-and a low score is not proof that a source is clean.
+The analyzer does not modify audio by itself. A high score is not proof of
+source damage, and a low score is not proof that a source is clean.
 
-`make quality` includes M9.2 fixtures for hard clipping, low-ceiling clipping,
-short bursts, AM-limited bandwidth, and SSB or voice-limited bandwidth. These
-fixtures are regression checks for the analyzer, not restoration or compliance
-proof.
+The optional M9.3 declipper is enabled with `--declipper`. It is disabled by
+default. When enabled, it uses the analyzer metrics to decide whether a block is
+safe to repair. It bypasses silence, non-finite analysis, low-confidence blocks,
+and transient-like blocks. It reports:
+
+| Metric                      | Meaning                                  |
+| --------------------------- | ---------------------------------------- |
+| `declipper`                 | Whether the repair stage is enabled      |
+| `repaired_samples`          | Samples changed in the latest block      |
+| `repaired_runs`             | Short clipped runs repaired              |
+| `max_delta`                 | Largest sample change in the block       |
+| `bypass`                    | Reason repair was bypassed               |
+| `finite`                    | Whether output remained finite           |
+
+The M9.3 declipper is a bounded clean-room research prototype for clear hard
+clipping and low-ceiling clipping. It does not restore all clipped audio,
+repair codecs, replace missing detail, remove noise, or implement a
+delossifier.
+
+`make quality` includes M9.3 fixtures for hard clipping, low-ceiling clipping,
+short bursts, AM-limited bandwidth, SSB or voice-limited bandwidth, and
+declipper repair gating. These fixtures are regression checks, not restoration
+or compliance proof.
 
 ## AGC Controls
 

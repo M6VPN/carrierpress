@@ -37,6 +37,12 @@ struct cp_monitor_snapshot {
 	unsigned int dehummer_enabled;
 	unsigned int dehummer_base_hz;
 	unsigned int dehummer_harmonic_count;
+	unsigned int declipper_enabled;
+	unsigned int declipper_repaired_samples;
+	unsigned int declipper_repaired_runs;
+	unsigned int declipper_max_delta;
+	int declipper_bypass_reason;
+	unsigned int declipper_finite;
 	unsigned int multiband_enabled;
 	int multiband_preset;
 	unsigned int restoration_enabled;

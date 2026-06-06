@@ -20,7 +20,36 @@ final limiter / clipper
 output
 ```
 
-v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, first multiband compressor scaffold, static bass EQ foundation, AM output-chain foundation, SSB output-chain foundation, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+v0.1 implements only the portable skeleton pieces: DC blocker, dehummer, meter, gated AGC, first multiband compressor scaffold, static bass EQ foundation, AM output-chain foundation, SSB output-chain foundation, restoration analysis, a conservative declipper research stage, final limiter, block API, synthetic CLI test, optional WAV processing, and optional PortAudio live audio.
+
+## M9.3 Declipper Behavior
+
+The active M9.3 chain adds an optional repair stage after analysis:
+
+```text
+input
+DC blocker
+dehummer
+restoration analysis tap
+declipper
+AGC
+multiband compressor 1
+bass EQ
+AM or SSB output chain
+limiter
+meter
+output
+```
+
+The declipper is disabled by default. Enable it with `--declipper`. The CLI
+enables analysis automatically because repair is gated by the analyzer metrics.
+The stage only attempts conservative bounded repair on blocks with confident
+hard-clipping or low-ceiling clipping indicators. It bypasses transient-like
+blocks, low-confidence blocks, and non-finite analysis.
+
+M9.3 is not a final restoration processor. It does not repair codecs,
+reconstruct all clipped peaks, replace missing detail, or implement the
+delossifier.
 
 ## M8.1 Bass EQ Behavior
 
