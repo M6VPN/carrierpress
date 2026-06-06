@@ -20,11 +20,14 @@ enum qr_fixture {
 	QR_FIXTURE_SPEECH_STEPS,
 	QR_FIXTURE_MUSIC_MIX,
 	QR_FIXTURE_CLIPPED,
+	QR_FIXTURE_LOW_CEILING_CLIPPED,
 	QR_FIXTURE_DC_OFFSET,
 	QR_FIXTURE_HUM_50,
 	QR_FIXTURE_HUM_60,
 	QR_FIXTURE_BURST,
 	QR_FIXTURE_HIGH_TONE,
+	QR_FIXTURE_AM_LIMITED,
+	QR_FIXTURE_SSB_LIMITED,
 	QR_FIXTURE_STEREO_IMBALANCE
 };
 
@@ -68,6 +71,14 @@ struct qr_metrics {
 	cp_sample_t analysis_hf_ratio;
 	cp_sample_t analysis_clip_confidence;
 	cp_sample_t analysis_lossy_confidence;
+	cp_sample_t analysis_low_ceiling_confidence;
+	cp_sample_t analysis_transient_confidence;
+	cp_sample_t analysis_flat_run_ratio;
+	cp_sample_t analysis_peak_repeat_ratio;
+	cp_sample_t analysis_observed_peak;
+	cp_sample_t analysis_crest_factor;
+	enum cp_restoration_source_profile analysis_source_profile;
+	unsigned int analysis_reason_flags;
 	int finite;
 };
 
@@ -94,7 +105,11 @@ main(void)
 		{ QR_PROFILE_DEFAULT, QR_FIXTURE_SPEECH_STEPS, "speech" },
 		{ QR_PROFILE_DEFAULT, QR_FIXTURE_MUSIC_MIX, "music" },
 		{ QR_PROFILE_DEFAULT, QR_FIXTURE_CLIPPED, "clipped" },
+		{ QR_PROFILE_DEFAULT, QR_FIXTURE_LOW_CEILING_CLIPPED,
+		    "low-ceiling" },
 		{ QR_PROFILE_DEFAULT, QR_FIXTURE_BURST, "burst" },
+		{ QR_PROFILE_DEFAULT, QR_FIXTURE_AM_LIMITED, "am-limited" },
+		{ QR_PROFILE_DEFAULT, QR_FIXTURE_SSB_LIMITED, "ssb-limited" },
 		{ QR_PROFILE_DEFAULT, QR_FIXTURE_DC_OFFSET, "dc" },
 		{ QR_PROFILE_DEHUM_50, QR_FIXTURE_HUM_50, "dehum-50" },
 		{ QR_PROFILE_DEHUM_60, QR_FIXTURE_HUM_60, "dehum-60" },
@@ -168,6 +183,35 @@ qr_check_case(const struct qr_case *test, const struct qr_metrics *metrics)
 		return 0;
 	if (test->fixture == QR_FIXTURE_STEREO_IMBALANCE &&
 	    metrics->output_left_square <= metrics->output_right_square * 2.0)
+		return 0;
+	if (test->fixture == QR_FIXTURE_CLIPPED) {
+		if (metrics->analysis_clip_confidence < 0.50f)
+			return 0;
+		if ((metrics->analysis_reason_flags &
+		    CP_RESTORATION_REASON_HARD_CLIP) == 0)
+			return 0;
+	}
+	if (test->fixture == QR_FIXTURE_LOW_CEILING_CLIPPED) {
+		if (metrics->analysis_low_ceiling_confidence < 0.50f)
+			return 0;
+		if ((metrics->analysis_reason_flags &
+		    CP_RESTORATION_REASON_LOW_CEILING) == 0)
+			return 0;
+	}
+	if (test->fixture == QR_FIXTURE_BURST) {
+		if (metrics->analysis_clip_confidence > 0.40f)
+			return 0;
+		if (metrics->analysis_transient_confidence < 0.50f)
+			return 0;
+		if ((metrics->analysis_reason_flags &
+		    CP_RESTORATION_REASON_TRANSIENT) == 0)
+			return 0;
+	}
+	if (test->fixture == QR_FIXTURE_AM_LIMITED &&
+	    metrics->analysis_source_profile != CP_RESTORATION_SOURCE_AM_LIMITED)
+		return 0;
+	if (test->fixture == QR_FIXTURE_SSB_LIMITED &&
+	    metrics->analysis_source_profile != CP_RESTORATION_SOURCE_SSB_VOICE)
 		return 0;
 
 	return 1;
@@ -305,6 +349,15 @@ qr_generate(enum qr_fixture fixture, cp_sample_t *buffer, size_t offset,
 			left = value;
 			right = value;
 			break;
+		case QR_FIXTURE_LOW_CEILING_CLIPPED:
+			value = 0.90f * sinf(phase * 700.0f);
+			if (value > 0.45f)
+				value = 0.45f;
+			if (value < -0.45f)
+				value = -0.45f;
+			left = value;
+			right = value;
+			break;
 		case QR_FIXTURE_DC_OFFSET:
 			left = 0.22f + (0.04f * sinf(phase * 400.0f));
 			right = left;
@@ -320,7 +373,9 @@ qr_generate(enum qr_fixture fixture, cp_sample_t *buffer, size_t offset,
 			right = left;
 			break;
 		case QR_FIXTURE_BURST:
-			if ((index % 1024u) < 40u)
+			if ((index % 2048u) < 4u)
+				left = 0.99f;
+			else if ((index % 1024u) < 40u)
 				left = 0.85f * sinf(phase * 1000.0f);
 			else
 				left = 0.03f * sinf(phase * 1000.0f);
@@ -328,6 +383,16 @@ qr_generate(enum qr_fixture fixture, cp_sample_t *buffer, size_t offset,
 			break;
 		case QR_FIXTURE_HIGH_TONE:
 			left = 0.20f * sinf(phase * 10000.0f);
+			right = left;
+			break;
+		case QR_FIXTURE_AM_LIMITED:
+			left = (0.20f * sinf(phase * 2500.0f)) +
+			    (0.04f * sinf(phase * 1200.0f));
+			right = left;
+			break;
+		case QR_FIXTURE_SSB_LIMITED:
+			left = (0.20f * sinf(phase * 900.0f)) +
+			    (0.04f * sinf(phase * 1600.0f));
 			right = left;
 			break;
 		case QR_FIXTURE_STEREO_IMBALANCE:
@@ -383,6 +448,8 @@ qr_fixture_name(enum qr_fixture fixture)
 		return "music-mix";
 	case QR_FIXTURE_CLIPPED:
 		return "clipped";
+	case QR_FIXTURE_LOW_CEILING_CLIPPED:
+		return "low-ceiling-clipped";
 	case QR_FIXTURE_DC_OFFSET:
 		return "dc-offset";
 	case QR_FIXTURE_HUM_50:
@@ -393,6 +460,10 @@ qr_fixture_name(enum qr_fixture fixture)
 		return "burst";
 	case QR_FIXTURE_HIGH_TONE:
 		return "high-tone";
+	case QR_FIXTURE_AM_LIMITED:
+		return "am-limited";
+	case QR_FIXTURE_SSB_LIMITED:
+		return "ssb-limited";
 	case QR_FIXTURE_STEREO_IMBALANCE:
 		return "stereo-imbalance";
 	default:
@@ -487,6 +558,14 @@ qr_run_case(const struct qr_case *test)
 	metrics.analysis_hf_ratio = 0.0f;
 	metrics.analysis_clip_confidence = 0.0f;
 	metrics.analysis_lossy_confidence = 0.0f;
+	metrics.analysis_low_ceiling_confidence = 0.0f;
+	metrics.analysis_transient_confidence = 0.0f;
+	metrics.analysis_flat_run_ratio = 0.0f;
+	metrics.analysis_peak_repeat_ratio = 0.0f;
+	metrics.analysis_observed_peak = 0.0f;
+	metrics.analysis_crest_factor = 0.0f;
+	metrics.analysis_source_profile = CP_RESTORATION_SOURCE_UNKNOWN;
+	metrics.analysis_reason_flags = 0u;
 	metrics.finite = 1;
 
 	for (offset = 0; offset < QR_TOTAL_FRAMES; offset += QR_BLOCK_FRAMES) {
@@ -532,6 +611,22 @@ qr_run_case(const struct qr_case *test)
 	    processor.restoration.metrics.clipping_confidence;
 	metrics.analysis_lossy_confidence =
 	    processor.restoration.metrics.lossy_confidence;
+	metrics.analysis_low_ceiling_confidence =
+	    processor.restoration.metrics.low_ceiling_clipping_confidence;
+	metrics.analysis_transient_confidence =
+	    processor.restoration.metrics.transient_confidence;
+	metrics.analysis_flat_run_ratio =
+	    processor.restoration.metrics.flat_run_ratio;
+	metrics.analysis_peak_repeat_ratio =
+	    processor.restoration.metrics.peak_repeat_ratio;
+	metrics.analysis_observed_peak =
+	    processor.restoration.metrics.observed_peak;
+	metrics.analysis_crest_factor =
+	    processor.restoration.metrics.crest_factor;
+	metrics.analysis_source_profile =
+	    processor.restoration.metrics.source_profile;
+	metrics.analysis_reason_flags =
+	    processor.restoration.metrics.reason_flags;
 	pass = qr_check_case(test, &metrics);
 
 	printf("quality profile=%s fixture=%s check=%s input_rms=%0.6f "
@@ -542,7 +637,12 @@ qr_run_case(const struct qr_case *test)
 	    "output_hum60=%0.6f output_left_rms=%0.6f "
 	    "output_right_rms=%0.6f analysis_clip_ratio=%0.6f "
 	    "analysis_hf_ratio=%0.6f analysis_clip_confidence=%0.6f "
-	    "analysis_lossy_confidence=%0.6f status=%s\n",
+	    "analysis_low_ceiling_confidence=%0.6f "
+	    "analysis_transient_confidence=%0.6f "
+	    "analysis_lossy_confidence=%0.6f analysis_flat_ratio=%0.6f "
+	    "analysis_peak_repeat_ratio=%0.6f analysis_peak=%0.6f "
+	    "analysis_crest=%0.6f analysis_profile=%s "
+	    "analysis_reason_flags=0x%08x status=%s\n",
 	    qr_profile_name(test->profile), qr_fixture_name(test->fixture),
 	    test->check, metrics.input_square, metrics.output_square,
 	    metrics.input_peak, metrics.output_peak, metrics.output_min,
@@ -553,7 +653,17 @@ qr_run_case(const struct qr_case *test)
 	    qr_hum_amp(&metrics, 60, 1), qr_hum_amp(&metrics, 60, 0),
 	    metrics.output_left_square, metrics.output_right_square,
 	    metrics.analysis_clip_ratio, metrics.analysis_hf_ratio,
-	    metrics.analysis_clip_confidence, metrics.analysis_lossy_confidence,
+	    metrics.analysis_clip_confidence,
+	    metrics.analysis_low_ceiling_confidence,
+	    metrics.analysis_transient_confidence,
+	    metrics.analysis_lossy_confidence,
+	    metrics.analysis_flat_run_ratio,
+	    metrics.analysis_peak_repeat_ratio,
+	    metrics.analysis_observed_peak,
+	    metrics.analysis_crest_factor,
+	    cp_restoration_source_profile_string(
+	    metrics.analysis_source_profile),
+	    metrics.analysis_reason_flags,
 	    pass ? "pass" : "fail");
 
 	return pass;

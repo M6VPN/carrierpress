@@ -15,6 +15,7 @@
 #include "cp_control.h"
 #include "cp_monitor.h"
 #include "cp_portaudio.h"
+#include "cp_restoration.h"
 #ifdef CP_WITH_TUI
 #include "cp_tui.h"
 #endif
@@ -44,8 +45,16 @@ struct cp_portaudio_runtime {
 	atomic_uint restoration_hf_ratio;
 	atomic_uint restoration_clipping_confidence;
 	atomic_uint restoration_lossy_confidence;
+	atomic_uint restoration_low_ceiling_confidence;
+	atomic_uint restoration_transient_confidence;
+	atomic_uint restoration_flat_run_ratio;
+	atomic_uint restoration_peak_repeat_ratio;
+	atomic_uint restoration_observed_peak;
+	atomic_uint restoration_crest_factor;
 	atomic_uint restoration_flat_runs;
 	atomic_uint restoration_peak_repeats;
+	atomic_uint restoration_reason_flags;
+	atomic_int restoration_source_profile;
 	atomic_uint bass_eq_enabled;
 	atomic_uint bass_eq_low_hz;
 	atomic_int bass_eq_low_gain_db_centibel;
@@ -498,8 +507,17 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	atomic_init(&runtime->restoration_hf_ratio, 0u);
 	atomic_init(&runtime->restoration_clipping_confidence, 0u);
 	atomic_init(&runtime->restoration_lossy_confidence, 0u);
+	atomic_init(&runtime->restoration_low_ceiling_confidence, 0u);
+	atomic_init(&runtime->restoration_transient_confidence, 0u);
+	atomic_init(&runtime->restoration_flat_run_ratio, 0u);
+	atomic_init(&runtime->restoration_peak_repeat_ratio, 0u);
+	atomic_init(&runtime->restoration_observed_peak, 0u);
+	atomic_init(&runtime->restoration_crest_factor, 0u);
 	atomic_init(&runtime->restoration_flat_runs, 0u);
 	atomic_init(&runtime->restoration_peak_repeats, 0u);
+	atomic_init(&runtime->restoration_reason_flags, 0u);
+	atomic_init(&runtime->restoration_source_profile,
+	    CP_RESTORATION_SOURCE_UNKNOWN);
 	atomic_init(&runtime->bass_eq_enabled, 0u);
 	atomic_init(&runtime->bass_eq_low_hz, 0u);
 	atomic_init(&runtime->bass_eq_low_gain_db_centibel, 0);
@@ -593,10 +611,26 @@ cp_pa_load_snapshot(struct cp_portaudio_runtime *runtime,
 	    atomic_load(&runtime->restoration_clipping_confidence);
 	snapshot->restoration_lossy_confidence =
 	    atomic_load(&runtime->restoration_lossy_confidence);
+	snapshot->restoration_low_ceiling_confidence =
+	    atomic_load(&runtime->restoration_low_ceiling_confidence);
+	snapshot->restoration_transient_confidence =
+	    atomic_load(&runtime->restoration_transient_confidence);
+	snapshot->restoration_flat_run_ratio =
+	    atomic_load(&runtime->restoration_flat_run_ratio);
+	snapshot->restoration_peak_repeat_ratio =
+	    atomic_load(&runtime->restoration_peak_repeat_ratio);
+	snapshot->restoration_observed_peak =
+	    atomic_load(&runtime->restoration_observed_peak);
+	snapshot->restoration_crest_factor =
+	    atomic_load(&runtime->restoration_crest_factor);
 	snapshot->restoration_flat_runs =
 	    atomic_load(&runtime->restoration_flat_runs);
 	snapshot->restoration_peak_repeats =
 	    atomic_load(&runtime->restoration_peak_repeats);
+	snapshot->restoration_reason_flags =
+	    atomic_load(&runtime->restoration_reason_flags);
+	snapshot->restoration_source_profile =
+	    atomic_load(&runtime->restoration_source_profile);
 	snapshot->bass_eq_enabled =
 	    atomic_load(&runtime->bass_eq_enabled);
 	snapshot->bass_eq_low_hz = atomic_load(&runtime->bass_eq_low_hz);
@@ -668,17 +702,37 @@ cp_pa_print_meters(const struct cp_monitor_snapshot *snapshot)
 	    cp_monitor_level_to_sample(snapshot->output_peak),
 	    cp_monitor_level_to_sample(snapshot->output_rms));
 	if (snapshot->restoration_enabled) {
-		printf("analysis_clip_ratio=%0.6f analysis_hf_ratio=%0.6f "
+		printf("analysis_profile=%s analysis_reason_flags=0x%08x "
+		    "analysis_clip_ratio=%0.6f analysis_hf_ratio=%0.6f "
 		    "analysis_clip_confidence=%0.6f "
-		    "analysis_lossy_confidence=%0.6f flat_runs=%u "
-		    "peak_repeats=%u\n",
+		    "analysis_low_ceiling_confidence=%0.6f "
+		    "analysis_transient_confidence=%0.6f "
+		    "analysis_lossy_confidence=%0.6f flat_ratio=%0.6f "
+		    "peak_repeat_ratio=%0.6f analysis_peak=%0.6f "
+		    "analysis_crest=%0.6f flat_runs=%u peak_repeats=%u\n",
+		    cp_restoration_source_profile_string(
+		    (enum cp_restoration_source_profile)
+		    snapshot->restoration_source_profile),
+		    snapshot->restoration_reason_flags,
 		    cp_monitor_level_to_sample(
 		    snapshot->restoration_clipped_ratio),
 		    cp_monitor_level_to_sample(snapshot->restoration_hf_ratio),
 		    cp_monitor_level_to_sample(
 		    snapshot->restoration_clipping_confidence),
 		    cp_monitor_level_to_sample(
+		    snapshot->restoration_low_ceiling_confidence),
+		    cp_monitor_level_to_sample(
+		    snapshot->restoration_transient_confidence),
+		    cp_monitor_level_to_sample(
 		    snapshot->restoration_lossy_confidence),
+		    cp_monitor_level_to_sample(
+		    snapshot->restoration_flat_run_ratio),
+		    cp_monitor_level_to_sample(
+		    snapshot->restoration_peak_repeat_ratio),
+		    cp_monitor_level_to_sample(
+		    snapshot->restoration_observed_peak),
+		    cp_monitor_level_to_sample(
+		    snapshot->restoration_crest_factor),
 		    snapshot->restoration_flat_runs,
 		    snapshot->restoration_peak_repeats);
 	}
@@ -851,10 +905,26 @@ cp_pa_store_meters(struct cp_portaudio_runtime *runtime)
 	    snapshot.restoration_clipping_confidence);
 	atomic_store(&runtime->restoration_lossy_confidence,
 	    snapshot.restoration_lossy_confidence);
+	atomic_store(&runtime->restoration_low_ceiling_confidence,
+	    snapshot.restoration_low_ceiling_confidence);
+	atomic_store(&runtime->restoration_transient_confidence,
+	    snapshot.restoration_transient_confidence);
+	atomic_store(&runtime->restoration_flat_run_ratio,
+	    snapshot.restoration_flat_run_ratio);
+	atomic_store(&runtime->restoration_peak_repeat_ratio,
+	    snapshot.restoration_peak_repeat_ratio);
+	atomic_store(&runtime->restoration_observed_peak,
+	    snapshot.restoration_observed_peak);
+	atomic_store(&runtime->restoration_crest_factor,
+	    snapshot.restoration_crest_factor);
 	atomic_store(&runtime->restoration_flat_runs,
 	    snapshot.restoration_flat_runs);
 	atomic_store(&runtime->restoration_peak_repeats,
 	    snapshot.restoration_peak_repeats);
+	atomic_store(&runtime->restoration_reason_flags,
+	    snapshot.restoration_reason_flags);
+	atomic_store(&runtime->restoration_source_profile,
+	    snapshot.restoration_source_profile);
 	atomic_store(&runtime->bass_eq_enabled,
 	    snapshot.bass_eq_enabled);
 	atomic_store(&runtime->bass_eq_low_hz,

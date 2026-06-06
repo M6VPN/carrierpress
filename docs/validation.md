@@ -97,7 +97,9 @@ EQ, AM shortwave, and SSB narrow profiles. Each line prints:
 - 50 Hz and 60 Hz single-bin hum measurements
 - output left and right RMS
 - clipping indicator metrics
+- low-ceiling and transient indicator metrics
 - high-frequency-loss indicator metrics
+- analysis source profile and reason flags
 - pass or fail status
 
 The M8.3 thresholds are conservative regression checks for finite output,
@@ -105,9 +107,14 @@ limiter ceiling, silence stability, DC reduction, hum reduction, AM/SSB
 low-pass rejection, and stereo stability. They are not tuning targets and do not
 replace listening tests, spectrum checks, or transmitter/load tests.
 
-M9.1 extends `make quality` with restoration analysis fields. These fields are
-diagnostic only. They do not prove clipping, lossy encoding, or clean source
-quality, and they do not apply repair.
+M9.2 extends `make quality` with calibrated restoration-analysis fixtures for
+hard clipping, low-ceiling clipping, transient rejection, AM-limited bandwidth,
+and SSB or voice-limited bandwidth. The target fails if obvious clipping is not
+flagged, if a short burst is treated as sustained hard clipping, or if the
+limited-band source profiles regress.
+
+These fields are diagnostic only. They do not prove clipping, lossy encoding,
+or clean source quality, and they do not apply repair.
 
 Validation does not prove regulatory compliance, occupied bandwidth compliance,
 sample-rate conversion quality, or broadcast-processor quality. Live hardware

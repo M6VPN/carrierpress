@@ -46,9 +46,9 @@ AM or SSB shaping. This gives later AM/SSB presets a simple tone-shaping stage
 without adding automatic EQ, subharmonic synthesis, immersive bass, or true bass
 processing yet.
 
-## M9.1 Restoration Analysis Behavior
+## M9.2 Restoration Analysis Behavior
 
-The active M9.1 chain adds an analysis tap:
+The active M9.2 chain adds an analysis tap:
 
 ```text
 input
@@ -66,8 +66,10 @@ output
 
 The restoration analyzer is disabled by default. When enabled with `--analyze`,
 it observes the signal after DC blocking and dehumming, before AGC gain riding.
-It reports clipping indicators, repeated near-peak flat runs, peak repeats, and
-a simple high-frequency activity ratio. It does not change samples.
+It reports clipping indicators, low-ceiling clipping suspicion, transient
+rejection, source profile hints, repeated near-peak flat runs, peak repeats,
+observed peak, crest factor, and a simple high-frequency activity ratio. It
+does not change samples.
 
 This placement keeps source-condition analysis ahead of level riding and
 compression. It is a research foundation for later declipper and delossifier

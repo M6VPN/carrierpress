@@ -15,6 +15,7 @@
 
 #include "cp_control.h"
 #include "cp_playout.h"
+#include "cp_restoration.h"
 #include "cp_resampler.h"
 #ifdef CP_WITH_TUI
 #include "cp_tui.h"
@@ -956,17 +957,37 @@ cp_playout_print_meters(const struct cp_monitor_snapshot *snapshot)
 		    cp_monitor_level_to_sample(snapshot->am_asymmetry_ratio));
 	}
 	if (snapshot->restoration_enabled) {
-		printf("analysis_clip_ratio=%0.6f analysis_hf_ratio=%0.6f "
+		printf("analysis_profile=%s analysis_reason_flags=0x%08x "
+		    "analysis_clip_ratio=%0.6f analysis_hf_ratio=%0.6f "
 		    "analysis_clip_confidence=%0.6f "
-		    "analysis_lossy_confidence=%0.6f flat_runs=%u "
-		    "peak_repeats=%u\n",
+		    "analysis_low_ceiling_confidence=%0.6f "
+		    "analysis_transient_confidence=%0.6f "
+		    "analysis_lossy_confidence=%0.6f flat_ratio=%0.6f "
+		    "peak_repeat_ratio=%0.6f analysis_peak=%0.6f "
+		    "analysis_crest=%0.6f flat_runs=%u peak_repeats=%u\n",
+		    cp_restoration_source_profile_string(
+		    (enum cp_restoration_source_profile)
+		    snapshot->restoration_source_profile),
+		    snapshot->restoration_reason_flags,
 		    cp_monitor_level_to_sample(
 		    snapshot->restoration_clipped_ratio),
 		    cp_monitor_level_to_sample(snapshot->restoration_hf_ratio),
 		    cp_monitor_level_to_sample(
 		    snapshot->restoration_clipping_confidence),
 		    cp_monitor_level_to_sample(
+		    snapshot->restoration_low_ceiling_confidence),
+		    cp_monitor_level_to_sample(
+		    snapshot->restoration_transient_confidence),
+		    cp_monitor_level_to_sample(
 		    snapshot->restoration_lossy_confidence),
+		    cp_monitor_level_to_sample(
+		    snapshot->restoration_flat_run_ratio),
+		    cp_monitor_level_to_sample(
+		    snapshot->restoration_peak_repeat_ratio),
+		    cp_monitor_level_to_sample(
+		    snapshot->restoration_observed_peak),
+		    cp_monitor_level_to_sample(
+		    snapshot->restoration_crest_factor),
 		    snapshot->restoration_flat_runs,
 		    snapshot->restoration_peak_repeats);
 	}

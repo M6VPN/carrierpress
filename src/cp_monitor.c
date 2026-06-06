@@ -111,10 +111,32 @@ cp_monitor_snapshot_from_processor(const struct cp_block_processor *processor,
 	snapshot->restoration_lossy_confidence =
 	    cp_monitor_sample_to_level(
 	    processor->restoration.metrics.lossy_confidence);
+	snapshot->restoration_low_ceiling_confidence =
+	    cp_monitor_sample_to_level(
+	    processor->restoration.metrics.low_ceiling_clipping_confidence);
+	snapshot->restoration_transient_confidence =
+	    cp_monitor_sample_to_level(
+	    processor->restoration.metrics.transient_confidence);
+	snapshot->restoration_flat_run_ratio =
+	    cp_monitor_sample_to_level(
+	    processor->restoration.metrics.flat_run_ratio);
+	snapshot->restoration_peak_repeat_ratio =
+	    cp_monitor_sample_to_level(
+	    processor->restoration.metrics.peak_repeat_ratio);
+	snapshot->restoration_observed_peak =
+	    cp_monitor_sample_to_level(
+	    processor->restoration.metrics.observed_peak);
+	snapshot->restoration_crest_factor =
+	    cp_monitor_sample_to_level(
+	    processor->restoration.metrics.crest_factor);
 	snapshot->restoration_flat_runs =
 	    (unsigned int)processor->restoration.metrics.flat_run_count;
 	snapshot->restoration_peak_repeats =
 	    (unsigned int)processor->restoration.metrics.peak_repeat_count;
+	snapshot->restoration_reason_flags =
+	    processor->restoration.metrics.reason_flags;
+	snapshot->restoration_source_profile =
+	    (int)processor->restoration.metrics.source_profile;
 	snapshot->bass_eq_enabled =
 	    processor->bass_eq.config.enabled ? 1u : 0u;
 	snapshot->bass_eq_low_hz =

@@ -44,8 +44,16 @@ struct cp_monitor_snapshot {
 	unsigned int restoration_hf_ratio;
 	unsigned int restoration_clipping_confidence;
 	unsigned int restoration_lossy_confidence;
+	unsigned int restoration_low_ceiling_confidence;
+	unsigned int restoration_transient_confidence;
+	unsigned int restoration_flat_run_ratio;
+	unsigned int restoration_peak_repeat_ratio;
+	unsigned int restoration_observed_peak;
+	unsigned int restoration_crest_factor;
 	unsigned int restoration_flat_runs;
 	unsigned int restoration_peak_repeats;
+	unsigned int restoration_reason_flags;
+	int restoration_source_profile;
 	unsigned int bass_eq_enabled;
 	unsigned int bass_eq_low_hz;
 	int bass_eq_low_gain_db_centibel;

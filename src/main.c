@@ -867,14 +867,26 @@ print_restoration_metrics(const struct cp_restoration_metrics *metrics)
 	if (metrics == NULL)
 		return;
 
-	printf("analysis_clip_ratio=%0.6f analysis_hf_ratio=%0.6f "
+	printf("analysis_profile=%s analysis_reason_flags=0x%08x "
+	    "analysis_clip_ratio=%0.6f analysis_hf_ratio=%0.6f "
 	    "analysis_clip_confidence=%0.6f "
-	    "analysis_lossy_confidence=%0.6f flat_runs=%zu "
-	    "peak_repeats=%zu finite=%s\n",
+	    "analysis_low_ceiling_confidence=%0.6f "
+	    "analysis_transient_confidence=%0.6f "
+	    "analysis_lossy_confidence=%0.6f flat_ratio=%0.6f "
+	    "peak_repeat_ratio=%0.6f analysis_peak=%0.6f "
+	    "analysis_crest=%0.6f flat_runs=%zu peak_repeats=%zu finite=%s\n",
+	    cp_restoration_source_profile_string(metrics->source_profile),
+	    metrics->reason_flags,
 	    metrics->clipped_sample_ratio,
 	    metrics->high_frequency_ratio,
 	    metrics->clipping_confidence,
+	    metrics->low_ceiling_clipping_confidence,
+	    metrics->transient_confidence,
 	    metrics->lossy_confidence,
+	    metrics->flat_run_ratio,
+	    metrics->peak_repeat_ratio,
+	    metrics->observed_peak,
+	    metrics->crest_factor,
 	    metrics->flat_run_count,
 	    metrics->peak_repeat_count,
 	    metrics->finite ? "yes" : "no");

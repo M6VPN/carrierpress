@@ -12,6 +12,7 @@
 #include "cp_agc.h"
 #include "cp_bass_eq.h"
 #include "cp_multiband.h"
+#include "cp_restoration.h"
 #include "cp_ssb.h"
 #include "cp_tui.h"
 
@@ -230,13 +231,24 @@ cp_tui_draw_restoration(int row, const struct cp_monitor_snapshot *snapshot)
 		return;
 	}
 
-	mvprintw(row, 2, "Analysis clip %0.4f HF %0.4f clip_conf %0.3f "
-	    "loss_conf %0.3f flat %u repeat %u",
+	mvprintw(row, 2, "Analysis %s flags 0x%08x clip %0.4f HF %0.4f "
+	    "clip_conf %0.3f lowceil %0.3f transient %0.3f "
+	    "loss_conf %0.3f peak %0.3f crest %0.3f flat %u repeat %u",
+	    cp_restoration_source_profile_string(
+	    (enum cp_restoration_source_profile)
+	    snapshot->restoration_source_profile),
+	    snapshot->restoration_reason_flags,
 	    cp_monitor_level_to_sample(snapshot->restoration_clipped_ratio),
 	    cp_monitor_level_to_sample(snapshot->restoration_hf_ratio),
 	    cp_monitor_level_to_sample(
 	    snapshot->restoration_clipping_confidence),
+	    cp_monitor_level_to_sample(
+	    snapshot->restoration_low_ceiling_confidence),
+	    cp_monitor_level_to_sample(
+	    snapshot->restoration_transient_confidence),
 	    cp_monitor_level_to_sample(snapshot->restoration_lossy_confidence),
+	    cp_monitor_level_to_sample(snapshot->restoration_observed_peak),
+	    cp_monitor_level_to_sample(snapshot->restoration_crest_factor),
 	    snapshot->restoration_flat_runs,
 	    snapshot->restoration_peak_repeats);
 }

@@ -4,7 +4,7 @@ CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB a
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
-Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.1 adds analysis-only clipping and high-frequency-loss indicators. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
+Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.2 adds analysis-only clipping, low-ceiling, transient, source-profile, and high-frequency-loss indicators. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
 
 ## Table of Contents
 
@@ -109,14 +109,15 @@ Run the built-in synthetic tone through the v0.1 chain:
 
 The command prints input and output meter values plus AGC gain, gain dB, and gate state.
 
-Run the same self-test with the M9.1 restoration analyzer enabled:
+Run the same self-test with the M9.2 restoration analyzer enabled:
 
 ```sh
 ./carrierpress --self-test --analyze
 ```
 
-The analyzer reports clipping and high-frequency-loss indicators only. It does
-not repair audio, declip samples, or replace missing detail.
+The analyzer reports clipping, low-ceiling, transient, source-profile, and
+high-frequency-loss indicators only. It does not repair audio, declip samples,
+or replace missing detail.
 
 Run the same self-test with the dehummer enabled:
 
@@ -496,21 +497,32 @@ It does not expose arbitrary DSP parameter editing.
 
 ## Restoration Analysis
 
-The M9.1 analyzer is disabled by default. Enable it with `--analyze`. It
+The M9.2 analyzer is disabled by default. Enable it with `--analyze`. It
 observes the post-DC-blocker and post-dehummer signal before AGC, then reports:
 
-| Metric                             | Meaning                                      |
-| ---------------------------------- | -------------------------------------------- |
-| `analysis_clip_ratio`              | Samples near the configured clipping ceiling |
-| `analysis_hf_ratio`                | Simple high-frequency activity indicator     |
-| `analysis_clip_confidence`         | Conservative clipping suspicion score        |
-| `analysis_lossy_confidence`        | High-frequency-loss suspicion score          |
-| `flat_runs`                        | Repeated near-peak flat sample runs          |
-| `peak_repeats`                     | Repeated near-peak samples                   |
+| Metric                                  | Meaning                                      |
+| --------------------------------------- | -------------------------------------------- |
+| `analysis_profile`                      | Wideband or limited-band source hint         |
+| `analysis_reason_flags`                 | Bit field for active analyzer reasons        |
+| `analysis_clip_ratio`                   | Samples near the configured clipping ceiling |
+| `analysis_hf_ratio`                     | Simple high-frequency activity indicator     |
+| `analysis_clip_confidence`              | Conservative hard-clipping suspicion score   |
+| `analysis_low_ceiling_confidence`       | Flattened low-ceiling suspicion score        |
+| `analysis_transient_confidence`         | Short near-peak event suspicion score        |
+| `analysis_lossy_confidence`             | High-frequency-loss suspicion score          |
+| `analysis_peak`                         | Highest absolute sample observed             |
+| `analysis_crest`                        | Observed peak divided by RMS                 |
+| `flat_runs`                             | Repeated near-peak flat sample runs          |
+| `peak_repeats`                          | Repeated near-peak samples                   |
 
 The analyzer does not modify audio. It is intended to guide later clean-room
 declipper and delossifier research. A high score is not proof of source damage,
 and a low score is not proof that a source is clean.
+
+`make quality` includes M9.2 fixtures for hard clipping, low-ceiling clipping,
+short bursts, AM-limited bandwidth, and SSB or voice-limited bandwidth. These
+fixtures are regression checks for the analyzer, not restoration or compliance
+proof.
 
 ## AGC Controls
 

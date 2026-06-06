@@ -1,6 +1,6 @@
 # Restoration Research
 
-CarrierPress M9 restoration work starts with detection, not repair. The M9.1
+CarrierPress M9 restoration work starts with detection, not repair. The M9.2
 analyzer is a diagnostic tap used to identify source material that may need
 later clean-room declipping or delossifier research.
 
@@ -29,18 +29,29 @@ compression, output shaping, and limiting change the signal statistics.
 
 The analyzer currently reports:
 
-| Metric                     | Purpose                                      |
-| -------------------------- | -------------------------------------------- |
-| clipped sample ratio       | Fraction of samples near the clip threshold  |
-| flat run count             | Runs of repeated near-peak samples           |
-| peak repeat count          | Repeated near-peak values                    |
-| high-frequency ratio       | Simple first-difference activity estimate    |
-| clipping confidence        | Conservative clipping suspicion score        |
-| lossy confidence           | High-frequency-loss suspicion score          |
+| Metric                         | Purpose                                      |
+| ------------------------------ | -------------------------------------------- |
+| clipped sample ratio           | Fraction of samples near the clip threshold  |
+| flat run count                 | Runs of repeated near-peak samples           |
+| peak repeat count              | Repeated near-peak values                    |
+| observed peak                  | Highest absolute sample observed             |
+| crest factor                   | Observed peak divided by RMS                 |
+| high-frequency ratio           | Simple first-difference activity estimate    |
+| clipping confidence            | Conservative hard-clipping suspicion score   |
+| low-ceiling clipping confidence | Flattened low-ceiling suspicion score        |
+| transient confidence           | Short near-peak event suspicion score        |
+| lossy confidence               | High-frequency-loss suspicion score          |
+| source profile                 | Wideband or limited-band source hint         |
+| reason flags                   | Bit flags for the active diagnostic reasons  |
 
 The metrics are bounded and finite. NaN and infinity input samples are treated
 as invalid observations, reported through the `finite` field, and do not produce
 NaN output metrics.
+
+M9.2 adds calibrated fixtures for hard clipping, low-ceiling clipping, short
+transient bursts, AM-limited bandwidth, and SSB or voice-limited bandwidth. The
+fixtures are quality gates for analyzer behavior. They are not listening tests
+or proof of source history.
 
 ## Current Limits
 
@@ -53,8 +64,10 @@ recording, AM-limited file, or SSB-limited file can naturally have low
 high-frequency activity. A high score should prompt review, not automatic
 repair.
 
-The clipping score is conservative. Short bursts and transient peaks should not
-be treated as proof of hard clipping without repeated flat near-peak behavior.
+The clipping score is conservative. Short bursts and transient peaks are
+reported separately from sustained hard clipping. Low-ceiling clipping is a
+separate suspicion score based on repeated flat behavior and low crest factor,
+not proof of damage.
 
 ## Deferred Work
 
