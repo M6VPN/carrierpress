@@ -4,7 +4,7 @@ CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB a
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
-Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.4 adds optional conservative natural dynamics and low-level boost stages before AGC. M9.5 adds a stricter deterministic validation gate for the existing chain. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
+Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio, and an optional M10 sndio foundation is available for OpenBSD-style live audio. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.4 adds optional conservative natural dynamics and low-level boost stages before AGC. M9.5 adds a stricter deterministic validation gate for the existing chain. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
 
 ## Table of Contents
 
@@ -21,9 +21,10 @@ Offline WAV processing is available as an optional M1 foundation when built with
 - Standard C math library
 - Optional [libsndfile](https://libsndfile.github.io/libsndfile/) development package for WAV processing
 - Optional [PortAudio](https://www.portaudio.com/) development package for live USB sound-card processing
+- Optional [sndio](https://sndio.org/) development package for OpenBSD-style live audio
 - Optional [ncurses](https://invisible-island.net/ncurses/) development package for the live TUI monitor
 
-The DSP core builds without PortAudio, libsndfile, or ncurses. If your system is missing optional WAV support, install the libsndfile development package manually. Common package names are `libsndfile1-dev`, `libsndfile-devel`, or `libsndfile`. If your system is missing optional live audio support, install the PortAudio development package manually. Common package names are `portaudio19-dev`, `portaudio-devel`, or `portaudio`. If your system is missing optional TUI support, install the ncurses development package manually. Common package names are `libncurses-dev`, `ncurses-devel`, or `ncurses`.
+The DSP core builds without PortAudio, libsndfile, sndio, or ncurses. If your system is missing optional WAV support, install the libsndfile development package manually. Common package names are `libsndfile1-dev`, `libsndfile-devel`, or `libsndfile`. If your system is missing optional PortAudio support, install the PortAudio development package manually. Common package names are `portaudio19-dev`, `portaudio-devel`, or `portaudio`. If your system is missing optional sndio support, install the sndio development package manually. Common package names are `sndio`, `sndio-devel`, or `libsndio-dev`. If your system is missing optional TUI support, install the ncurses development package manually. Common package names are `libncurses-dev`, `ncurses-devel`, or `ncurses`.
 
 ## Setup
 
@@ -75,6 +76,12 @@ Build with optional PortAudio live audio support:
 make WITH_PORTAUDIO=1
 ```
 
+Build with optional sndio live audio support:
+
+```sh
+make WITH_SNDIO=1
+```
+
 Build with optional PortAudio live audio and the ncurses TUI monitor:
 
 ```sh
@@ -85,6 +92,12 @@ Build with both optional WAV and PortAudio support:
 
 ```sh
 make WITH_SNDFILE=1 WITH_PORTAUDIO=1
+```
+
+Build with optional WAV, PortAudio, and sndio support:
+
+```sh
+make WITH_SNDFILE=1 WITH_PORTAUDIO=1 WITH_SNDIO=1
 ```
 
 Build with optional WAV playout support:
@@ -351,8 +364,20 @@ Choose a backend policy:
 ./carrierpress --live --audio-backend jack
 ./carrierpress --live --audio-backend alsa
 ./carrierpress --live --audio-backend pulse
+./carrierpress --live --audio-backend sndio
 ./carrierpress --live --audio-backend default
 ```
+
+On OpenBSD or systems using sndio, build with `WITH_SNDIO=1` and select sndio
+explicitly:
+
+```sh
+./carrierpress --live --audio-backend sndio
+./carrierpress --live --audio-backend sndio --device default
+```
+
+The sndio backend uses named sndio devices through `--device NAME`. Numeric
+`--input-device` and `--output-device` values are PortAudio-only.
 
 Choose a full-duplex device by name substring:
 
@@ -442,6 +467,12 @@ PortAudio support requires a `WITH_PORTAUDIO=1` build. Without it, live and devi
 PortAudio support not enabled. Rebuild with WITH_PORTAUDIO=1.
 ```
 
+sndio support requires a `WITH_SNDIO=1` build. Without it, sndio live mode exits with:
+
+```text
+sndio support not enabled. Rebuild with WITH_SNDIO=1.
+```
+
 TUI support requires a `WITH_TUI=1` build. Without it, `--tui` exits with:
 
 ```text
@@ -453,6 +484,9 @@ Live mode is experimental. It is a sound-card backend for testing the existing D
 PortAudio may print ALSA or JACK probe warnings while listing or opening devices.
 Those warnings are not always fatal. Use the final CarrierPress status line and
 meter output to confirm whether a stream opened.
+
+The sndio backend is a blocking full-duplex foundation. It does not provide a
+device listing command or TUI controls in this milestone.
 
 ## Manual Live-Audio Test
 
@@ -510,9 +544,31 @@ multiband off, speech, and music. For AM control testing, add `--am`, press
 AM presets. For SSB control testing, add `--ssb`, press `s`, and press `0`
 through `4` to switch SSB off or select one of the validated SSB presets.
 
+## Manual sndio Live-Audio Test
+
+Build with sndio:
+
+```sh
+make WITH_SNDIO=1
+```
+
+Run live processing through the default sndio device:
+
+```sh
+./carrierpress --live --audio-backend sndio
+```
+
+Run live processing through a named sndio device:
+
+```sh
+./carrierpress --live --audio-backend sndio --device default --sample-rate 48000 --channels 2 --block-size 256
+```
+
+Check that meter lines update while audio is present. Stop with `Ctrl-C`.
+
 ## Development
 
-The core library has no optional audio backend dependency. WAV support lives in `cp_wav.c`, PortAudio support lives in `cp_portaudio.c`, WAV playout lives in `cp_playout.c`, and the ncurses monitor lives in `cp_tui.c`. Optional files are compiled only when requested. Process functions use caller-owned buffers and explicit state structs so real-time callbacks can remain malloc-free and deterministic.
+The core library has no optional audio backend dependency. WAV support lives in `cp_wav.c`, PortAudio support lives in `cp_portaudio.c`, sndio support lives in `cp_sndio.c`, WAV playout lives in `cp_playout.c`, and the ncurses monitor lives in `cp_tui.c`. Optional files are compiled only when requested. Process functions use caller-owned buffers and explicit state structs so real-time callbacks can remain malloc-free and deterministic.
 
 WAV playout reads fixed-size blocks from libsndfile, processes them through the normal CarrierPress chain, reports live-style meters from the processor state, and writes processed float32 blocks to a PortAudio output stream. It does not load the whole file into memory. This milestone uses blocking PortAudio output for file playout; live input mode still uses the callback backend.
 
@@ -723,7 +779,7 @@ SSB mode does not add carrier generation, sideband modulation, VOX, CAT control,
 | Core DSP   | Portable C17 float32 block API       |
 | Offline IO | Optional WAV foundation in progress  |
 | Live audio | Optional PortAudio foundation        |
-| OpenBSD IO | Planned sndio backend for M10        |
+| OpenBSD IO | Optional sndio foundation            |
 | MCU port   | Planned STM32H753/CMSIS-DSP for M11  |
 
 ## License

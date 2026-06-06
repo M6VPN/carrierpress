@@ -50,6 +50,10 @@ cp_audio_backend_from_string(const char *text,
 		*backend = CP_AUDIO_BACKEND_PULSE;
 		return CP_AUDIO_OK;
 	}
+	if (strcmp(text, "sndio") == 0) {
+		*backend = CP_AUDIO_BACKEND_SNDIO;
+		return CP_AUDIO_OK;
+	}
 	if (strcmp(text, "default") == 0) {
 		*backend = CP_AUDIO_BACKEND_DEFAULT;
 		return CP_AUDIO_OK;
@@ -70,6 +74,8 @@ cp_audio_backend_string(enum cp_audio_backend backend)
 		return "alsa";
 	case CP_AUDIO_BACKEND_PULSE:
 		return "pulse";
+	case CP_AUDIO_BACKEND_SNDIO:
+		return "sndio";
 	case CP_AUDIO_BACKEND_DEFAULT:
 		return "default";
 	default:
@@ -198,6 +204,7 @@ cp_audio_select_device_candidate(const struct cp_audio_config *config,
 	case CP_AUDIO_BACKEND_JACK:
 	case CP_AUDIO_BACKEND_ALSA:
 	case CP_AUDIO_BACKEND_PULSE:
+	case CP_AUDIO_BACKEND_SNDIO:
 		return cp_audio_find_backend(candidates, count, config,
 		    config->backend, device_index);
 	case CP_AUDIO_BACKEND_DEFAULT:
@@ -277,6 +284,7 @@ cp_audio_validate_config(const struct cp_audio_config *config)
 	    config->backend != CP_AUDIO_BACKEND_JACK &&
 	    config->backend != CP_AUDIO_BACKEND_ALSA &&
 	    config->backend != CP_AUDIO_BACKEND_PULSE &&
+	    config->backend != CP_AUDIO_BACKEND_SNDIO &&
 	    config->backend != CP_AUDIO_BACKEND_DEFAULT)
 		return CP_AUDIO_ERR_BACKEND;
 	if (config->sample_rate < CP_AUDIO_MIN_SAMPLE_RATE ||

@@ -14,6 +14,7 @@
 #include "carrierpress.h"
 #include "cp_playout.h"
 #include "cp_portaudio.h"
+#include "cp_sndio.h"
 #include "cp_wav.h"
 
 #define CP_SELF_TEST_BLOCK	128
@@ -26,9 +27,7 @@
 
 static volatile sig_atomic_t stop_requested = 0;
 
-#ifdef CP_WITH_PORTAUDIO
 static void	handle_signal(int);
-#endif
 static int	parse_am_preset(struct cp_am_config *, const char *);
 static int	parse_bass_eq_preset(struct cp_bass_eq_config *,
 		    const char *);
@@ -553,7 +552,6 @@ main(int argc, char *argv[])
 	return 1;
 }
 
-#ifdef CP_WITH_PORTAUDIO
 static void
 handle_signal(int signal_number)
 {
@@ -561,7 +559,6 @@ handle_signal(int signal_number)
 
 	stop_requested = 1;
 }
-#endif
 
 static int
 parse_am_preset(struct cp_am_config *config, const char *text)
@@ -718,7 +715,6 @@ run_list_devices(void)
 static int
 run_live_audio(const struct cp_audio_config *config)
 {
-#ifdef CP_WITH_PORTAUDIO
 	int status;
 
 	status = cp_audio_validate_config(config);
@@ -735,6 +731,25 @@ run_live_audio(const struct cp_audio_config *config)
 		return 1;
 	}
 
+#ifdef CP_WITH_SNDIO
+	if (config->backend == CP_AUDIO_BACKEND_SNDIO) {
+		status = cp_sndio_run(config, &stop_requested);
+		if (status != CP_SNDIO_OK) {
+			printf("carrierpress: sndio failed: %s\n",
+			    cp_sndio_status_string(status));
+			return 1;
+		}
+
+		return 0;
+	}
+#else
+	if (config->backend == CP_AUDIO_BACKEND_SNDIO) {
+		printf("sndio support not enabled. Rebuild with WITH_SNDIO=1.\n");
+		return 1;
+	}
+#endif
+
+#ifdef CP_WITH_PORTAUDIO
 	status = cp_portaudio_run(config, &stop_requested);
 	if (status != CP_PORTAUDIO_OK) {
 		printf("carrierpress: PortAudio failed: %s\n",
@@ -744,8 +759,19 @@ run_live_audio(const struct cp_audio_config *config)
 
 	return 0;
 #else
-	(void)config;
+#ifdef CP_WITH_SNDIO
+	if (config->backend == CP_AUDIO_BACKEND_AUTO ||
+	    config->backend == CP_AUDIO_BACKEND_DEFAULT) {
+		status = cp_sndio_run(config, &stop_requested);
+		if (status != CP_SNDIO_OK) {
+			printf("carrierpress: sndio failed: %s\n",
+			    cp_sndio_status_string(status));
+			return 1;
+		}
 
+		return 0;
+	}
+#endif
 	printf("PortAudio support not enabled. Rebuild with WITH_PORTAUDIO=1.\n");
 	return 1;
 #endif
@@ -1058,7 +1084,7 @@ usage(const char *program)
 	printf("usage: %s --list-devices\n", program);
 	printf("usage: %s --live [--input-device N] [--output-device N]\n",
 	    program);
-	printf("usage: %s --live --audio-backend auto|jack|alsa|pulse|default\n",
+	printf("usage: %s --live --audio-backend auto|jack|alsa|pulse|sndio|default\n",
 	    program);
 	printf("usage: %s --live --device NAME\n", program);
 	printf("usage: %s --live --sample-rate 48000 --channels 2 "

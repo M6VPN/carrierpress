@@ -24,6 +24,7 @@
 #include "cp_natural_dynamics.h"
 #include "cp_restoration.h"
 #include "cp_resampler.h"
+#include "cp_sndio.h"
 #include "cp_ssb.h"
 #include "cp_types.h"
 

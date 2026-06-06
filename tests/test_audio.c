@@ -4,6 +4,7 @@
 #include <sys/types.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include "cp_audio.h"
 #include "cp_block.h"
@@ -38,6 +39,12 @@ test_backend_parse(void)
 
 	if (cp_audio_backend_from_string("jack", &backend) != CP_AUDIO_OK ||
 	    backend != CP_AUDIO_BACKEND_JACK)
+		return 0;
+	if (cp_audio_backend_from_string("sndio", &backend) != CP_AUDIO_OK ||
+	    backend != CP_AUDIO_BACKEND_SNDIO)
+		return 0;
+	if (strcmp(cp_audio_backend_string(CP_AUDIO_BACKEND_SNDIO),
+	    "sndio") != 0)
 		return 0;
 	if (cp_audio_backend_from_string("bad", &backend) !=
 	    CP_AUDIO_ERR_BACKEND)
@@ -133,13 +140,14 @@ test_device_selection(void)
 		{ 0, "hw:0,0", "ALSA", 2, 0, 44100.0, 1, 0 },
 		{ 1, "system", "JACK", 2, 2, 48000.0, 0, 0 },
 		{ 2, "pulse", "ALSA", 32, 32, 44100.0, 0, 0 },
-		{ 3, "default", "ALSA", 32, 32, 44100.0, 0, 1 }
+		{ 3, "default", "ALSA", 32, 32, 44100.0, 0, 1 },
+		{ 4, "snd/0", "sndio", 2, 2, 48000.0, 0, 0 }
 	};
 	struct cp_audio_config config;
 	int device;
 
 	cp_audio_default_config(&config);
-	if (cp_audio_select_device_candidate(&config, candidates, 4,
+	if (cp_audio_select_device_candidate(&config, candidates, 5,
 	    &device) != CP_AUDIO_OK || device != 1) {
 		printf("test_audio: auto did not prefer JACK\n");
 		return 0;
@@ -147,7 +155,7 @@ test_device_selection(void)
 
 	cp_audio_default_config(&config);
 	config.device_name = "default";
-	if (cp_audio_select_device_candidate(&config, candidates, 4,
+	if (cp_audio_select_device_candidate(&config, candidates, 5,
 	    &device) != CP_AUDIO_OK || device != 3) {
 		printf("test_audio: named device selection failed\n");
 		return 0;
@@ -155,9 +163,17 @@ test_device_selection(void)
 
 	cp_audio_default_config(&config);
 	config.backend = CP_AUDIO_BACKEND_PULSE;
-	if (cp_audio_select_device_candidate(&config, candidates, 4,
+	if (cp_audio_select_device_candidate(&config, candidates, 5,
 	    &device) != CP_AUDIO_OK || device != 2) {
 		printf("test_audio: pulse selection failed\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&config);
+	config.backend = CP_AUDIO_BACKEND_SNDIO;
+	if (cp_audio_select_device_candidate(&config, candidates, 5,
+	    &device) != CP_AUDIO_OK || device != 4) {
+		printf("test_audio: sndio selection failed\n");
 		return 0;
 	}
 
@@ -209,6 +225,13 @@ test_validate_config(void)
 	cp_audio_default_config(&config);
 	if (cp_audio_validate_config(&config) != CP_AUDIO_OK) {
 		printf("test_audio: default config rejected\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&config);
+	config.backend = CP_AUDIO_BACKEND_SNDIO;
+	if (cp_audio_validate_config(&config) != CP_AUDIO_OK) {
+		printf("test_audio: sndio config rejected\n");
 		return 0;
 	}
 

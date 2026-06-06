@@ -143,7 +143,10 @@ claim.
 
 ## M10 sndio backend
 
-Add optional sndio live audio support for OpenBSD.
+Partially implemented. CarrierPress now has an optional sndio live backend for
+OpenBSD-style full-duplex audio when built with `WITH_SNDIO=1`. It uses the
+existing block DSP chain and text meters, but device listing, TUI controls, and
+hardware validation are still deferred.
 
 ## M11 STM32H753/CMSIS-DSP port
 

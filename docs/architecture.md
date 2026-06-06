@@ -13,6 +13,7 @@ The DSP core does not include PortAudio, libsndfile, sndio, or embedded platform
 - `cp_audio` owns live-audio defaults and config validation.
 - `cp_wav` owns optional offline WAV processing with libsndfile.
 - `cp_portaudio` owns optional live sound-card processing with PortAudio.
+- `cp_sndio` owns optional live sound-card processing with sndio.
 - `cp_playout` owns optional WAV file playout through PortAudio output.
 - `cp_monitor` owns dependency-free monitor snapshots and scaling.
 - `cp_control` owns validated live control commands.
@@ -20,15 +21,20 @@ The DSP core does not include PortAudio, libsndfile, sndio, or embedded platform
 
 This split keeps the core library usable for offline tools, live hosts, and embedded ports without forcing every dependency into every build.
 
-## Planned Host Backends
+## Host Backends
 
 - PortAudio for Linux and FreeBSD live USB sound-card processing. It is optional because many target builds, including embedded and test builds, do not need a host audio API.
-- sndio for OpenBSD live audio after the portable core is stable.
+- sndio for OpenBSD live audio. It is optional and uses the same block DSP chain through a small host boundary.
 - CMSIS-DSP for STM32H753 after the float32 host chain is proven.
 
 The PortAudio backend uses callback mode. Buffers and DSP state are allocated before stream start, the callback does not print, and meter/status values are handed to the foreground loop for reporting. Text meters and the optional ncurses TUI both read monitor snapshots outside the callback.
 
 Live device selection stays at the PortAudio boundary. Automatic mode prefers usable JACK devices, then PipeWire or Pulse-style full-duplex devices visible through PortAudio, then PortAudio defaults. CarrierPress does not include direct ALSA, JACK, or PipeWire code in the DSP core.
+
+The sndio backend uses blocking full-duplex I/O with all audio buffers and DSP
+state allocated before stream start. It converts signed 16-bit PCM at the host
+boundary and keeps float32 inside the DSP chain. It does not print from an
+audio callback because M10 does not use a callback-mode sndio stream.
 
 WAV playout is a host feature, not a DSP core feature. It requires both
 libsndfile and PortAudio, reads WAV data in fixed-size blocks, processes those
@@ -39,7 +45,7 @@ M6.10 still uses blocking PortAudio output for file playout. The TUI can monitor
 playout, switch validated operator presets, and skip to the next playlist item.
 Callback playout and web control remain deferred.
 
-Live TUI controls use a small command handoff. The foreground TUI validates key input into a preset command, stores one pending command atomically, and the callback applies it at the next block boundary. Playout TUI controls are applied between blocking file-output blocks. M7.4 keeps live and playout aligned by sharing host-to-DSP block config setup and processor snapshot extraction before live mode hands values to atomics. Future sndio/OpenBSD work should keep the same boundary. The STM32H753 path should call the same block DSP model directly or through a CMSIS-DSP adapter.
+Live TUI controls use a small command handoff. The foreground TUI validates key input into a preset command, stores one pending command atomically, and the callback applies it at the next block boundary. Playout TUI controls are applied between blocking file-output blocks. M7.4 keeps live and playout aligned by sharing host-to-DSP block config setup and processor snapshot extraction before live mode hands values to atomics. The sndio backend should keep using the same monitor snapshot and control boundary as it grows. The STM32H753 path should call the same block DSP model directly or through a CMSIS-DSP adapter.
 
 ## State Ownership
 

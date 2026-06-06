@@ -8,6 +8,7 @@ CPPFLAGS += -Iinclude
 LDLIBS	+= -lm
 WITH_SNDFILE ?= 0
 WITH_PORTAUDIO ?= 0
+WITH_SNDIO ?= 0
 WITH_TUI ?= 0
 
 BUILD_DIR = build
@@ -84,6 +85,14 @@ CORE_SRCS += src/cp_portaudio.c
 PORTAUDIO_ORDER = check-portaudio
 endif
 
+ifeq ($(WITH_SNDIO),1)
+FEATURE_DIR := $(FEATURE_DIR)-sndio
+CPPFLAGS += -DCP_WITH_SNDIO
+LDLIBS	+= -lsndio
+CORE_SRCS += src/cp_sndio.c
+SNDIO_ORDER = check-sndio
+endif
+
 ifeq ($(WITH_SNDFILE),1)
 ifeq ($(WITH_PORTAUDIO),1)
 CPPFLAGS += -DCP_WITH_PLAYOUT
@@ -101,7 +110,7 @@ CORE_SRCS += src/cp_tui.c
 TUI_ORDER = check-tui
 endif
 
-BACKEND_ORDER = $(SNDFILE_ORDER) $(PORTAUDIO_ORDER) $(TUI_ORDER)
+BACKEND_ORDER = $(SNDFILE_ORDER) $(PORTAUDIO_ORDER) $(SNDIO_ORDER) $(TUI_ORDER)
 
 APP_CORE_OBJS = $(CORE_SRCS:src/%.c=$(APP_OBJ_DIR)/src/%.o)
 APP_OBJS = $(APP_CORE_OBJS) $(APP_SRCS:src/%.c=$(APP_OBJ_DIR)/src/%.o)
@@ -307,6 +316,11 @@ check-portaudio:
 	@printf '#include <portaudio.h>\nint main(void) { return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/check-portaudio -lportaudio >/dev/null 2>&1 || { printf 'error: missing PortAudio development package/library. Install PortAudio (for example portaudio19-dev, portaudio-devel, or portaudio).\n'; exit 1; }
 	@rm -f $(BUILD_DIR)/check-portaudio
 
+check-sndio:
+	@mkdir -p $(BUILD_DIR)
+	@printf '#include <sndio.h>\nint main(void) { return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/check-sndio -lsndio >/dev/null 2>&1 || { printf 'error: missing sndio development package/library. Install sndio (for example sndio, sndio-devel, or libsndio-dev).\n'; exit 1; }
+	@rm -f $(BUILD_DIR)/check-sndio
+
 check-tui:
 	@mkdir -p $(BUILD_DIR)
 	@printf '#include <curses.h>\nint main(void) { initscr(); endwin(); return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/check-tui -lncurses >/dev/null 2>&1 || { printf 'error: missing ncurses development package/library. Install ncurses (for example libncurses-dev, ncurses-devel, or ncurses).\n'; exit 1; }
@@ -344,4 +358,4 @@ clean:
 	rm -f tests/playout_report.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all check-portaudio check-sndfile check-tui clean professional-check quality test validate
+.PHONY: all check-portaudio check-sndfile check-sndio check-tui clean professional-check quality test validate
