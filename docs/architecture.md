@@ -23,9 +23,9 @@ This split keeps the core library usable for offline tools, live hosts, and embe
 
 ## Host Backends
 
-- PortAudio for Linux and FreeBSD live USB sound-card processing. It is optional because many target builds, including embedded and test builds, do not need a host audio API.
-- sndio for OpenBSD live audio. It is optional and uses the same block DSP chain through a small host boundary.
-- CMSIS-DSP for STM32H753 after the float32 host chain is proven.
+- PortAudio for Linux and FreeBSD live USB sound-card processing. Linux with PortAudio is the active host target.
+- sndio for OpenBSD live audio. It is optional, partially implemented, and remaining sndio work is deferred.
+- CMSIS-DSP for STM32H753 after the float32 host chain is proven. Embedded work is deferred.
 
 The PortAudio backend uses callback mode. Buffers and DSP state are allocated before stream start, the callback does not print, and meter/status values are handed to the foreground loop for reporting. Text meters and the optional ncurses TUI both read monitor snapshots outside the callback.
 
@@ -34,7 +34,8 @@ Live device selection stays at the PortAudio boundary. Automatic mode prefers us
 The sndio backend uses blocking full-duplex I/O with all audio buffers and DSP
 state allocated before stream start. It converts signed 16-bit PCM at the host
 boundary and keeps float32 inside the DSP chain. It does not print from an
-audio callback because M10 does not use a callback-mode sndio stream.
+audio callback because M10 does not use a callback-mode sndio stream. Device
+listing, TUI controls, and broader OpenBSD hardware validation are deferred.
 
 WAV playout is a host feature, not a DSP core feature. It requires both
 libsndfile and PortAudio, reads WAV data in fixed-size blocks, processes those
@@ -45,7 +46,15 @@ M6.10 still uses blocking PortAudio output for file playout. The TUI can monitor
 playout, switch validated operator presets, and skip to the next playlist item.
 Callback playout and web control remain deferred.
 
-Live TUI controls use a small command handoff. The foreground TUI validates key input into a preset command, stores one pending command atomically, and the callback applies it at the next block boundary. Playout TUI controls are applied between blocking file-output blocks. M7.4 keeps live and playout aligned by sharing host-to-DSP block config setup and processor snapshot extraction before live mode hands values to atomics. The sndio backend should keep using the same monitor snapshot and control boundary as it grows. The STM32H753 path should call the same block DSP model directly or through a CMSIS-DSP adapter.
+Live TUI controls use a small command handoff. The foreground TUI validates key input into a preset command, stores one pending command atomically, and the callback applies it at the next block boundary. Playout TUI controls are applied between blocking file-output blocks. M7.4 keeps live and playout aligned by sharing host-to-DSP block config setup and processor snapshot extraction before live mode hands values to atomics. The sndio backend should keep using the same monitor snapshot and control boundary when deferred work resumes. The STM32H753 path should call the same block DSP model directly or through a CMSIS-DSP adapter when embedded work resumes.
+
+## Active Linux Validation
+
+Current development assumes a Linux host unless a milestone says otherwise.
+The active host stack is WAV processing with libsndfile, PortAudio live audio,
+PortAudio WAV playout, and the ncurses TUI. Core DSP changes should pass the
+normal test suite, the validation fixtures, the quality report, and the
+professional-check gate before new features are added.
 
 ## State Ownership
 

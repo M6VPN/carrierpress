@@ -146,8 +146,49 @@ claim.
 Partially implemented. CarrierPress now has an optional sndio live backend for
 OpenBSD-style full-duplex audio when built with `WITH_SNDIO=1`. It uses the
 existing block DSP chain and text meters, but device listing, TUI controls, and
-hardware validation are still deferred.
+hardware validation are deferred while Linux-host core processing quality is
+the active development focus.
+
+## M10.1 processing quality baseline
+
+Current focus. Treat Linux as the default host, with PortAudio, WAV processing,
+WAV playout, and TUI monitoring as the active host path. Before adding more DSP
+features, keep the existing chain passing `make validate`, `make quality`, and
+`make professional-check`, and document known limits in
+`docs/core-processing-quality.md`.
+
+## M10.2 multiband compressor 2 scaffold
+
+Planned. Add a second conservative multiband compressor stage after bass EQ and
+before AM or SSB output shaping. It should be disabled by default and reuse the
+existing multiband and compressor patterns.
+
+## M10.3 automatic EQ analysis foundation
+
+Planned. Add analysis-only source and tonal-balance measurements before any
+automatic EQ processing. Do not change samples in this milestone.
+
+## M10.4 adaptive bass EQ improvements
+
+Planned. Improve bass EQ controls using measured fixtures and bounded presets.
+Do not add immersive bass, true bass, or subharmonic synthesis yet.
+
+## M10.5 immersive bass and true bass research
+
+Planned research. Define clean-room goals, test fixtures, safety limits, and
+bypass rules before adding any processing stage.
+
+## M10.6 delossifier research
+
+Planned research. Keep delossifier work analysis-only first. Do not claim codec
+repair or source reconstruction without measured evidence.
+
+## M10.7 declipper quality pass
+
+Planned. Improve the current conservative declipper prototype using measured
+fixtures and clearer bypass diagnostics. Keep it disabled by default.
 
 ## M11 STM32H753/CMSIS-DSP port
 
-Add fixed-size embedded build paths, Q31/Q15 planning, and CMSIS-DSP acceleration where it fits.
+Deferred. Add fixed-size embedded build paths, Q31/Q15 planning, and CMSIS-DSP
+acceleration after the Linux-host float32 chain is more mature.
