@@ -1,5 +1,7 @@
 # CarrierPress
 
+[![CI](https://github.com/M6VPN/carrierpress/actions/workflows/ci.yml/badge.svg)](https://github.com/M6VPN/carrierpress/actions/workflows/ci.yml)
+
 CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.1 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, optional dehummer, optional natural dynamics and low-level boost stages, optional multiband compressor foundations, optional static bass EQ, optional restoration and auto EQ analysis taps, an optional conservative declipper research stage, and a safe peak limiter.
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
@@ -136,6 +138,7 @@ make release-check
 
 Release validation and manual tag checks are documented in
 [`docs/release-checklist.md`](docs/release-checklist.md).
+GitHub Actions CI coverage is documented in [`docs/ci.md`](docs/ci.md).
 Release notes, the manual GitHub release procedure, and optional local release
 asset guidance are documented in
 [`docs/release-notes-v0.1.md`](docs/release-notes-v0.1.md),

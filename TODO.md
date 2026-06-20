@@ -124,3 +124,14 @@ implemented until code, docs, and validation are complete.
 - [x] Add a `carrierpress(1)` man page.
 - [x] Add `carrierpress --version`.
 - [x] Add a non-root `install-smoke` target for packaging review.
+
+## R4 CI Matrix
+
+- [x] Add GitHub Actions base validation workflow.
+- [x] Add staged install and package smoke validation.
+- [x] Add optional dependency build profiles where runner packages are
+      available.
+- [x] Document the GUI and SDL3 manual validation gap.
+- [x] Add README CI badge.
+- [x] Keep releases manual and local.
+- [x] Keep PTT control deferred.

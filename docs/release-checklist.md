@@ -40,6 +40,9 @@ These checks must pass before a v0.1 tag. They use deterministic fixtures and
 do not prove broadcast-processor quality, RF compliance, transmitter safety, or
 legal operation.
 
+GitHub Actions CI must also be green before a release tag is created. CI
+coverage is documented in `docs/ci.md`.
+
 ## Optional Linux-host Validation
 
 Run optional profiles only on hosts with the matching development libraries:
@@ -54,6 +57,13 @@ CP_CHECK_ALL_OPTIONAL=1 ./scripts/release-check.sh
 
 If an optional dependency is missing, the build should fail with a package or
 library name. Do not install packages from project scripts.
+
+GitHub Actions covers the base build, staged install, libsndfile, PortAudio,
+ncurses TUI, FFTW, flrig read-only CAT, and hamlib read-only CAT profiles when
+the runner packages are available. SDL3 GUI validation is attempted in a
+separate allowed-to-skip job because Ubuntu runner package availability can
+vary. Local GUI validation remains required for release review when SDL3 is not
+available in CI.
 
 ## Optional CAT Validation
 
@@ -126,6 +136,10 @@ LD_LIBRARY_PATH="$HAMLIB_LOCAL/src/.libs:${LD_LIBRARY_PATH:-}" \
 Do not commit generated Hamlib build products or make CarrierPress depend on
 the local vendored path.
 
+GitHub Actions must not depend on this local Hamlib path. CI uses distribution
+packages only. The local Hamlib 4.7.1 check remains a manual local validation
+step.
+
 ## Manual Checks Before Tagging
 
 - Confirm `LICENSE` contains the ISC licence and 2026 M6VPN ownership.
@@ -139,6 +153,7 @@ the local vendored path.
   draft releases.
 - Confirm `docs/release-assets-v0.1.md` lists only optional local evidence
   assets.
+- Confirm GitHub Actions CI is green.
 - Run `make install-smoke` before packaging or prefix-install testing.
 - Confirm `git status --short` contains only intentional release changes.
 - Draft release notes that list implemented audio and host features as v0.1

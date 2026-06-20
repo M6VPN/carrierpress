@@ -13,6 +13,9 @@ git status --short
 make release-check
 ```
 
+Confirm GitHub Actions CI is green for the commit that will be tagged. CI
+coverage and optional-profile notes are documented in `docs/ci.md`.
+
 If optional host dependencies are available, run the relevant opt-in profiles:
 
 ```sh
@@ -85,6 +88,9 @@ Push the tag only after validation and review:
 ```sh
 git push origin v0.1.0
 ```
+
+Do not push a tag until `make release-check` has passed locally and GitHub
+Actions CI is green for the selected commit.
 
 ## Manual GitHub Draft Release
 

@@ -1,0 +1,162 @@
+# CarrierPress - Developed by M6VPN (M6VPN@tuta.com)
+# carrierpress/.github/workflows/ci.yml
+
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  base:
+    name: Base build and validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install base tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config
+
+      - name: Base build
+        run: |
+          make clean
+          make
+
+      - name: Base tests
+        run: |
+          make test
+          make -j test
+
+      - name: Validation profiles
+        run: |
+          make validate
+          make quality
+          make professional-check
+
+      - name: Install smoke and version
+        run: |
+          make install-smoke
+          ./carrierpress --version
+
+      - name: Release check
+        run: make release-check
+
+  optional:
+    name: Optional dependency profiles
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install optional dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libasound2-dev \
+            libfftw3-dev \
+            libhamlib-dev \
+            libncurses-dev \
+            libsndfile1-dev \
+            pkg-config \
+            portaudio19-dev
+
+      - name: Autodetect
+        run: make autodetect
+
+      - name: libsndfile profile
+        run: make WITH_SNDFILE=1 test
+
+      - name: PortAudio profile
+        run: make WITH_PORTAUDIO=1
+
+      - name: ncurses TUI profile
+        run: make WITH_TUI=1 test
+
+      - name: libsndfile plus PortAudio profile
+        run: make WITH_SNDFILE=1 WITH_PORTAUDIO=1 test
+
+      - name: FFTW profile
+        run: make WITH_FFTW=1 test
+
+      - name: flrig read-only CAT profile
+        run: make WITH_FLRIG=1 test
+
+      - name: hamlib read-only CAT profile
+        run: make WITH_HAMLIB=1 test
+
+  gui:
+    name: Optional SDL3 GUI profile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install SDL3 GUI dependencies if available
+        id: gui_deps
+        shell: bash
+        run: |
+          set -e
+          sudo apt-get update
+          if sudo apt-get install -y build-essential libsdl3-dev libfftw3-dev pkg-config; then
+            echo "available=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: GUI tests
+        if: steps.gui_deps.outputs.available == '1'
+        run: make WITH_GUI=1 test
+
+      - name: GUI plus FFTW tests
+        if: steps.gui_deps.outputs.available == '1'
+        run: make WITH_GUI=1 WITH_FFTW=1 test
+
+      - name: GUI unavailable note
+        if: steps.gui_deps.outputs.available != '1'
+        run: |
+          printf '%s\n' \
+            'SDL3 development packages were unavailable on this runner.' \
+            'Run GUI validation locally with make WITH_GUI=1 WITH_FFTW=1 test.'
+
+  packaging:
+    name: Packaging smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install base tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config
+
+      - name: Staged install
+        run: |
+          make clean
+          make
+          make DESTDIR=build/stage PREFIX=/usr install
+
+      - name: Verify staged files
+        run: |
+          test -x build/stage/usr/bin/carrierpress
+          test -f build/stage/usr/lib/libcarrierpress.a
+          test -f build/stage/usr/lib/pkgconfig/carrierpress.pc
+          test -f build/stage/usr/share/man/man1/carrierpress.1
+          test -f build/stage/usr/include/carrierpress/carrierpress.h
+
+      - name: Staged uninstall
+        run: |
+          make DESTDIR=build/stage PREFIX=/usr uninstall
+          test ! -e build/stage/usr/bin/carrierpress
+          test ! -e build/stage/usr/lib/libcarrierpress.a
+          test ! -e build/stage/usr/lib/pkgconfig/carrierpress.pc
+          test ! -e build/stage/usr/share/man/man1/carrierpress.1
+          test ! -e build/stage/usr/include/carrierpress
