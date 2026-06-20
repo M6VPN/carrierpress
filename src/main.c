@@ -922,7 +922,7 @@ run_gui_demo(const struct cp_audio_config *config,
 		snapshot.output_rms = cp_monitor_sample_to_level(level * 0.45f);
 		snapshot.agc_gain = cp_monitor_sample_to_level(0.92f);
 		snapshot.agc_gain_db_centibel = cp_monitor_db_to_centibel(-0.7f);
-		snapshot.agc_state = CP_AGC_GATE_OPEN;
+		snapshot.agc_state = CP_AGC_STATE_OPEN;
 		snapshot.dehummer_enabled = 1;
 		snapshot.restoration_enabled = 1;
 		snapshot.multiband_enabled = 1;
