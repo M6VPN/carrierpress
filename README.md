@@ -531,6 +531,21 @@ press `0` for SSB off, `1` for `ssb-speech`, `2` for `ssb-narrow`, `3` for
 `ssb-wide`, and `4` for `ssb-gentle`. Press `q` to stop. Preset changes are
 validated and applied at audio block boundaries.
 
+The TUI is a plain ASCII operator panel. It is readable on monochrome terminals
+and does not depend on colour. The screen is split into stable regions for
+transport, active audio-chain mode, selected control bank, device/config
+details, input/output meters, AGC state, stream flags, chain-order processing
+state, detailed status, and a compact key footer. The active audio-chain mode is
+shown as `NEUTRAL`, `AM`, or `SSB`. The selected control bank is shown
+separately as `AM BANK` or `SSB BANK`. When AM mode is active, SSB controls are
+shown locked unless the SSB bank is explicitly selected. When SSB mode is
+active, AM controls are shown locked unless the AM bank is explicitly selected.
+
+The key footer changes by context. Live mode shows stop, bank selection,
+dehummer, multiband, and preset keys. Single-file play mode shows the same
+processing keys for file playout. Playlist mode adds `n next` when another item
+is available.
+
 Print meters once per second:
 
 ```sh
@@ -615,6 +630,41 @@ Run the TUI monitor:
 ```
 
 Check that input/output meters, AGC state, stream flags, multiband meters, analysis metrics when enabled, and AM/SSB settings update. Press `q` or `Ctrl-C` to stop.
+
+## Manual TUI Smoke Test
+
+Build with TUI support:
+
+```sh
+make WITH_PORTAUDIO=1 WITH_TUI=1
+make WITH_SNDFILE=1 WITH_PORTAUDIO=1 WITH_TUI=1
+```
+
+Check an 80x24 terminal:
+
+```sh
+stty cols 80 rows 24
+./carrierpress --live --tui --device pulse
+./carrierpress --play input.wav --tui --device pulse
+./carrierpress --playlist playlist.txt --tui --device pulse
+```
+
+Check a wider terminal:
+
+```sh
+stty cols 120 rows 32
+./carrierpress --live --tui --device pulse
+./carrierpress --play input.wav --tui --device pulse
+./carrierpress --playlist playlist.txt --tui --device pulse
+```
+
+For each run, verify that the footer is visible, the screen does not overflow,
+the active mode reads `NEUTRAL`, `AM`, or `SSB`, and the selected control bank
+reads `AM BANK` or `SSB BANK`. Press `a` and `s` to switch banks. In AM mode,
+confirm that SSB controls are shown locked until the SSB bank is selected. In
+SSB mode, confirm that AM controls are shown locked until the AM bank is
+selected. In playlist mode, confirm that `n next` appears only when another
+playlist item is available.
 
 For live control testing, press `d` to toggle dehummer and `m` to cycle
 multiband off, speech, and music. For AM control testing, add `--am`, press

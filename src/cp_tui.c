@@ -4,12 +4,14 @@
 #include <sys/types.h>
 
 #include <math.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
 #include <curses.h>
 
 #include "cp_agc.h"
+#include "cp_am.h"
 #include "cp_auto_eq.h"
 #include "cp_bass_eq.h"
 #include "cp_declipper.h"
@@ -18,36 +20,42 @@
 #include "cp_ssb.h"
 #include "cp_tui.h"
 
-#define CP_TUI_BAR_WIDTH	40
-#define CP_TUI_QUIT_KEY		'q'
+#define CP_TUI_BAR_WIDTH	16
+#define CP_TUI_MIN_ROWS		24
+#define CP_TUI_MIN_COLS		80
+#define CP_TUI_TEXT_SIZE	256
 
-static void	cp_tui_draw_bar(int, int, const char *, cp_sample_t,
-		    cp_sample_t);
-static void	cp_tui_draw_am(int, const struct cp_monitor_snapshot *);
-static void	cp_tui_draw_auto_eq(int,
+enum cp_tui_processing_mode {
+	CP_TUI_PROCESSING_NEUTRAL = 0,
+	CP_TUI_PROCESSING_AM,
+	CP_TUI_PROCESSING_SSB
+};
+
+static enum cp_tui_processing_mode
+		cp_tui_processing_mode(
 		    const struct cp_monitor_snapshot *);
-static void	cp_tui_draw_bass_eq(int,
+static int	cp_tui_level_columns(cp_sample_t, cp_sample_t, int);
+static int	cp_tui_snprintf(char *, size_t, const char *, ...);
+static void	cp_tui_bar(char *, size_t, cp_sample_t, cp_sample_t);
+static void	cp_tui_draw_box_line(int, int, const char *, int);
+static void	cp_tui_draw_chain(int, int,
 		    const struct cp_monitor_snapshot *);
-static void	cp_tui_draw_bass_eq_recommend(int,
+static void	cp_tui_draw_details(int, int,
 		    const struct cp_monitor_snapshot *);
-static void	cp_tui_draw_dehummer(int,
+static void	cp_tui_draw_meters(int, int,
 		    const struct cp_monitor_snapshot *);
-static void	cp_tui_draw_declipper(int,
-		    const struct cp_monitor_snapshot *);
-static void	cp_tui_draw_flags(int, unsigned int);
-static void	cp_tui_draw_header(const struct cp_tui_view *);
-static void	cp_tui_draw_multiband(int, const char *, unsigned int,
-		    int, size_t, const unsigned int *, const int *);
-static void	cp_tui_draw_natural(int,
-		    const struct cp_monitor_snapshot *);
-static void	cp_tui_draw_restoration(int,
-		    const struct cp_monitor_snapshot *);
-static void	cp_tui_draw_ssb(int, const struct cp_monitor_snapshot *);
-static void	cp_tui_draw_keys(const struct cp_tui_view *,
+static void	cp_tui_draw_mode(int, int, const struct cp_tui_view *,
 		    enum cp_control_bank);
+static void	cp_tui_draw_small_screen(int, int);
+static void	cp_tui_draw_transport(int, int,
+		    const struct cp_tui_view *, enum cp_control_bank);
+static void	cp_tui_draw_text(int, int, int, const char *, ...);
+static void	cp_tui_flags_append(char *, size_t, const char *);
+static void	cp_tui_format_flags(char *, size_t, unsigned int);
 static enum cp_control_bank
 		cp_tui_initial_bank(const struct cp_tui_view *);
-static int	cp_tui_level_columns(cp_sample_t, cp_sample_t);
+static const char
+		*cp_tui_processing_mode_name(enum cp_tui_processing_mode);
 
 void
 cp_tui_close(struct cp_tui *tui)
@@ -99,55 +107,31 @@ int
 cp_tui_update_view(struct cp_tui *tui, const struct cp_tui_view *view,
 	struct cp_control_command *command)
 {
-	cp_sample_t agc_gain;
-	const struct cp_monitor_snapshot *snapshot;
+	int cols;
 	int key;
+	int rows;
 
 	if (tui == NULL || view == NULL || view->config == NULL ||
 	    view->snapshot == NULL ||
 	    command == NULL || !tui->active)
 		return 1;
 	cp_control_command_clear(command);
-	snapshot = view->snapshot;
 	if (!tui->control_bank_set) {
 		tui->control_bank = cp_tui_initial_bank(view);
 		tui->control_bank_set = 1;
 	}
 
+	getmaxyx(stdscr, rows, cols);
 	erase();
-	cp_tui_draw_header(view);
-	cp_tui_draw_bar(4, 2, "Input peak ",
-	    cp_monitor_level_to_sample(snapshot->input_peak), 1.0f);
-	cp_tui_draw_bar(5, 2, "Input RMS  ",
-	    cp_monitor_level_to_sample(snapshot->input_rms), 1.0f);
-	cp_tui_draw_bar(7, 2, "Output peak",
-	    cp_monitor_level_to_sample(snapshot->output_peak), 1.0f);
-	cp_tui_draw_bar(8, 2, "Output RMS ",
-	    cp_monitor_level_to_sample(snapshot->output_rms), 1.0f);
-
-	agc_gain = cp_monitor_level_to_sample(snapshot->agc_gain);
-	mvprintw(10, 2, "AGC gain %0.3f  gain_db %0.2f  state %s",
-	    agc_gain,
-	    cp_monitor_centibel_to_db(snapshot->agc_gain_db_centibel),
-	    cp_agc_state_string((enum cp_agc_gate_state)snapshot->agc_state));
-
-	cp_tui_draw_dehummer(11, snapshot);
-	cp_tui_draw_natural(12, snapshot);
-	cp_tui_draw_multiband(13, "MB1", snapshot->multiband_enabled,
-	    snapshot->multiband_preset, snapshot->band_count,
-	    snapshot->band_rms, snapshot->band_gr_db_centibel);
-	cp_tui_draw_multiband(14, "MB2", snapshot->multiband2_enabled,
-	    snapshot->multiband2_preset, snapshot->band2_count,
-	    snapshot->band2_rms, snapshot->band2_gr_db_centibel);
-	cp_tui_draw_bass_eq(15, snapshot);
-	cp_tui_draw_bass_eq_recommend(16, snapshot);
-	cp_tui_draw_am(17, snapshot);
-	cp_tui_draw_ssb(18, snapshot);
-	cp_tui_draw_auto_eq(19, snapshot);
-	cp_tui_draw_restoration(20, snapshot);
-	cp_tui_draw_declipper(21, snapshot);
-	cp_tui_draw_flags(22, snapshot->stream_flags);
-	cp_tui_draw_keys(view, tui->control_bank);
+	if (rows < CP_TUI_MIN_ROWS || cols < CP_TUI_MIN_COLS) {
+		cp_tui_draw_small_screen(rows, cols);
+	} else {
+		cp_tui_draw_transport(rows, cols, view, tui->control_bank);
+		cp_tui_draw_mode(rows, cols, view, tui->control_bank);
+		cp_tui_draw_meters(rows, cols, view->snapshot);
+		cp_tui_draw_chain(rows, cols, view->snapshot);
+		cp_tui_draw_details(rows, cols, view->snapshot);
+	}
 	refresh();
 
 	key = getch();
@@ -171,296 +155,467 @@ cp_tui_update_view(struct cp_tui *tui, const struct cp_tui_view *view,
 	return 0;
 }
 
-static void
-cp_tui_draw_am(int row, const struct cp_monitor_snapshot *snapshot)
+const char *
+cp_tui_active_mode_string(const struct cp_monitor_snapshot *snapshot)
 {
-	const char *preset_name;
+	return cp_tui_processing_mode_name(cp_tui_processing_mode(snapshot));
+}
 
-	preset_name = cp_am_preset_string(
-	    (enum cp_am_preset)snapshot->am_preset);
-	if (preset_name == NULL)
-		preset_name = "unknown";
+int
+cp_tui_format_key_help(const struct cp_tui_view *view,
+	enum cp_control_bank bank, char *buffer, size_t buffer_size)
+{
+	const char *bank_name;
+	const char *mode_name;
+	const char *next_text;
+	const char *preset_text;
+	enum cp_tui_processing_mode mode;
 
-	mvprintw(row, 2, "AM %s preset %s HP %u Hz LP %u Hz pos %0.2f "
-	    "neg %0.2f asym %s %0.2f",
+	if (view == NULL || view->snapshot == NULL || buffer == NULL ||
+	    buffer_size == 0)
+		return CP_ERR_NULL;
+	if (bank != CP_CONTROL_BANK_AM && bank != CP_CONTROL_BANK_SSB)
+		return CP_ERR_RANGE;
+
+	mode = cp_tui_processing_mode(view->snapshot);
+	mode_name = cp_tui_processing_mode_name(mode);
+	bank_name = bank == CP_CONTROL_BANK_AM ? "AM BANK" : "SSB BANK";
+	if (bank == CP_CONTROL_BANK_AM) {
+		preset_text = "0 AM off 1 safe 2 short 3 wide 4 voice";
+	} else {
+		preset_text = "0 SSB off 1 speech 2 narrow 3 wide 4 gentle";
+	}
+	next_text = view->mode == CP_TUI_MODE_PLAYOUT && view->next_enabled ?
+	    " n next" : "";
+
+	return cp_tui_snprintf(buffer, buffer_size,
+	    "Keys: q stop%s | a AM bank s SSB bank | d hum m MB1 b MB2 | "
+	    "%s | %s | mode %s",
+	    next_text, bank_name, preset_text, mode_name);
+}
+
+int
+cp_tui_format_mode_status(const struct cp_monitor_snapshot *snapshot,
+	enum cp_control_bank bank, char *buffer, size_t buffer_size)
+{
+	const char *am_state;
+	const char *ssb_state;
+	const char *bank_name;
+	enum cp_tui_processing_mode mode;
+
+	if (snapshot == NULL || buffer == NULL || buffer_size == 0)
+		return CP_ERR_NULL;
+	if (bank != CP_CONTROL_BANK_AM && bank != CP_CONTROL_BANK_SSB)
+		return CP_ERR_RANGE;
+
+	mode = cp_tui_processing_mode(snapshot);
+	bank_name = bank == CP_CONTROL_BANK_AM ? "AM BANK" : "SSB BANK";
+	am_state = "AM controls available";
+	ssb_state = "SSB controls available";
+	if (mode == CP_TUI_PROCESSING_AM) {
+		am_state = "AM controls active";
+		ssb_state = bank == CP_CONTROL_BANK_SSB ?
+		    "SSB bank armed" : "SSB controls locked by AM mode";
+	} else if (mode == CP_TUI_PROCESSING_SSB) {
+		am_state = bank == CP_CONTROL_BANK_AM ?
+		    "AM bank armed" : "AM controls locked by SSB mode";
+		ssb_state = "SSB controls active";
+	} else if (bank == CP_CONTROL_BANK_AM) {
+		ssb_state = "SSB controls locked by AM bank";
+	} else {
+		am_state = "AM controls locked by SSB bank";
+	}
+
+	return cp_tui_snprintf(buffer, buffer_size,
+	    "Mode %-7s | Control %-8s | %s | %s",
+	    cp_tui_processing_mode_name(mode), bank_name, am_state,
+	    ssb_state);
+}
+
+static enum cp_tui_processing_mode
+cp_tui_processing_mode(const struct cp_monitor_snapshot *snapshot)
+{
+	if (snapshot == NULL)
+		return CP_TUI_PROCESSING_NEUTRAL;
+	if (snapshot->am_enabled)
+		return CP_TUI_PROCESSING_AM;
+	if (snapshot->ssb_enabled)
+		return CP_TUI_PROCESSING_SSB;
+
+	return CP_TUI_PROCESSING_NEUTRAL;
+}
+
+static int
+cp_tui_level_columns(cp_sample_t value, cp_sample_t full_scale, int width)
+{
+	cp_sample_t ratio;
+
+	if (width <= 0 || !isfinite(value) || value <= 0.0f ||
+	    full_scale <= 0.0f)
+		return 0;
+
+	ratio = value / full_scale;
+	if (ratio >= 1.0f)
+		return width;
+	if (ratio <= 0.0f)
+		return 0;
+
+	return (int)lrintf(ratio * (cp_sample_t)width);
+}
+
+static int
+cp_tui_snprintf(char *buffer, size_t buffer_size, const char *format, ...)
+{
+	va_list ap;
+	int written;
+
+	if (buffer == NULL || buffer_size == 0 || format == NULL)
+		return CP_ERR_NULL;
+
+	va_start(ap, format);
+	written = vsnprintf(buffer, buffer_size, format, ap);
+	va_end(ap);
+	if (written < 0)
+		return CP_ERR_RANGE;
+	if ((size_t)written >= buffer_size)
+		buffer[buffer_size - 1] = '\0';
+
+	return CP_OK;
+}
+
+static void
+cp_tui_bar(char *buffer, size_t buffer_size, cp_sample_t value,
+	cp_sample_t full_scale)
+{
+	int fill;
+	int index;
+	size_t offset;
+
+	if (buffer == NULL || buffer_size == 0)
+		return;
+	fill = cp_tui_level_columns(value, full_scale, CP_TUI_BAR_WIDTH);
+	if (buffer_size < (size_t)CP_TUI_BAR_WIDTH + 3u) {
+		buffer[0] = '\0';
+		return;
+	}
+
+	offset = 0;
+	buffer[offset++] = '[';
+	for (index = 0; index < CP_TUI_BAR_WIDTH; index++)
+		buffer[offset++] = index < fill ? '#' : ' ';
+	buffer[offset++] = ']';
+	buffer[offset] = '\0';
+}
+
+static void
+cp_tui_draw_box_line(int row, int cols, const char *title, int bottom)
+{
+	int col;
+	int length;
+	int start;
+
+	if (row < 0 || cols < 2)
+		return;
+
+	mvaddch(row, 0, '+');
+	for (col = 1; col < cols - 1; col++)
+		mvaddch(row, col, bottom ? '=' : '-');
+	mvaddch(row, cols - 1, '+');
+	if (title == NULL || title[0] == '\0')
+		return;
+
+	length = (int)strlen(title);
+	start = 2;
+	if (length + start + 1 >= cols)
+		length = cols - start - 2;
+	if (length > 0)
+		mvaddnstr(row, start, title, length);
+}
+
+static void
+cp_tui_draw_chain(int rows, int cols,
+	const struct cp_monitor_snapshot *snapshot)
+{
+	char mb1[CP_TUI_TEXT_SIZE];
+	char mb2[CP_TUI_TEXT_SIZE];
+
+	(void)rows;
+	cp_tui_draw_box_line(10, cols, " Processing Chain ", 0);
+	cp_tui_draw_text(11, 2, cols, "DC blocker -> dehummer %s -> "
+	    "restoration %s -> declipper %s -> Auto EQ %s",
+	    snapshot->dehummer_enabled ? "on" : "off",
+	    snapshot->restoration_enabled ? "on" : "off",
+	    snapshot->declipper_enabled ? "on" : "off",
+	    snapshot->auto_eq_enabled ? "on" : "off");
+	cp_tui_draw_text(12, 2, cols, "natural dynamics %s -> "
+	    "low-level boost %s -> AGC %s -> multiband 1 %s",
+	    snapshot->natural_dynamics_enabled ? "on" : "off",
+	    snapshot->low_level_boost_enabled ? "on" : "off",
+	    cp_agc_state_string(
+	    (enum cp_agc_gate_state)snapshot->agc_state),
+	    snapshot->multiband_enabled ? "on" : "off");
+	cp_tui_draw_text(13, 2, cols, "bass EQ %s -> multiband 2 %s -> "
+	    "AM %s -> SSB %s -> limiter -> output meter",
+	    snapshot->bass_eq_enabled ? "on" : "off",
+	    snapshot->multiband2_enabled ? "on" : "off",
 	    snapshot->am_enabled ? "on" : "off",
-	    preset_name,
-	    snapshot->am_highpass_hz,
-	    snapshot->am_lowpass_hz,
+	    snapshot->ssb_enabled ? "on" : "off");
+
+	cp_tui_snprintf(mb1, sizeof(mb1), "MB1 bands %zu preset %s",
+	    snapshot->band_count,
+	    cp_multiband_preset_string(
+	    (enum cp_multiband_preset)snapshot->multiband_preset));
+	cp_tui_snprintf(mb2, sizeof(mb2), "MB2 bands %zu preset %s",
+	    snapshot->band2_count,
+	    cp_multiband_preset_string(
+	    (enum cp_multiband_preset)snapshot->multiband2_preset));
+	cp_tui_draw_text(14, 2, cols, "%s | %s", mb1, mb2);
+}
+
+static void
+cp_tui_draw_details(int rows, int cols,
+	const struct cp_monitor_snapshot *snapshot)
+{
+	const char *am_preset;
+	const char *bass_preset;
+	const char *ssb_preset;
+	size_t band;
+
+	(void)rows;
+	am_preset = cp_am_preset_string((enum cp_am_preset)
+	    snapshot->am_preset);
+	ssb_preset = cp_ssb_preset_string((enum cp_ssb_preset)
+	    snapshot->ssb_preset);
+	bass_preset = cp_bass_eq_preset_string((enum cp_bass_eq_preset)
+	    snapshot->bass_eq_preset);
+	if (am_preset == NULL)
+		am_preset = "unknown";
+	if (ssb_preset == NULL)
+		ssb_preset = "unknown";
+	if (bass_preset == NULL)
+		bass_preset = "unknown";
+
+	cp_tui_draw_box_line(15, cols, " Detailed Status ", 0);
+	cp_tui_draw_text(16, 2, cols, "AM %s preset %s HP %u LP %u pos %.2f "
+	    "neg %.2f asym %s %.2f",
+	    snapshot->am_enabled ? "on" : "off", am_preset,
+	    snapshot->am_highpass_hz, snapshot->am_lowpass_hz,
 	    cp_monitor_level_to_sample(snapshot->am_positive_peak),
 	    cp_monitor_level_to_sample(snapshot->am_negative_peak),
 	    snapshot->am_asymmetry_enabled ? "on" : "off",
 	    cp_monitor_level_to_sample(snapshot->am_asymmetry_ratio));
-}
-
-static void
-cp_tui_draw_auto_eq(int row, const struct cp_monitor_snapshot *snapshot)
-{
-	if (!snapshot->auto_eq_enabled) {
-		mvprintw(row, 2, "Auto EQ analysis off");
-		return;
-	}
-
-	mvprintw(row, 2, "Auto EQ %s rms %0.4f tilt %0.2f dB low %0.3f "
-	    "presence %0.3f high %0.3f finite %s",
-	    cp_auto_eq_source_hint_string(
-	    (enum cp_auto_eq_source_hint)snapshot->auto_eq_source_hint),
-	    cp_monitor_level_to_sample(snapshot->auto_eq_total_rms),
-	    cp_monitor_centibel_to_db(
-	    snapshot->auto_eq_spectral_tilt_db_centibel),
-	    cp_monitor_level_to_sample(snapshot->auto_eq_low_weight),
-	    cp_monitor_level_to_sample(snapshot->auto_eq_presence_weight),
-	    cp_monitor_level_to_sample(snapshot->auto_eq_high_weight),
-	    snapshot->auto_eq_finite ? "yes" : "no");
-}
-
-static void
-cp_tui_draw_bass_eq(int row, const struct cp_monitor_snapshot *snapshot)
-{
-	const char *preset_name;
-
-	preset_name = cp_bass_eq_preset_string(
-	    (enum cp_bass_eq_preset)snapshot->bass_eq_preset);
-	if (preset_name == NULL)
-		preset_name = "unknown";
-
-	mvprintw(row, 2, "Bass EQ %s preset %s bass %u Hz %0.2f dB "
-	    "presence %u Hz %0.2f dB",
-	    snapshot->bass_eq_enabled ? "on" : "off",
-	    preset_name,
-	    snapshot->bass_eq_low_hz,
-	    cp_monitor_centibel_to_db(
-	    snapshot->bass_eq_low_gain_db_centibel),
-	    snapshot->bass_eq_high_hz,
-	    cp_monitor_centibel_to_db(
-	    snapshot->bass_eq_high_gain_db_centibel));
-}
-
-static void
-cp_tui_draw_bass_eq_recommend(int row,
-	const struct cp_monitor_snapshot *snapshot)
-{
-	if (!snapshot->auto_eq_enabled) {
-		mvprintw(row, 2, "Bass EQ recommendation off");
-		return;
-	}
-
-	mvprintw(row, 2, "Bass EQ recommend %s preset %s bass %0.2f dB "
-	    "presence %0.2f dB out %0.2f dB confidence %0.3f",
-	    snapshot->bass_eq_recommend_valid ? "valid" : "invalid",
-	    cp_bass_eq_preset_string(
-	    (enum cp_bass_eq_preset)snapshot->bass_eq_recommend_preset),
-	    cp_monitor_centibel_to_db(
-	    snapshot->bass_eq_recommend_low_gain_db_centibel),
-	    cp_monitor_centibel_to_db(
-	    snapshot->bass_eq_recommend_high_gain_db_centibel),
-	    cp_monitor_centibel_to_db(
-	    snapshot->bass_eq_recommend_output_gain_db_centibel),
-	    cp_monitor_level_to_sample(
-	    snapshot->bass_eq_recommend_confidence));
-}
-
-static void
-cp_tui_draw_ssb(int row, const struct cp_monitor_snapshot *snapshot)
-{
-	const char *preset_name;
-
-	preset_name = cp_ssb_preset_string(
-	    (enum cp_ssb_preset)snapshot->ssb_preset);
-	if (preset_name == NULL)
-		preset_name = "unknown";
-
-	mvprintw(row, 2, "SSB %s preset %s HP %u Hz LP %u Hz peak %0.2f "
-	    "phase %s",
-	    snapshot->ssb_enabled ? "on" : "off",
-	    preset_name,
-	    snapshot->ssb_highpass_hz,
-	    snapshot->ssb_lowpass_hz,
+	cp_tui_draw_text(17, 2, cols, "SSB %s preset %s HP %u LP %u peak %.2f "
+	    "phase %s | Bass EQ %s preset %s",
+	    snapshot->ssb_enabled ? "on" : "off", ssb_preset,
+	    snapshot->ssb_highpass_hz, snapshot->ssb_lowpass_hz,
 	    cp_monitor_level_to_sample(snapshot->ssb_peak_limit),
-	    snapshot->ssb_phase_rotator_enabled ? "on" : "off");
-}
-
-static void
-cp_tui_draw_restoration(int row, const struct cp_monitor_snapshot *snapshot)
-{
-	if (!snapshot->restoration_enabled) {
-		mvprintw(row, 2, "Analysis off");
-		return;
-	}
-
-	mvprintw(row, 2, "Analysis %s flags 0x%08x clip %0.4f HF %0.4f "
-	    "clip_conf %0.3f lowceil %0.3f transient %0.3f "
-	    "loss_conf %0.3f peak %0.3f crest %0.3f flat %u repeat %u",
+	    snapshot->ssb_phase_rotator_enabled ? "on" : "off",
+	    snapshot->bass_eq_enabled ? "on" : "off", bass_preset);
+	cp_tui_draw_text(18, 2, cols, "Analysis %s profile %s flags 0x%08x "
+	    "clip %.3f HF %.3f | Declipper %s repairs %u",
+	    snapshot->restoration_enabled ? "on" : "off",
 	    cp_restoration_source_profile_string(
 	    (enum cp_restoration_source_profile)
 	    snapshot->restoration_source_profile),
 	    snapshot->restoration_reason_flags,
 	    cp_monitor_level_to_sample(snapshot->restoration_clipped_ratio),
 	    cp_monitor_level_to_sample(snapshot->restoration_hf_ratio),
-	    cp_monitor_level_to_sample(
-	    snapshot->restoration_clipping_confidence),
-	    cp_monitor_level_to_sample(
-	    snapshot->restoration_low_ceiling_confidence),
-	    cp_monitor_level_to_sample(
-	    snapshot->restoration_transient_confidence),
-	    cp_monitor_level_to_sample(snapshot->restoration_lossy_confidence),
-	    cp_monitor_level_to_sample(snapshot->restoration_observed_peak),
-	    cp_monitor_level_to_sample(snapshot->restoration_crest_factor),
-	    snapshot->restoration_flat_runs,
-	    snapshot->restoration_peak_repeats);
-}
-
-static void
-cp_tui_draw_bar(int row, int col, const char *label, cp_sample_t value,
-	cp_sample_t full_scale)
-{
-	int fill;
-	int index;
-
-	fill = cp_tui_level_columns(value, full_scale);
-	mvprintw(row, col, "%s [", label);
-	for (index = 0; index < CP_TUI_BAR_WIDTH; index++)
-		addch(index < fill ? '#' : ' ');
-	printw("] %0.3f", value);
-}
-
-static void
-cp_tui_draw_dehummer(int row, const struct cp_monitor_snapshot *snapshot)
-{
-	mvprintw(row, 2, "Dehummer %s base %u Hz harmonics %u",
-	    snapshot->dehummer_enabled ? "on" : "off",
-	    snapshot->dehummer_base_hz,
-	    snapshot->dehummer_harmonic_count);
-}
-
-static void
-cp_tui_draw_declipper(int row, const struct cp_monitor_snapshot *snapshot)
-{
-	mvprintw(row, 2, "Declipper %s repaired %u runs %u delta %0.4f "
-	    "bypass %s finite %s",
 	    snapshot->declipper_enabled ? "on" : "off",
-	    snapshot->declipper_repaired_samples,
-	    snapshot->declipper_repaired_runs,
-	    cp_monitor_level_to_sample(snapshot->declipper_max_delta),
-	    cp_declipper_bypass_reason_string(
-	    (enum cp_declipper_bypass_reason)
-	    snapshot->declipper_bypass_reason),
-	    snapshot->declipper_finite ? "yes" : "no");
-}
+	    snapshot->declipper_repaired_samples);
+	cp_tui_draw_text(19, 2, cols, "Auto EQ %s rms %.4f tilt %.2f dB | "
+	    "Bass recommend %s confidence %.3f",
+	    snapshot->auto_eq_enabled ? "on" : "off",
+	    cp_monitor_level_to_sample(snapshot->auto_eq_total_rms),
+	    cp_monitor_centibel_to_db(
+	    snapshot->auto_eq_spectral_tilt_db_centibel),
+	    snapshot->bass_eq_recommend_valid ? "valid" : "off",
+	    cp_monitor_level_to_sample(
+	    snapshot->bass_eq_recommend_confidence));
 
-static void
-cp_tui_draw_flags(int row, unsigned int flags)
-{
-	mvprintw(row, 2, "Stream flags:");
-	if (flags == 0u) {
-		printw(" none");
-		return;
+	for (band = 0; band < snapshot->band_count &&
+	    band < CP_MONITOR_MAX_BANDS && band < 4; band++) {
+		cp_tui_draw_text(20 + (int)(band / 2), 2 + (int)(band % 2) *
+		    (cols / 2), cols, "MB1 B%zu rms %.3f gr %.2f dB",
+		    band + 1,
+		    cp_monitor_level_to_sample(snapshot->band_rms[band]),
+		    cp_monitor_centibel_to_db(
+		    snapshot->band_gr_db_centibel[band]));
 	}
-	if ((flags & CP_MONITOR_INPUT_UNDERFLOW) != 0)
-		printw(" input_underflow");
-	if ((flags & CP_MONITOR_INPUT_OVERFLOW) != 0)
-		printw(" input_overflow");
-	if ((flags & CP_MONITOR_OUTPUT_UNDERFLOW) != 0)
-		printw(" output_underflow");
-	if ((flags & CP_MONITOR_OUTPUT_OVERFLOW) != 0)
-		printw(" output_overflow");
-	if ((flags & CP_MONITOR_PRIMING_OUTPUT) != 0)
-		printw(" priming_output");
 }
 
 static void
-cp_tui_draw_header(const struct cp_tui_view *view)
+cp_tui_draw_meters(int rows, int cols,
+	const struct cp_monitor_snapshot *snapshot)
 {
+	char flags[CP_TUI_TEXT_SIZE];
+	char in_peak[CP_TUI_BAR_WIDTH + 3];
+	char in_rms[CP_TUI_BAR_WIDTH + 3];
+	char out_peak[CP_TUI_BAR_WIDTH + 3];
+	char out_rms[CP_TUI_BAR_WIDTH + 3];
+
+	(void)rows;
+	cp_tui_bar(in_peak, sizeof(in_peak),
+	    cp_monitor_level_to_sample(snapshot->input_peak), 1.0f);
+	cp_tui_bar(in_rms, sizeof(in_rms),
+	    cp_monitor_level_to_sample(snapshot->input_rms), 1.0f);
+	cp_tui_bar(out_peak, sizeof(out_peak),
+	    cp_monitor_level_to_sample(snapshot->output_peak), 1.0f);
+	cp_tui_bar(out_rms, sizeof(out_rms),
+	    cp_monitor_level_to_sample(snapshot->output_rms), 1.0f);
+	cp_tui_format_flags(flags, sizeof(flags), snapshot->stream_flags);
+
+	cp_tui_draw_box_line(6, cols, " Meters ", 0);
+	cp_tui_draw_text(7, 2, cols, "Input  peak %s %.3f  RMS %s %.3f",
+	    in_peak, cp_monitor_level_to_sample(snapshot->input_peak),
+	    in_rms, cp_monitor_level_to_sample(snapshot->input_rms));
+	cp_tui_draw_text(8, 2, cols, "Output peak %s %.3f  RMS %s %.3f",
+	    out_peak, cp_monitor_level_to_sample(snapshot->output_peak),
+	    out_rms, cp_monitor_level_to_sample(snapshot->output_rms));
+	cp_tui_draw_text(9, 2, cols, "AGC gain %.3f %.2f dB state %s | "
+	    "Limiter final clamp | Flags %s",
+	    cp_monitor_level_to_sample(snapshot->agc_gain),
+	    cp_monitor_centibel_to_db(snapshot->agc_gain_db_centibel),
+	    cp_agc_state_string(
+	    (enum cp_agc_gate_state)snapshot->agc_state),
+	    flags);
+}
+
+static void
+cp_tui_draw_mode(int rows, int cols, const struct cp_tui_view *view,
+	enum cp_control_bank bank)
+{
+	char mode_text[CP_TUI_TEXT_SIZE];
+
+	(void)rows;
+	cp_tui_draw_box_line(3, cols, " Mode / Controls ", 0);
+	if (cp_tui_format_mode_status(view->snapshot, bank, mode_text,
+	    sizeof(mode_text)) != CP_OK)
+		mode_text[0] = '\0';
+	cp_tui_draw_text(4, 2, cols, "%s", mode_text);
+	cp_tui_draw_text(5, 2, cols, "Preset commands only. Audio-chain "
+	    "mode display is baseband audio processing, not RF generation.");
+}
+
+static void
+cp_tui_draw_small_screen(int rows, int cols)
+{
+	if (rows <= 0 || cols <= 0)
+		return;
+	cp_tui_draw_text(0, 0, cols, "CarrierPress TUI");
+	if (rows > 1)
+		cp_tui_draw_text(1, 0, cols, "Terminal too small: need at "
+		    "least %dx%d, current %dx%d", CP_TUI_MIN_COLS,
+		    CP_TUI_MIN_ROWS, cols, rows);
+	if (rows > 2)
+		cp_tui_draw_text(2, 0, cols, "Resize terminal or run without "
+		    "--tui. Press q to stop.");
+}
+
+static void
+cp_tui_draw_transport(int rows, int cols, const struct cp_tui_view *view,
+	enum cp_control_bank bank)
+{
+	char keys[CP_TUI_TEXT_SIZE];
 	const struct cp_audio_config *config;
 
 	config = view->config;
+	cp_tui_draw_box_line(0, cols, " CarrierPress Operator Panel ", 1);
 	if (view->mode == CP_TUI_MODE_PLAYOUT) {
-		mvprintw(1, 2, "CarrierPress playout monitor");
 		if (view->playlist_count > 0) {
-			mvprintw(2, 2, "track %zu/%zu  rate %0.0f Hz  "
-			    "channels %zu  block %zu  output_device %d",
+			cp_tui_draw_text(1, 2, cols, "Transport PLAYLIST "
+			    "track %zu/%zu | rate %.0f Hz | channels %zu | "
+			    "block %zu | output %d",
 			    view->playlist_index + 1, view->playlist_count,
 			    config->sample_rate, config->channels,
-			    config->block_size,
-			    view->output_device);
+			    config->block_size, view->output_device);
 		} else {
-			mvprintw(2, 2, "single file  rate %0.0f Hz  "
-			    "channels %zu  block %zu  output_device %d",
+			cp_tui_draw_text(1, 2, cols, "Transport PLAY file | "
+			    "rate %.0f Hz | channels %zu | block %zu | "
+			    "output %d",
 			    config->sample_rate, config->channels,
-			    config->block_size,
-			    view->output_device);
+			    config->block_size, view->output_device);
 		}
-		mvprintw(3, 2, "file %s", view->path == NULL ? "" :
-		    view->path);
+		cp_tui_draw_text(2, 2, cols, "Source %s",
+		    view->path == NULL ? "" : view->path);
+	} else {
+		cp_tui_draw_text(1, 2, cols, "Transport LIVE | rate %.0f Hz | "
+		    "channels %zu | block %zu | input %d | output %d",
+		    config->sample_rate, config->channels, config->block_size,
+		    config->input_device, config->output_device);
+		cp_tui_draw_text(2, 2, cols, "Backend %s | device %s",
+		    cp_audio_backend_string(config->backend),
+		    config->device_name == NULL ||
+		    config->device_name[0] == '\0' ? "auto" :
+		    config->device_name);
+	}
+
+	if (cp_tui_format_key_help(view, bank, keys,
+	    sizeof(keys)) == CP_OK && rows > 0)
+		cp_tui_draw_text(rows - 1, 1, cols, "%s", keys);
+}
+
+static void
+cp_tui_draw_text(int row, int col, int cols, const char *format, ...)
+{
+	char buffer[CP_TUI_TEXT_SIZE];
+	va_list ap;
+	int available;
+	int written;
+
+	if (row < 0 || col < 0 || cols <= col || format == NULL)
+		return;
+
+	available = cols - col;
+	if (available <= 0)
+		return;
+
+	va_start(ap, format);
+	written = vsnprintf(buffer, sizeof(buffer), format, ap);
+	va_end(ap);
+	if (written < 0)
+		return;
+	if ((size_t)written >= sizeof(buffer))
+		buffer[sizeof(buffer) - 1] = '\0';
+
+	mvaddnstr(row, col, buffer, available);
+}
+
+static void
+cp_tui_flags_append(char *buffer, size_t buffer_size, const char *text)
+{
+	size_t length;
+	size_t used;
+
+	if (buffer == NULL || buffer_size == 0 || text == NULL)
+		return;
+	used = strlen(buffer);
+	length = strlen(text);
+	if (used >= buffer_size - 1u || length >= buffer_size - used)
+		return;
+	(void)strncat(buffer, text, buffer_size - used - 1u);
+}
+
+static void
+cp_tui_format_flags(char *buffer, size_t buffer_size, unsigned int flags)
+{
+	if (buffer == NULL || buffer_size == 0)
+		return;
+	if (flags == 0u) {
+		cp_tui_snprintf(buffer, buffer_size, "none");
 		return;
 	}
 
-	mvprintw(1, 2, "CarrierPress live monitor");
-	mvprintw(2, 2, "rate %0.0f Hz  channels %zu  block %zu  "
-	    "input_device %d  output_device %d",
-	    config->sample_rate, config->channels, config->block_size,
-	    config->input_device, config->output_device);
-}
-
-static void
-cp_tui_draw_multiband(int row, const char *label, unsigned int enabled,
-	int preset, size_t band_count, const unsigned int *band_rms,
-	const int *band_gr_db_centibel)
-{
-	const char *preset_name;
-	size_t band;
-
-	preset_name = cp_multiband_preset_string(
-	    (enum cp_multiband_preset)preset);
-	if (preset_name == NULL)
-		preset_name = "unknown";
-
-	mvprintw(row, 2, "%s %s bands %zu preset %s", label,
-	    enabled ? "on" : "off", band_count, preset_name);
-	for (band = 0; band < band_count && band < CP_MONITOR_MAX_BANDS;
-	    band++) {
-		printw("  B%zu %0.3f/%0.2f", band + 1,
-		    cp_monitor_level_to_sample(band_rms[band]),
-		    cp_monitor_centibel_to_db(band_gr_db_centibel[band]));
-	}
-}
-
-static void
-cp_tui_draw_natural(int row, const struct cp_monitor_snapshot *snapshot)
-{
-	mvprintw(row, 2, "Natural %s GR %0.2f dB  Low boost %s gain %0.3f "
-	    "%0.2f dB %s",
-	    snapshot->natural_dynamics_enabled ? "on" : "off",
-	    cp_monitor_centibel_to_db(
-	    snapshot->natural_dynamics_gr_db_centibel),
-	    snapshot->low_level_boost_enabled ? "on" : "off",
-	    cp_monitor_level_to_sample(snapshot->low_level_boost_gain),
-	    cp_monitor_centibel_to_db(
-	    snapshot->low_level_boost_gain_db_centibel),
-	    cp_agc_state_string((enum cp_agc_gate_state)
-	    snapshot->low_level_boost_state));
-}
-
-static void
-cp_tui_draw_keys(const struct cp_tui_view *view, enum cp_control_bank bank)
-{
-	const char *preset_keys;
-
-	if (bank == CP_CONTROL_BANK_SSB)
-		preset_keys = "0 SSB off  1 speech  2 narrow  3 wide  "
-		    "4 gentle";
-	else
-		preset_keys = "0 AM off  1 safe  2 shortwave  3 wide  "
-		    "4 voice";
-
-	if (view->mode == CP_TUI_MODE_PLAYOUT && view->next_enabled) {
-		mvprintw(24, 2,
-		    "Keys: a AM  s SSB  d hum  m mb1  b mb2  %s  n next  q stop",
-		    preset_keys);
-		return;
-	}
-	mvprintw(24, 2, "Keys: a AM  s SSB  d hum  m mb1  b mb2  %s  q stop",
-	    preset_keys);
+	buffer[0] = '\0';
+	if ((flags & CP_MONITOR_INPUT_UNDERFLOW) != 0)
+		cp_tui_flags_append(buffer, buffer_size, "in_underflow ");
+	if ((flags & CP_MONITOR_INPUT_OVERFLOW) != 0)
+		cp_tui_flags_append(buffer, buffer_size, "in_overflow ");
+	if ((flags & CP_MONITOR_OUTPUT_UNDERFLOW) != 0)
+		cp_tui_flags_append(buffer, buffer_size, "out_underflow ");
+	if ((flags & CP_MONITOR_OUTPUT_OVERFLOW) != 0)
+		cp_tui_flags_append(buffer, buffer_size, "out_overflow ");
+	if ((flags & CP_MONITOR_PRIMING_OUTPUT) != 0)
+		cp_tui_flags_append(buffer, buffer_size, "priming ");
 }
 
 static enum cp_control_bank
@@ -472,19 +627,16 @@ cp_tui_initial_bank(const struct cp_tui_view *view)
 	return CP_CONTROL_BANK_AM;
 }
 
-static int
-cp_tui_level_columns(cp_sample_t value, cp_sample_t full_scale)
+static const char *
+cp_tui_processing_mode_name(enum cp_tui_processing_mode mode)
 {
-	cp_sample_t ratio;
-
-	if (!isfinite(value) || value <= 0.0f || full_scale <= 0.0f)
-		return 0;
-
-	ratio = value / full_scale;
-	if (ratio >= 1.0f)
-		return CP_TUI_BAR_WIDTH;
-	if (ratio <= 0.0f)
-		return 0;
-
-	return (int)lrintf(ratio * (cp_sample_t)CP_TUI_BAR_WIDTH);
+	switch (mode) {
+	case CP_TUI_PROCESSING_AM:
+		return "AM";
+	case CP_TUI_PROCESSING_SSB:
+		return "SSB";
+	case CP_TUI_PROCESSING_NEUTRAL:
+	default:
+		return "NEUTRAL";
+	}
 }

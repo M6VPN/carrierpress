@@ -31,6 +31,12 @@ struct cp_tui_view {
 };
 
 void	cp_tui_close(struct cp_tui *);
+const char
+	*cp_tui_active_mode_string(const struct cp_monitor_snapshot *);
+int	cp_tui_format_key_help(const struct cp_tui_view *,
+	    enum cp_control_bank, char *, size_t);
+int	cp_tui_format_mode_status(const struct cp_monitor_snapshot *,
+	    enum cp_control_bank, char *, size_t);
 int	cp_tui_init(struct cp_tui *);
 int	cp_tui_update(struct cp_tui *, const struct cp_audio_config *,
 	    const struct cp_monitor_snapshot *, struct cp_control_command *);

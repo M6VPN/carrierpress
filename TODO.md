@@ -17,22 +17,22 @@ implemented until code, docs, and validation are complete.
 
 ## T1 TUI Usability Cleanup
 
-- [ ] Define the target ncurses style as a clear Borland-like operator panel.
-- [ ] Split the screen into stable regions for transport, mode, devices, meters,
+- [x] Define the target ncurses style as a clear Borland-like operator panel.
+- [x] Split the screen into stable regions for transport, mode, devices, meters,
       processing chain, and key help.
-- [ ] Make AM, SSB, and neutral mode state visually unambiguous.
-- [ ] Show when AM controls are locked because SSB mode is active, and when SSB
+- [x] Make AM, SSB, and neutral mode state visually unambiguous.
+- [x] Show when AM controls are locked because SSB mode is active, and when SSB
       controls are locked because AM mode is active.
-- [ ] Group input meters, output meters, AGC state, limiter state, and stream
+- [x] Group input meters, output meters, AGC state, limiter state, and stream
       flags in a consistent meter panel.
-- [ ] Group dehummer, restoration, declipper, dynamics, low-level boost, AGC,
+- [x] Group dehummer, restoration, declipper, dynamics, low-level boost, AGC,
       multiband, bass EQ, AM, SSB, and limiter state in chain order.
-- [ ] Add a compact key legend that changes with live, play, and playlist mode.
-- [ ] Keep TUI support behind `WITH_TUI=1`.
-- [ ] Keep TUI commands preset-based until arbitrary parameter editing has a
+- [x] Add a compact key legend that changes with live, play, and playlist mode.
+- [x] Keep TUI support behind `WITH_TUI=1`.
+- [x] Keep TUI commands preset-based until arbitrary parameter editing has a
       dedicated validation pass.
-- [ ] Add non-interactive tests for TUI state formatting where practical.
-- [ ] Add manual terminal-size test notes for 80x24 and wider terminals.
+- [x] Add non-interactive tests for TUI state formatting where practical.
+- [x] Add manual terminal-size test notes for 80x24 and wider terminals.
 
 ## T2 Build Auto-Detection Cleanup
 

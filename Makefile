@@ -111,6 +111,7 @@ FEATURE_DIR := $(FEATURE_DIR)-tui
 CPPFLAGS += -DCP_WITH_TUI
 LDLIBS	+= -lncurses
 CORE_SRCS += src/cp_tui.c
+TEST_SRCS += tests/test_tui.c
 TUI_ORDER = check-tui
 endif
 
@@ -165,6 +166,10 @@ endif
 
 ifeq ($(PLAYOUT_ENABLED),1)
 TEST_BINS += $(TEST_BIN_DIR)/test_playout
+endif
+
+ifeq ($(WITH_TUI),1)
+TEST_BINS += $(TEST_BIN_DIR)/test_tui
 endif
 
 all: carrierpress
@@ -303,6 +308,10 @@ $(TEST_BIN_DIR)/test_ssb: $(TEST_OBJ_DIR)/tests/test_ssb.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_ssb.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_tui: $(TEST_OBJ_DIR)/tests/test_tui.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_tui.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_playout: $(TEST_OBJ_DIR)/tests/test_playout.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_playout.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -350,6 +359,9 @@ ifeq ($(WITH_SNDFILE),1)
 endif
 ifeq ($(PLAYOUT_ENABLED),1)
 	./$(TEST_BIN_DIR)/test_playout
+endif
+ifeq ($(WITH_TUI),1)
+	./$(TEST_BIN_DIR)/test_tui
 endif
 
 validate: $(VALIDATION_BINS)
@@ -419,7 +431,7 @@ clean:
 	rm -f tests/test_professional_check
 	rm -f tests/test_quality_report
 	rm -f tests/test_resampler tests/test_restoration tests/test_ssb
-	rm -f tests/test_playout tests/test_validation tests/test_wav
+	rm -f tests/test_playout tests/test_tui tests/test_validation tests/test_wav
 	rm -f tests/playout_bad.txt tests/playout_good.txt
 	rm -f tests/playout_report.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
