@@ -134,6 +134,11 @@ the local vendored path.
 - Confirm T3 PTT control remains deferred and unchecked.
 - Confirm `docs/cat-ptt-safety.md` is present and linked.
 - Confirm `docs/gui-visual-regression.md` is present for GUI smoke checks.
+- Confirm `docs/release-notes-v0.1.md` is ready for the release body.
+- Confirm `docs/release-procedure.md` is followed manually for tags and GitHub
+  draft releases.
+- Confirm `docs/release-assets-v0.1.md` lists only optional local evidence
+  assets.
 - Confirm `git status --short` contains only intentional release changes.
 - Draft release notes that list implemented audio and host features as v0.1
   foundations, not final broadcast-processing claims.

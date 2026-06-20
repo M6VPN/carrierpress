@@ -136,6 +136,11 @@ make release-check
 
 Release validation and manual tag checks are documented in
 [`docs/release-checklist.md`](docs/release-checklist.md).
+Release notes, the manual GitHub release procedure, and optional local release
+asset guidance are documented in
+[`docs/release-notes-v0.1.md`](docs/release-notes-v0.1.md),
+[`docs/release-procedure.md`](docs/release-procedure.md), and
+[`docs/release-assets-v0.1.md`](docs/release-assets-v0.1.md).
 
 Build with optional WAV support:
 

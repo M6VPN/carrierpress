@@ -103,3 +103,13 @@ implemented until code, docs, and validation are complete.
 - [x] Keep optional dependency checks opt-in.
 - [x] Document local Hamlib 4.7.1 validation without hardcoding the path.
 - [x] Preserve read-only CAT and deferred PTT-control status.
+
+## R2 v0.1 Release Notes and Procedure
+
+- [x] Add v0.1 release notes with safety and limitation wording.
+- [x] Add a manual local GitHub release procedure.
+- [x] Document example local release evidence assets.
+- [x] Keep tag creation and GitHub release publication as manual commands.
+- [x] Keep release docs free of RF generation, transmitter compliance, and
+      regulatory approval claims.
+- [x] Preserve read-only CAT and deferred PTT-control status.
