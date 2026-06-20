@@ -3,6 +3,7 @@
 
 CC	?= cc
 AR	?= ar
+PKG_CONFIG ?= pkg-config
 CFLAGS	?= -std=c17 -Wall -Wextra -Wconversion -Wsign-conversion -pedantic
 CPPFLAGS += -Iinclude
 LDLIBS	+= -lm
@@ -10,6 +11,7 @@ WITH_SNDFILE ?= 0
 WITH_PORTAUDIO ?= 0
 WITH_SNDIO ?= 0
 WITH_TUI ?= 0
+WITH_GUI ?= 0
 WITH_HAMLIB ?= 0
 WITH_FLRIG ?= 0
 
@@ -34,6 +36,7 @@ CORE_SRCS = \
 	src/cp_dc_blocker.c \
 	src/cp_declipper.c \
 	src/cp_dehummer.c \
+	src/cp_gui_format.c \
 	src/cp_limiter.c \
 	src/cp_low_level_boost.c \
 	src/cp_meter.c \
@@ -61,6 +64,7 @@ TEST_SRCS = \
 	tests/test_dc_blocker.c \
 	tests/test_declipper.c \
 	tests/test_dehummer.c \
+	tests/test_gui_format.c \
 	tests/test_limiter.c \
 	tests/test_low_level_boost.c \
 	tests/test_meter.c \
@@ -134,14 +138,23 @@ TEST_SRCS += tests/test_tui.c
 TUI_ORDER = check-tui
 endif
 
+ifeq ($(WITH_GUI),1)
+FEATURE_DIR := $(FEATURE_DIR)-gui
+CPPFLAGS += -DCP_WITH_GUI -DCP_WITH_GUI_SDL3 \
+	$(shell $(PKG_CONFIG) --cflags sdl3 2>/dev/null)
+LDLIBS += $(shell $(PKG_CONFIG) --libs sdl3 2>/dev/null)
+CORE_SRCS += src/cp_gui_sdl3.c
+GUI_ORDER = check-gui
+endif
+
 FEATURE_SUMMARY_ORDER =
-ifneq ($(WITH_SNDFILE)$(WITH_PORTAUDIO)$(WITH_SNDIO)$(WITH_TUI)$(WITH_HAMLIB)$(WITH_FLRIG),000000)
+ifneq ($(WITH_SNDFILE)$(WITH_PORTAUDIO)$(WITH_SNDIO)$(WITH_TUI)$(WITH_GUI)$(WITH_HAMLIB)$(WITH_FLRIG),0000000)
 FEATURE_SUMMARY_ORDER = feature-summary
 endif
 
 BACKEND_ORDER = $(FEATURE_SUMMARY_ORDER) $(SNDFILE_ORDER) \
-	$(PORTAUDIO_ORDER) $(SNDIO_ORDER) $(TUI_ORDER) $(HAMLIB_ORDER) \
-	$(FLRIG_ORDER)
+	$(PORTAUDIO_ORDER) $(SNDIO_ORDER) $(TUI_ORDER) $(GUI_ORDER) \
+	$(HAMLIB_ORDER) $(FLRIG_ORDER)
 
 APP_CORE_OBJS = $(CORE_SRCS:src/%.c=$(APP_OBJ_DIR)/src/%.o)
 APP_OBJS = $(APP_CORE_OBJS) $(APP_SRCS:src/%.c=$(APP_OBJ_DIR)/src/%.o)
@@ -171,6 +184,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_dc_blocker \
 	$(TEST_BIN_DIR)/test_declipper \
 	$(TEST_BIN_DIR)/test_dehummer \
+	$(TEST_BIN_DIR)/test_gui_format \
 	$(TEST_BIN_DIR)/test_limiter \
 	$(TEST_BIN_DIR)/test_low_level_boost \
 	$(TEST_BIN_DIR)/test_meter \
@@ -207,6 +221,7 @@ autodetect:
 	@mkdir -p $(BUILD_DIR)
 	@set -e; \
 	sndfile=0; portaudio=0; ncurses=0; tui=0; sndio=0; \
+	gui=0; \
 	if printf '#include <sndfile.h>\nint main(void) { return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/autodetect-sndfile -lsndfile >/dev/null 2>&1; then \
 		sndfile=1; \
 	else \
@@ -231,6 +246,12 @@ autodetect:
 		printf 'missing: sndio development package/library. Install sndio (for example sndio, sndio-devel, or libsndio-dev).\n'; \
 	fi; \
 	rm -f $(BUILD_DIR)/autodetect-sndio; \
+	if $(PKG_CONFIG) --exists sdl3 >/dev/null 2>&1 && printf '#include <SDL3/SDL.h>\nint main(void) { SDL_Renderer *r = 0; (void)r; return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) $$($(PKG_CONFIG) --cflags sdl3) -x c - -o $(BUILD_DIR)/autodetect-gui $$($(PKG_CONFIG) --libs sdl3) >/dev/null 2>&1; then \
+		gui=1; \
+	else \
+		printf 'missing: SDL3 development package/library. Install SDL3, libsdl3-dev, SDL3-devel, or sdl3.\n'; \
+	fi; \
+	rm -f $(BUILD_DIR)/autodetect-gui; \
 	if [ "$$portaudio" = 1 ] && [ "$$ncurses" = 1 ]; then \
 		tui=1; \
 	fi; \
@@ -238,6 +259,7 @@ autodetect:
 	printf '  libsndfile: %s\n' "$$([ "$$sndfile" = 1 ] && printf enabled || printf disabled)"; \
 	printf '  PortAudio: %s\n' "$$([ "$$portaudio" = 1 ] && printf enabled || printf disabled)"; \
 	printf '  ncurses TUI: %s\n' "$$([ "$$tui" = 1 ] && printf enabled || printf disabled)"; \
+	printf '  SDL3 GUI: %s (manual WITH_GUI=1, not auto-enabled)\n' "$$([ "$$gui" = 1 ] && printf detected || printf missing)"; \
 	printf '  sndio: %s (deferred Linux path, not auto-enabled)\n' "$$([ "$$sndio" = 1 ] && printf detected || printf missing)"; \
 	printf '  hamlib CAT: manual WITH_HAMLIB=1 (not auto-enabled)\n'; \
 	printf '  flrig CAT: manual WITH_FLRIG=1 (not auto-enabled)\n'; \
@@ -313,6 +335,10 @@ $(TEST_BIN_DIR)/test_dehummer: $(TEST_OBJ_DIR)/tests/test_dehummer.o $(TEST_CORE
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_dehummer.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_gui_format: $(TEST_OBJ_DIR)/tests/test_gui_format.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_gui_format.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_limiter: $(TEST_OBJ_DIR)/tests/test_limiter.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_limiter.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -387,6 +413,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_crossover
 	./$(TEST_BIN_DIR)/test_declipper
 	./$(TEST_BIN_DIR)/test_dehummer
+	./$(TEST_BIN_DIR)/test_gui_format
 	./$(TEST_BIN_DIR)/test_limiter
 	./$(TEST_BIN_DIR)/test_low_level_boost
 	./$(TEST_BIN_DIR)/test_meter
@@ -427,6 +454,7 @@ feature-summary:
 	@printf '  libsndfile: %s\n' "$$([ "$(WITH_SNDFILE)" = 1 ] && printf enabled || printf disabled)"
 	@printf '  PortAudio: %s\n' "$$([ "$(WITH_PORTAUDIO)" = 1 ] && printf enabled || printf disabled)"
 	@printf '  ncurses TUI: %s\n' "$$([ "$(WITH_TUI)" = 1 ] && printf enabled || printf disabled)"
+	@printf '  SDL3 GUI: %s%s\n' "$$([ "$(WITH_GUI)" = 1 ] && printf enabled || printf disabled)" "$$([ "$(WITH_GUI)" = 1 ] && printf ' (monitor)' || printf ' (manual WITH_GUI=1)')"
 	@printf '  sndio: %s%s\n' "$$([ "$(WITH_SNDIO)" = 1 ] && printf enabled || printf disabled)" "$$([ "$(WITH_SNDIO)" = 1 ] && printf ' (deferred Linux path)' || printf '')"
 	@printf '  hamlib CAT: %s%s\n' "$$([ "$(WITH_HAMLIB)" = 1 ] && printf enabled || printf disabled)" "$$([ "$(WITH_HAMLIB)" = 1 ] && printf ' (read-only)' || printf ' (manual WITH_HAMLIB=1)')"
 	@printf '  flrig CAT: %s%s\n' "$$([ "$(WITH_FLRIG)" = 1 ] && printf enabled || printf disabled)" "$$([ "$(WITH_FLRIG)" = 1 ] && printf ' (read-only XML-RPC)' || printf ' (manual WITH_FLRIG=1)')"
@@ -450,6 +478,12 @@ check-tui:
 	@mkdir -p $(BUILD_DIR)
 	@printf '#include <curses.h>\nint main(void) { initscr(); endwin(); return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/check-tui -lncurses >/dev/null 2>&1 || { printf 'error: missing ncurses development package/library. Install ncurses (for example libncurses-dev, ncurses-devel, or ncurses).\n'; exit 1; }
 	@rm -f $(BUILD_DIR)/check-tui
+
+check-gui:
+	@mkdir -p $(BUILD_DIR)
+	@$(PKG_CONFIG) --exists sdl3 >/dev/null 2>&1 || { printf 'error: missing SDL3 development package/library. Install SDL3, libsdl3-dev, SDL3-devel, or sdl3.\n'; exit 1; }
+	@printf '#include <SDL3/SDL.h>\nint main(void) { SDL_Window *w = 0; SDL_Renderer *r = 0; (void)SDL_CreateWindowAndRenderer("test", 32, 32, 0, &w, &r); if (r != 0) (void)SDL_RenderDebugText(r, 0.0f, 0.0f, "x"); return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) $$($(PKG_CONFIG) --cflags sdl3) -x c - -o $(BUILD_DIR)/check-gui $$($(PKG_CONFIG) --libs sdl3) >/dev/null 2>&1 || { printf 'error: missing SDL3 development package/library. Install SDL3, libsdl3-dev, SDL3-devel, or sdl3.\n'; exit 1; }
+	@rm -f $(BUILD_DIR)/check-gui
 
 check-flrig:
 	@mkdir -p $(BUILD_DIR)
@@ -484,6 +518,7 @@ clean:
 	rm -f tests/test_compressor tests/test_crossover
 	rm -f tests/test_control
 	rm -f tests/test_dc_blocker tests/test_declipper tests/test_dehummer
+	rm -f tests/test_gui_format
 	rm -f tests/test_limiter tests/test_low_level_boost tests/test_meter
 	rm -f tests/test_monitor tests/test_multiband
 	rm -f tests/test_natural_dynamics
@@ -495,4 +530,4 @@ clean:
 	rm -f tests/playout_report.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all autodetect check-flrig check-hamlib check-portaudio check-sndfile check-sndio check-tui clean feature-summary professional-check quality test validate
+.PHONY: all autodetect check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean feature-summary professional-check quality test validate

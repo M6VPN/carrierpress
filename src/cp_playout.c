@@ -16,6 +16,9 @@
 #include "cp_cat.h"
 #include "cp_control.h"
 #include "cp_declipper.h"
+#ifdef CP_WITH_GUI
+#include "cp_gui.h"
+#endif
 #include "cp_playout.h"
 #include "cp_restoration.h"
 #include "cp_resampler.h"
@@ -241,6 +244,13 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	struct cp_tui tui;
 	struct cp_tui_view tui_view;
 #endif
+#if defined(CP_WITH_GUI) && !defined(CP_WITH_TUI)
+	struct cp_cat_snapshot cat_snapshot;
+#endif
+#ifdef CP_WITH_GUI
+	struct cp_gui gui;
+	struct cp_gui_view gui_view;
+#endif
 	sf_count_t frames_read;
 	size_t block_frames;
 	size_t block_samples;
@@ -264,8 +274,15 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 		return status;
 	if (!cp_playout_path_is_wav(path))
 		return CP_PLAYOUT_ERR_UNSUPPORTED;
+	if (config->audio_config.tui_enabled &&
+	    config->audio_config.gui_enabled)
+		return CP_PLAYOUT_ERR_AUDIO;
 #ifndef CP_WITH_TUI
 	if (config->audio_config.tui_enabled)
+		return CP_PLAYOUT_ERR_AUDIO;
+#endif
+#ifndef CP_WITH_GUI
+	if (config->audio_config.gui_enabled)
 		return CP_PLAYOUT_ERR_AUDIO;
 #endif
 
@@ -437,8 +454,27 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 		return CP_PLAYOUT_ERR_AUDIO;
 	}
 #endif
+#ifdef CP_WITH_GUI
+	gui.active = 0;
+	if (audio_config.gui_enabled && cp_gui_init(&gui) != CP_OK) {
+#ifdef CP_WITH_TUI
+		cp_tui_close(&tui);
+#endif
+		Pa_CloseStream(stream);
+		Pa_Terminate();
+		free(input);
+		free(output);
+		free(resampled);
+		free(scratch);
+		sf_close(input_file);
+		return CP_PLAYOUT_ERR_AUDIO;
+	}
+#endif
 	error = Pa_StartStream(stream);
 	if (error != paNoError) {
+#ifdef CP_WITH_GUI
+		cp_gui_close(&gui);
+#endif
 #ifdef CP_WITH_TUI
 		cp_tui_close(&tui);
 #endif
@@ -452,7 +488,7 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 		return CP_PLAYOUT_ERR_STREAM;
 	}
 
-	if (!audio_config.tui_enabled) {
+	if (!audio_config.tui_enabled && !audio_config.gui_enabled) {
 		if (resampling) {
 			printf("playing: %s input_rate=%0.0f output_rate=%0.0f "
 			    "channels=%zu output_device=%d resampler=linear\n",
@@ -539,6 +575,31 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 			continue;
 		}
 #endif
+#ifdef CP_WITH_GUI
+		if (audio_config.gui_enabled) {
+			(void)cp_cat_snapshot_update(&config->cat_config,
+			    &cat_snapshot);
+			memset(&gui_view, 0, sizeof(gui_view));
+			gui_view.mode           = CP_GUI_MODE_PLAYOUT;
+			gui_view.config         = &audio_config;
+			gui_view.snapshot       = &snapshot;
+			gui_view.cat_snapshot   = &cat_snapshot;
+			gui_view.path           = path;
+			gui_view.playlist_index = config->playlist_index;
+			gui_view.playlist_count = config->playlist_count;
+			gui_view.output_device  = (int)output_device;
+			if (cp_gui_update(&gui, &gui_view) != CP_OK) {
+				result = CP_PLAYOUT_ERR_AUDIO;
+				break;
+			}
+			if (cp_gui_should_stop(&gui)) {
+				if (config->stop_requested != NULL)
+					*config->stop_requested = 1;
+				break;
+			}
+			continue;
+		}
+#endif
 		if (process_frames >= frames_until_meter) {
 			cp_playout_print_meters(&snapshot);
 			frames_until_meter = meter_frames;
@@ -549,7 +610,8 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	if (!cp_playout_should_stop(config) && frames_read < 0 &&
 	    result == CP_PLAYOUT_OK)
 		result = CP_PLAYOUT_ERR_READ;
-	if (result == CP_PLAYOUT_OK && !audio_config.tui_enabled) {
+	if (result == CP_PLAYOUT_OK && !audio_config.tui_enabled &&
+	    !audio_config.gui_enabled) {
 		status = cp_playout_build_snapshot(&processor, &snapshot);
 		if (status == CP_PLAYOUT_OK)
 			cp_playout_print_meters(&snapshot);
@@ -558,6 +620,9 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	Pa_StopStream(stream);
 #ifdef CP_WITH_TUI
 	cp_tui_close(&tui);
+#endif
+#ifdef CP_WITH_GUI
+	cp_gui_close(&gui);
 #endif
 	Pa_CloseStream(stream);
 	Pa_Terminate();

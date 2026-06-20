@@ -13,6 +13,7 @@
 
 #include "carrierpress.h"
 #include "cp_cat.h"
+#include "cp_gui.h"
 #include "cp_playout.h"
 #include "cp_portaudio.h"
 #include "cp_sndio.h"
@@ -41,6 +42,8 @@ static int	parse_size_arg(const char *, size_t *);
 static int	parse_uint_arg(const char *, unsigned int *);
 static int	parse_uint64_arg(const char *, uint64_t *);
 static int	run_cat_status(const struct cp_cat_config *);
+static int	run_gui_demo(const struct cp_audio_config *,
+		    const struct cp_cat_config *);
 static int	run_list_devices(void);
 static int	run_live_audio(const struct cp_audio_config *,
 		    const struct cp_cat_config *);
@@ -75,6 +78,7 @@ main(int argc, char *argv[])
 	int arg;
 	int cat_status_mode;
 	int channels_explicit;
+	int gui_demo_mode;
 	int live_mode;
 	int list_devices;
 	int self_test_mode;
@@ -85,6 +89,7 @@ main(int argc, char *argv[])
 	playlist_path = NULL;
 	cat_status_mode = 0;
 	channels_explicit = 0;
+	gui_demo_mode = 0;
 	live_mode    = 0;
 	list_devices = 0;
 	self_test_mode = 0;
@@ -315,6 +320,21 @@ main(int argc, char *argv[])
 			audio_config.tui_enabled = 1;
 #else
 			printf("TUI support not enabled. Rebuild with WITH_TUI=1.\n");
+			return 1;
+#endif
+		} else if (strcmp(argv[arg], "--gui") == 0) {
+#ifdef CP_WITH_GUI
+			audio_config.gui_enabled = 1;
+#else
+			printf("GUI support not enabled. Rebuild with WITH_GUI=1.\n");
+			return 1;
+#endif
+		} else if (strcmp(argv[arg], "--gui-demo") == 0) {
+#ifdef CP_WITH_GUI
+			gui_demo_mode = 1;
+			audio_config.gui_enabled = 1;
+#else
+			printf("GUI support not enabled. Rebuild with WITH_GUI=1.\n");
 			return 1;
 #endif
 		} else if (strcmp(argv[arg], "--input-device") == 0 &&
@@ -597,11 +617,27 @@ main(int argc, char *argv[])
 		usage(argv[0]);
 		return 1;
 	}
+	if (audio_config.tui_enabled && audio_config.gui_enabled) {
+		usage(argv[0]);
+		return 1;
+	}
+
+	if (gui_demo_mode) {
+		if (input_path != NULL || output_path != NULL ||
+		    play_path != NULL || playlist_path != NULL || live_mode ||
+		    list_devices || self_test_mode || cat_status_mode) {
+			usage(argv[0]);
+			return 1;
+		}
+
+		return run_gui_demo(&audio_config, &cat_config);
+	}
 
 	if (cat_status_mode) {
 		if (input_path != NULL || output_path != NULL ||
 		    play_path != NULL || playlist_path != NULL ||
-		    live_mode || list_devices || self_test_mode) {
+		    live_mode || list_devices || self_test_mode ||
+		    audio_config.gui_enabled) {
 			usage(argv[0]);
 			return 1;
 		}
@@ -611,8 +647,8 @@ main(int argc, char *argv[])
 
 	if (self_test_mode) {
 		if (input_path != NULL || output_path != NULL ||
-		    play_path != NULL || playlist_path != NULL ||
-		    live_mode || list_devices) {
+		    play_path != NULL || playlist_path != NULL || live_mode ||
+		    list_devices || audio_config.gui_enabled) {
 			usage(argv[0]);
 			return 1;
 		}
@@ -641,7 +677,7 @@ main(int argc, char *argv[])
 	}
 
 	if (input_path != NULL || output_path != NULL) {
-		if (live_mode || list_devices) {
+		if (live_mode || list_devices || audio_config.gui_enabled) {
 			usage(argv[0]);
 			return 1;
 		}
@@ -654,7 +690,7 @@ main(int argc, char *argv[])
 	}
 
 	if (list_devices) {
-		if (live_mode) {
+		if (live_mode || audio_config.gui_enabled) {
 			usage(argv[0]);
 			return 1;
 		}
@@ -846,6 +882,81 @@ run_cat_status(const struct cp_cat_config *config)
 }
 
 static int
+run_gui_demo(const struct cp_audio_config *config,
+	const struct cp_cat_config *cat_config)
+{
+#ifdef CP_WITH_GUI
+	struct cp_cat_snapshot cat_snapshot;
+	struct cp_gui gui;
+	struct cp_gui_view view;
+	struct cp_monitor_snapshot snapshot;
+	unsigned int tick;
+	cp_sample_t phase;
+	cp_sample_t level;
+	int status;
+
+	if (config == NULL || cat_config == NULL)
+		return 1;
+
+	stop_requested = 0;
+	if (signal(SIGINT, handle_signal) == SIG_ERR ||
+	    signal(SIGTERM, handle_signal) == SIG_ERR) {
+		printf("carrierpress: could not install signal handler\n");
+		return 1;
+	}
+
+	status = cp_gui_init(&gui);
+	if (status != CP_OK) {
+		printf("carrierpress: GUI failed to start\n");
+		return 1;
+	}
+
+	tick = 0;
+	while (!stop_requested && !cp_gui_should_stop(&gui)) {
+		cp_monitor_snapshot_clear(&snapshot);
+		phase = (cp_sample_t)(tick % 100u) / 100.0f;
+		level = 0.18f + 0.62f * fabsf(sinf(phase * CP_TWO_PI));
+		snapshot.input_peak = cp_monitor_sample_to_level(level);
+		snapshot.input_rms = cp_monitor_sample_to_level(level * 0.55f);
+		snapshot.output_peak = cp_monitor_sample_to_level(level * 0.8f);
+		snapshot.output_rms = cp_monitor_sample_to_level(level * 0.45f);
+		snapshot.agc_gain = cp_monitor_sample_to_level(0.92f);
+		snapshot.agc_gain_db_centibel = cp_monitor_db_to_centibel(-0.7f);
+		snapshot.agc_state = CP_AGC_GATE_OPEN;
+		snapshot.dehummer_enabled = 1;
+		snapshot.restoration_enabled = 1;
+		snapshot.multiband_enabled = 1;
+		snapshot.bass_eq_enabled = 1;
+		snapshot.ssb_enabled = 1;
+		if ((tick % 20u) == 0)
+			snapshot.stream_flags = CP_MONITOR_PRIMING_OUTPUT;
+
+		(void)cp_cat_snapshot_update(cat_config, &cat_snapshot);
+		memset(&view, 0, sizeof(view));
+		view.mode = CP_GUI_MODE_DEMO;
+		view.config = config;
+		view.snapshot = &snapshot;
+		view.cat_snapshot = &cat_snapshot;
+		view.output_device = config->output_device;
+		status = cp_gui_update(&gui, &view);
+		if (status != CP_OK)
+			break;
+		tick++;
+		cp_gui_delay_ms(50u);
+	}
+
+	cp_gui_close(&gui);
+	return status == CP_OK ? 0 : 1;
+#else
+	(void)config;
+	(void)cat_config;
+
+	printf("GUI support not enabled. Rebuild with WITH_GUI=1.\n");
+	return 1;
+#endif
+}
+
+static int
 run_list_devices(void)
 {
 #ifdef CP_WITH_PORTAUDIO
@@ -877,6 +988,12 @@ run_live_audio(const struct cp_audio_config *config,
 	if (status != CP_AUDIO_OK) {
 		printf("carrierpress: invalid live audio config: %s\n",
 		    cp_audio_status_string(status));
+		return 1;
+	}
+	if (config->gui_enabled &&
+	    config->backend == CP_AUDIO_BACKEND_SNDIO) {
+		printf("carrierpress: GUI live mode requires the PortAudio "
+		    "backend.\n");
 		return 1;
 	}
 
@@ -915,6 +1032,11 @@ run_live_audio(const struct cp_audio_config *config,
 
 	return 0;
 #else
+	if (config->gui_enabled) {
+		printf("PortAudio support not enabled. Rebuild with "
+		    "WITH_PORTAUDIO=1.\n");
+		return 1;
+	}
 #ifdef CP_WITH_SNDIO
 	if (config->backend == CP_AUDIO_BACKEND_AUTO ||
 	    config->backend == CP_AUDIO_BACKEND_DEFAULT) {
@@ -1315,6 +1437,8 @@ usage(const char *program)
 	printf("usage: %s --play input.wav [--output-device N]\n", program);
 	printf("usage: %s --playlist playlist.txt [--output-device N]\n",
 	    program);
+	printf("usage: %s --gui-demo --cat-backend mock --cat-frequency-hz "
+	    "14230000 --cat-mode USB --cat-ptt off\n", program);
 	printf("usage: %s --cat-backend mock --cat-frequency-hz 14230000 "
 	    "--cat-mode USB --cat-ptt off --cat-status\n", program);
 	printf("usage: %s --cat-backend flrig --cat-host 127.0.0.1 "
@@ -1331,6 +1455,7 @@ usage(const char *program)
 	    "--block-size 256\n", program);
 	printf("usage: %s --live --meter-interval-ms 1000\n", program);
 	printf("usage: %s --live --tui\n", program);
+	printf("usage: %s --live --gui\n", program);
 	printf("analysis option: --analyze\n");
 	printf("auto EQ analysis option: --auto-eq-analyze "
 	    "--bass-eq-recommend\n");

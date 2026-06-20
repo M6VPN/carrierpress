@@ -201,6 +201,7 @@ cp_audio_default_config(struct cp_audio_config *config)
 	config->ssb_config.channel_count = config->channels;
 	config->ssb_config.sample_rate = (cp_sample_t)config->sample_rate;
 	config->tui_enabled = 0;
+	config->gui_enabled = 0;
 	(void)cp_audio_config_set_format(config, config->channels,
 	    config->sample_rate);
 }

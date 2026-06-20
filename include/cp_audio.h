@@ -97,6 +97,7 @@ struct cp_audio_config {
 	struct cp_restoration_config restoration_config;
 	struct cp_ssb_config ssb_config;
 	int tui_enabled;
+	int gui_enabled;
 };
 
 int		cp_audio_backend_from_string(const char *,

@@ -21,6 +21,8 @@ The DSP core does not include PortAudio, libsndfile, sndio, or embedded platform
 - `cp_cat_flrig` owns optional read-only flrig XML-RPC status polling.
 - `cp_cat_hamlib` owns optional read-only hamlib status polling.
 - `cp_tui` owns optional ncurses live monitoring.
+- `cp_gui_format` owns dependency-free GUI status text formatting.
+- `cp_gui_sdl3` owns optional SDL3 monitor rendering.
 
 This split keeps the core library usable for offline tools, live hosts, and embedded ports without forcing every dependency into every build.
 
@@ -57,6 +59,12 @@ the same snapshot fields. CAT backends do not send transmit commands, set
 frequency, set mode, or key PTT. The foreground live or playout loop may
 refresh a CAT snapshot for display; no CAT work runs inside the real-time audio
 callback.
+
+The optional SDL3 GUI monitor is a host-side display boundary. It consumes the
+same monitor and CAT snapshots used by text meters and the TUI. SDL rendering,
+event polling, and GUI shutdown checks run in the foreground live or playout
+loop, not in the PortAudio callback. T4A reserves waveform and spectrum panels
+for later work.
 
 Live TUI controls use a small command handoff. The foreground TUI validates key input into a preset command, stores one pending command atomically, and the callback applies it at the next block boundary. Playout TUI controls are applied between blocking file-output blocks. M7.4 keeps live and playout aligned by sharing host-to-DSP block config setup and processor snapshot extraction before live mode hands values to atomics. The sndio backend should keep using the same monitor snapshot and control boundary when deferred work resumes. The STM32H753 path should call the same block DSP model directly or through a CMSIS-DSP adapter when embedded work resumes.
 

@@ -15,6 +15,9 @@
 #include "cp_cat.h"
 #include "cp_control.h"
 #include "cp_declipper.h"
+#ifdef CP_WITH_GUI
+#include "cp_gui.h"
+#endif
 #include "cp_monitor.h"
 #include "cp_portaudio.h"
 #include "cp_restoration.h"
@@ -230,6 +233,13 @@ cp_portaudio_run(const struct cp_audio_config *config,
 	struct cp_tui tui;
 	struct cp_tui_view tui_view;
 #endif
+#if defined(CP_WITH_GUI) && !defined(CP_WITH_TUI)
+	struct cp_cat_snapshot cat_snapshot;
+#endif
+#ifdef CP_WITH_GUI
+	struct cp_gui gui;
+	struct cp_gui_view gui_view;
+#endif
 	int status;
 
 	status = cp_audio_validate_config(config);
@@ -237,8 +247,14 @@ cp_portaudio_run(const struct cp_audio_config *config,
 		return CP_PORTAUDIO_ERR_CONFIG;
 	if (cat_config == NULL || stop_requested == NULL)
 		return CP_PORTAUDIO_ERR_CONFIG;
+	if (config->tui_enabled && config->gui_enabled)
+		return CP_PORTAUDIO_ERR_CONFIG;
 #ifndef CP_WITH_TUI
 	if (config->tui_enabled)
+		return CP_PORTAUDIO_ERR_CONFIG;
+#endif
+#ifndef CP_WITH_GUI
+	if (config->gui_enabled)
 		return CP_PORTAUDIO_ERR_CONFIG;
 #endif
 
@@ -305,9 +321,25 @@ cp_portaudio_run(const struct cp_audio_config *config,
 		return CP_PORTAUDIO_ERR_CONFIG;
 	}
 #endif
+#ifdef CP_WITH_GUI
+	gui.active = 0;
+	if (config->gui_enabled && cp_gui_init(&gui) != CP_OK) {
+#ifdef CP_WITH_TUI
+		cp_tui_close(&tui);
+#endif
+		Pa_CloseStream(stream);
+		free(runtime.scratch);
+		free(runtime.zero_input);
+		Pa_Terminate();
+		return CP_PORTAUDIO_ERR_CONFIG;
+	}
+#endif
 
 	error = Pa_StartStream(stream);
 	if (error != paNoError) {
+#ifdef CP_WITH_GUI
+		cp_gui_close(&gui);
+#endif
 #ifdef CP_WITH_TUI
 		cp_tui_close(&tui);
 #endif
@@ -318,13 +350,14 @@ cp_portaudio_run(const struct cp_audio_config *config,
 		return CP_PORTAUDIO_ERR_START;
 	}
 
-	if (!config->tui_enabled)
+	if (!config->tui_enabled && !config->gui_enabled)
 		printf("live audio started. input_device=%d output_device=%d "
 		    "rate=%0.0f backend=%s. press Ctrl-C to stop.\n",
 		    input_device, output_device, stream_rate,
 		    cp_audio_backend_string(config->backend));
 	while (!*stop_requested && Pa_IsStreamActive(stream) == 1) {
-		Pa_Sleep(config->tui_enabled ? CP_PA_SLEEP_MS :
+		Pa_Sleep((config->tui_enabled || config->gui_enabled) ?
+		    CP_PA_SLEEP_MS :
 		    (long)config->meter_interval_ms);
 		cp_pa_load_snapshot(&runtime, &snapshot);
 #ifdef CP_WITH_TUI
@@ -345,6 +378,21 @@ cp_portaudio_run(const struct cp_audio_config *config,
 				    &command);
 		} else
 #endif
+#ifdef CP_WITH_GUI
+		if (config->gui_enabled) {
+			(void)cp_cat_snapshot_update(cat_config,
+			    &cat_snapshot);
+			memset(&gui_view, 0, sizeof(gui_view));
+			gui_view.mode          = CP_GUI_MODE_LIVE;
+			gui_view.config        = config;
+			gui_view.snapshot      = &snapshot;
+			gui_view.cat_snapshot  = &cat_snapshot;
+			gui_view.output_device = (int)output_device;
+			if (cp_gui_update(&gui, &gui_view) != CP_OK ||
+			    cp_gui_should_stop(&gui))
+				*stop_requested = 1;
+		} else
+#endif
 		{
 			cp_pa_print_meters(&snapshot);
 			cp_pa_print_flags(snapshot.stream_flags);
@@ -362,6 +410,9 @@ cp_portaudio_run(const struct cp_audio_config *config,
 
 #ifdef CP_WITH_TUI
 	cp_tui_close(&tui);
+#endif
+#ifdef CP_WITH_GUI
+	cp_gui_close(&gui);
 #endif
 	Pa_CloseStream(stream);
 	free(runtime.scratch);

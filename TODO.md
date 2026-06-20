@@ -71,15 +71,15 @@ implemented until code, docs, and validation are complete.
 
 ## T4 Optional GUI Monitor
 
-- [ ] Keep the GUI optional and separate from the DSP core.
-- [ ] Do not replace the ncurses TUI.
-- [ ] Choose the GUI toolkit after dependency and portability review.
-- [ ] Reuse existing monitor snapshot data where possible.
+- [x] Keep the GUI optional and separate from the DSP core.
+- [x] Do not replace the ncurses TUI.
+- [x] Choose the GUI toolkit after dependency and portability review.
+- [x] Reuse existing monitor snapshot data where possible.
 - [ ] Display processed output waveform.
 - [ ] Display processed output spectrum.
-- [ ] Display input and output peak/RMS meters.
-- [ ] Display AGC, limiter, AM, SSB, multiband, bass EQ, and restoration state.
-- [ ] Keep GUI rendering off the real-time audio callback.
-- [ ] Add a manual GUI smoke-test checklist.
+- [x] Display input and output peak/RMS meters.
+- [x] Display AGC, limiter, AM, SSB, multiband, bass EQ, and restoration state.
+- [x] Keep GUI rendering off the real-time audio callback.
+- [x] Add a manual GUI smoke-test checklist.
 - [ ] Add screenshot or visual-regression notes only after a toolkit is chosen.
-- [ ] Keep the CLI fully usable without GUI support.
+- [x] Keep the CLI fully usable without GUI support.

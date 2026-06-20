@@ -4,7 +4,7 @@ CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB a
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
-Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional sndio support exists as an OpenBSD-style foundation, but remaining sndio work is deferred while Linux-host core processing quality is the active focus. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.4 adds optional conservative natural dynamics and low-level boost stages before AGC. M10.2 adds an optional second conservative multiband polish stage after bass EQ and before AM or SSB shaping. M10.3 adds an optional analysis-only auto EQ tap for tonal-balance diagnostics. M10.4 adds bounded bass EQ recommendations from the auto EQ analyzer without applying them automatically. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
+Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional sndio support exists as an OpenBSD-style foundation, but remaining sndio work is deferred while Linux-host core processing quality is the active focus. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. The ncurses TUI and SDL3 GUI monitor are optional host interfaces. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.4 adds optional conservative natural dynamics and low-level boost stages before AGC. M10.2 adds an optional second conservative multiband polish stage after bass EQ and before AM or SSB shaping. M10.3 adds an optional analysis-only auto EQ tap for tonal-balance diagnostics. M10.4 adds bounded bass EQ recommendations from the auto EQ analyzer without applying them automatically. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
 
 ## Table of Contents
 
@@ -23,10 +23,11 @@ Offline WAV processing is available as an optional M1 foundation when built with
 - Optional [PortAudio](https://www.portaudio.com/) development package for live USB sound-card processing
 - Optional [sndio](https://sndio.org/) development package for OpenBSD-style live audio
 - Optional [ncurses](https://invisible-island.net/ncurses/) development package for the live TUI monitor
+- Optional [SDL3](https://wiki.libsdl.org/SDL3/FrontPage) development package for the GUI monitor
 - Optional [hamlib](https://hamlib.github.io/) development package for read-only CAT status
 
-The DSP core builds without PortAudio, libsndfile, sndio, ncurses, or CAT
-control libraries. CAT includes a dependency-free read-only mock backend and an
+The DSP core builds without PortAudio, libsndfile, sndio, ncurses, SDL3, or
+CAT control libraries. CAT includes a dependency-free read-only mock backend and an
 optional read-only flrig XML-RPC backend plus an optional read-only hamlib
 backend. If your system is missing optional
 WAV support, install the libsndfile development package manually. Common
@@ -38,6 +39,9 @@ support, install the sndio development package manually. Common package names
 are `sndio`, `sndio-devel`, or `libsndio-dev`. If your system is missing
 optional TUI support, install the ncurses development package manually. Common
 package names are `libncurses-dev`, `ncurses-devel`, or `ncurses`.
+If your system is missing optional GUI support, install the SDL3 development
+package manually. Common package names are `libsdl3-dev`, `SDL3-devel`,
+`SDL3`, or `sdl3`.
 If your system is missing optional hamlib support, install the hamlib
 development package manually. Common package names are `hamlib`, `libhamlib`,
 `libhamlib-dev`, or `hamlib-devel`.
@@ -69,6 +73,10 @@ you need a reproducible build profile:
 make WITH_SNDFILE=1
 make WITH_PORTAUDIO=1
 make WITH_PORTAUDIO=1 WITH_TUI=1
+make WITH_GUI=1
+make WITH_GUI=1 WITH_TUI=1
+make WITH_GUI=1 WITH_PORTAUDIO=1
+make WITH_GUI=1 WITH_SNDFILE=1 WITH_PORTAUDIO=1
 make WITH_SNDFILE=1 WITH_PORTAUDIO=1
 make WITH_FLRIG=1
 make WITH_FLRIG=1 WITH_TUI=1
@@ -135,6 +143,19 @@ Build with optional PortAudio live audio and the ncurses TUI monitor:
 ```sh
 make WITH_PORTAUDIO=1 WITH_TUI=1
 ```
+
+Build with the optional SDL3 GUI monitor:
+
+```sh
+make WITH_GUI=1
+make WITH_GUI=1 WITH_TUI=1
+make WITH_GUI=1 WITH_PORTAUDIO=1
+make WITH_GUI=1 WITH_SNDFILE=1 WITH_PORTAUDIO=1
+```
+
+The GUI monitor is separate from the ncurses TUI. SDL3 rendering and event
+polling run in the foreground host loop, not in the real-time audio callback.
+T4A reserves waveform and spectrum panels for later work.
 
 Build with both optional WAV and PortAudio support:
 
@@ -268,6 +289,41 @@ Show mock CAT status in the TUI while running live or playout mode:
 CAT status is read outside the real-time audio callback. Users remain
 responsible for licence limits, station-control requirements, and transmitter
 operating rules.
+
+Build the optional SDL3 GUI monitor:
+
+```sh
+make WITH_GUI=1
+make WITH_GUI=1 WITH_TUI=1
+make WITH_GUI=1 WITH_PORTAUDIO=1
+make WITH_GUI=1 WITH_SNDFILE=1 WITH_PORTAUDIO=1
+```
+
+Run the GUI demo without audio hardware:
+
+```sh
+./carrierpress --gui-demo --cat-backend mock --cat-frequency-hz 14230000 --cat-mode USB --cat-ptt off
+```
+
+Run live or playout monitoring with the SDL3 GUI:
+
+```sh
+./carrierpress --live --gui
+./carrierpress --play input.wav --gui
+./carrierpress --playlist playlist.txt --gui
+```
+
+`--gui` and `--tui` are mutually exclusive. Without a `WITH_GUI=1` build,
+GUI commands exit with:
+
+```text
+GUI support not enabled. Rebuild with WITH_GUI=1.
+```
+
+The GUI monitor shows transport state, input and output peak/RMS meters, AGC
+state, stream flags, processing-chain state, and read-only CAT status. It is an
+engineering monitor and does not replace the ncurses TUI. The waveform and
+spectrum panels are reserved for a later T4 slice.
 
 Run the same self-test with the M9.3 restoration analyzer enabled:
 
@@ -775,6 +831,42 @@ multiband off, speech, and music. For AM control testing, add `--am`, press
 AM presets. For SSB control testing, add `--ssb`, press `s`, and press `0`
 through `4` to switch SSB off or select one of the validated SSB presets.
 
+## Manual GUI Smoke Test
+
+Build without GUI support and confirm GUI commands fail clearly:
+
+```sh
+make clean
+make
+./carrierpress --gui-demo
+```
+
+Build with GUI support:
+
+```sh
+make WITH_GUI=1
+```
+
+Run the hardware-free GUI demo and confirm the window opens, mock CAT appears,
+`q` exits cleanly, Escape exits cleanly, and closing the window exits cleanly:
+
+```sh
+./carrierpress --gui-demo --cat-backend mock --cat-frequency-hz 14230000 --cat-mode USB --cat-ptt off
+```
+
+If PortAudio is available, run live GUI monitoring:
+
+```sh
+./carrierpress --live --gui
+```
+
+If libsndfile and PortAudio are available, run playout GUI monitoring:
+
+```sh
+./carrierpress --play input.wav --gui
+./carrierpress --playlist playlist.txt --gui
+```
+
 ## Deferred sndio Live-Audio Test
 
 Build with sndio when OpenBSD-style audio testing resumes:
@@ -800,7 +892,7 @@ This is not part of the active Linux-host validation gate.
 
 ## Development
 
-The core library has no optional audio backend dependency. WAV support lives in `cp_wav.c`, PortAudio support lives in `cp_portaudio.c`, sndio support lives in `cp_sndio.c`, WAV playout lives in `cp_playout.c`, the ncurses monitor lives in `cp_tui.c`, and read-only CAT status lives in `cp_cat.c`. The flrig XML-RPC client lives in `cp_cat_flrig.c` and is compiled only with `WITH_FLRIG=1`. The hamlib client lives in `cp_cat_hamlib.c` and is compiled only with `WITH_HAMLIB=1`. CAT mock status is dependency-free and host-side. Process functions use caller-owned buffers and explicit state structs so real-time callbacks can remain malloc-free and deterministic.
+The core library has no optional audio backend dependency. WAV support lives in `cp_wav.c`, PortAudio support lives in `cp_portaudio.c`, sndio support lives in `cp_sndio.c`, WAV playout lives in `cp_playout.c`, the ncurses monitor lives in `cp_tui.c`, and read-only CAT status lives in `cp_cat.c`. The SDL3 GUI monitor lives in `cp_gui_sdl3.c` and is compiled only with `WITH_GUI=1`. GUI text formatting lives in dependency-free formatter helpers so it can be tested without SDL3. The flrig XML-RPC client lives in `cp_cat_flrig.c` and is compiled only with `WITH_FLRIG=1`. The hamlib client lives in `cp_cat_hamlib.c` and is compiled only with `WITH_HAMLIB=1`. CAT mock status is dependency-free and host-side. Process functions use caller-owned buffers and explicit state structs so real-time callbacks can remain malloc-free and deterministic.
 
 The current development baseline is Linux-host first. That means normal builds,
 WAV processing, PortAudio live mode, WAV playout, TUI monitoring, and the
