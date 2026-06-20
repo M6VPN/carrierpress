@@ -142,6 +142,31 @@ main(int argc, char *argv[])
 				usage(argv[0]);
 				return 1;
 			}
+		} else if (strcmp(argv[arg], "--cat-host") == 0 &&
+		    arg + 1 < argc) {
+			if (cp_cat_config_set_flrig_host(&cat_config,
+			    argv[++arg]) != CP_OK) {
+				usage(argv[0]);
+				return 1;
+			}
+		} else if (strcmp(argv[arg], "--cat-port") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_uint_arg(argv[++arg],
+			    &cat_config.flrig_port) ||
+			    cat_config.flrig_port < CP_CAT_MIN_PORT ||
+			    cat_config.flrig_port > CP_CAT_MAX_PORT) {
+				usage(argv[0]);
+				return 1;
+			}
+		} else if (strcmp(argv[arg], "--cat-timeout-ms") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_uint_arg(argv[++arg],
+			    &cat_config.timeout_ms) ||
+			    cat_config.timeout_ms < CP_CAT_MIN_TIMEOUT_MS ||
+			    cat_config.timeout_ms > CP_CAT_MAX_TIMEOUT_MS) {
+				usage(argv[0]);
+				return 1;
+			}
 		} else if (strcmp(argv[arg], "--cat-status") == 0) {
 			cat_status_mode = 1;
 		} else if (strcmp(argv[arg], "--analyze") == 0) {
@@ -544,6 +569,10 @@ main(int argc, char *argv[])
 		return 1;
 	}
 	if (block_config.am_config.enabled && block_config.ssb_config.enabled) {
+		usage(argv[0]);
+		return 1;
+	}
+	if (cp_cat_validate_config(&cat_config) != CP_OK) {
 		usage(argv[0]);
 		return 1;
 	}
@@ -1267,6 +1296,8 @@ usage(const char *program)
 	    program);
 	printf("usage: %s --cat-backend mock --cat-frequency-hz 14230000 "
 	    "--cat-mode USB --cat-ptt off --cat-status\n", program);
+	printf("usage: %s --cat-backend flrig --cat-host 127.0.0.1 "
+	    "--cat-port 12345 --cat-status\n", program);
 	printf("usage: %s --list-devices\n", program);
 	printf("usage: %s --live [--input-device N] [--output-device N]\n",
 	    program);
@@ -1306,5 +1337,6 @@ usage(const char *program)
 	    "--ssb-highpass HZ --ssb-phase-rotator --ssb-peak FLOAT\n");
 	printf("CAT options: --cat-backend none|mock|flrig|hamlib "
 	    "--cat-frequency-hz N --cat-mode MODE "
-	    "--cat-ptt off|on|unknown --cat-status\n");
+	    "--cat-ptt off|on|unknown --cat-host HOST --cat-port PORT "
+	    "--cat-timeout-ms N --cat-status\n");
 }

@@ -18,6 +18,7 @@ The DSP core does not include PortAudio, libsndfile, sndio, or embedded platform
 - `cp_monitor` owns dependency-free monitor snapshots and scaling.
 - `cp_control` owns validated live control commands.
 - `cp_cat` owns dependency-free read-only CAT status types and the mock backend.
+- `cp_cat_flrig` owns optional read-only flrig XML-RPC status polling.
 - `cp_tui` owns optional ncurses live monitoring.
 
 This split keeps the core library usable for offline tools, live hosts, and embedded ports without forcing every dependency into every build.
@@ -47,12 +48,12 @@ M6.10 still uses blocking PortAudio output for file playout. The TUI can monitor
 playout, switch validated operator presets, and skip to the next playlist item.
 Callback playout and web control remain deferred.
 
-CAT status is a host-side control/status boundary. T3A implements only
-dependency-free read-only types plus a mock backend for deterministic tests and
-TUI display. It does not poll real hardware, send transmit commands, key PTT,
-or add flrig or hamlib protocol code. The foreground live or playout loop may
-refresh a CAT snapshot for display; no CAT work runs inside the real-time audio
-callback.
+CAT status is a host-side control/status boundary. The dependency-free mock
+backend supports deterministic tests and TUI display without hardware. The
+optional flrig backend uses a small XML-RPC client for read-only frequency,
+mode, and PTT readback. It does not send transmit commands, set frequency, set
+mode, or key PTT. The foreground live or playout loop may refresh a CAT
+snapshot for display; no CAT work runs inside the real-time audio callback.
 
 Live TUI controls use a small command handoff. The foreground TUI validates key input into a preset command, stores one pending command atomically, and the callback applies it at the next block boundary. Playout TUI controls are applied between blocking file-output blocks. M7.4 keeps live and playout aligned by sharing host-to-DSP block config setup and processor snapshot extraction before live mode hands values to atomics. The sndio backend should keep using the same monitor snapshot and control boundary when deferred work resumes. The STM32H753 path should call the same block DSP model directly or through a CMSIS-DSP adapter when embedded work resumes.
 

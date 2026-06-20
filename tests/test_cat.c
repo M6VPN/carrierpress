@@ -10,6 +10,7 @@
 
 static int	test_backend_parse(void);
 static int	test_frequency_format(void);
+static int	test_flrig_unavailable_without_build(void);
 static int	test_mode_parse(void);
 static int	test_mock_snapshot(void);
 static int	test_ptt_parse(void);
@@ -21,6 +22,8 @@ main(void)
 	if (!test_backend_parse())
 		return 1;
 	if (!test_frequency_format())
+		return 1;
+	if (!test_flrig_unavailable_without_build())
 		return 1;
 	if (!test_mode_parse())
 		return 1;
@@ -53,6 +56,38 @@ test_backend_parse(void)
 		printf("test_cat: invalid backend accepted\n");
 		return 0;
 	}
+
+	return 1;
+}
+
+static int
+test_flrig_unavailable_without_build(void)
+{
+#ifndef CP_WITH_FLRIG
+	struct cp_cat_config config;
+	struct cp_cat_snapshot snapshot;
+	char buffer[128];
+
+	cp_cat_default_config(&config);
+	config.backend = CP_CAT_BACKEND_FLRIG;
+	config.enabled = 1;
+	if (cp_cat_snapshot_update(&config, &snapshot) != CP_OK) {
+		printf("test_cat: flrig unavailable snapshot failed\n");
+		return 0;
+	}
+	if (snapshot.status != CP_CAT_STATUS_UNAVAILABLE ||
+	    snapshot.connected) {
+		printf("test_cat: flrig unavailable mismatch\n");
+		return 0;
+	}
+	if (cp_cat_snapshot_format(&snapshot, buffer,
+	    sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "CAT flrig unavailable") == NULL) {
+		printf("test_cat: flrig unavailable format mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+#endif
 
 	return 1;
 }

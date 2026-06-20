@@ -10,6 +10,9 @@
 #include <string.h>
 
 #include "cp_cat.h"
+#ifdef CP_WITH_FLRIG
+#include "cp_cat_flrig.h"
+#endif
 
 static int	cp_cat_snprintf(char *, size_t, const char *, ...);
 static int	cp_cat_string_equal(const char *, const char *);
@@ -57,6 +60,18 @@ cp_cat_backend_from_string(const char *text, enum cp_cat_backend *backend)
 	return CP_ERR_RANGE;
 }
 
+int
+cp_cat_config_set_flrig_host(struct cp_cat_config *config, const char *host)
+{
+	if (config == NULL || host == NULL)
+		return CP_ERR_NULL;
+	if (host[0] == '\0')
+		return CP_ERR_RANGE;
+
+	return cp_cat_text_copy(config->flrig_host,
+	    sizeof(config->flrig_host), host);
+}
+
 void
 cp_cat_default_config(struct cp_cat_config *config)
 {
@@ -71,6 +86,10 @@ cp_cat_default_config(struct cp_cat_config *config)
 	    sizeof(config->mock_mode), "USB");
 	config->mock_ptt = CP_CAT_PTT_UNKNOWN;
 	config->mock_status = CP_CAT_STATUS_OK;
+	(void)cp_cat_config_set_flrig_host(config,
+	    CP_CAT_FLRIG_DEFAULT_HOST);
+	config->flrig_port = CP_CAT_FLRIG_DEFAULT_PORT;
+	config->timeout_ms = CP_CAT_DEFAULT_TIMEOUT_MS;
 }
 
 int
@@ -202,6 +221,18 @@ cp_cat_snapshot_update(const struct cp_cat_config *config,
 		return CP_OK;
 	}
 
+	if (config->backend == CP_CAT_BACKEND_FLRIG) {
+#ifdef CP_WITH_FLRIG
+		return cp_cat_flrig_snapshot_update(config, snapshot);
+#else
+		snapshot->status = CP_CAT_STATUS_UNAVAILABLE;
+		(void)cp_cat_text_copy(snapshot->status_text,
+		    sizeof(snapshot->status_text),
+		    "flrig support not enabled");
+		return CP_OK;
+#endif
+	}
+
 	snapshot->status = CP_CAT_STATUS_UNAVAILABLE;
 	(void)cp_cat_text_copy(snapshot->status_text,
 	    sizeof(snapshot->status_text), "backend reserved");
@@ -226,6 +257,27 @@ cp_cat_status_string(enum cp_cat_status status)
 	}
 
 	return "unknown";
+}
+
+int
+cp_cat_validate_config(const struct cp_cat_config *config)
+{
+	if (config == NULL)
+		return CP_ERR_NULL;
+	if (config->backend == CP_CAT_BACKEND_FLRIG) {
+		if (!config->enabled)
+			return CP_OK;
+		if (config->flrig_host[0] == '\0')
+			return CP_ERR_RANGE;
+		if (config->flrig_port < CP_CAT_MIN_PORT ||
+		    config->flrig_port > CP_CAT_MAX_PORT)
+			return CP_ERR_RANGE;
+		if (config->timeout_ms < CP_CAT_MIN_TIMEOUT_MS ||
+		    config->timeout_ms > CP_CAT_MAX_TIMEOUT_MS)
+			return CP_ERR_RANGE;
+	}
+
+	return CP_OK;
 }
 
 static int

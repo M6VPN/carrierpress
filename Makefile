@@ -99,6 +99,14 @@ CORE_SRCS += src/cp_sndio.c
 SNDIO_ORDER = check-sndio
 endif
 
+ifeq ($(WITH_FLRIG),1)
+FEATURE_DIR := $(FEATURE_DIR)-flrig
+CPPFLAGS += -DCP_WITH_FLRIG
+CORE_SRCS += src/cp_cat_flrig.c
+TEST_SRCS += tests/test_cat_flrig.c
+FLRIG_ORDER = check-flrig
+endif
+
 ifeq ($(WITH_SNDFILE),1)
 ifeq ($(WITH_PORTAUDIO),1)
 CPPFLAGS += -DCP_WITH_PLAYOUT
@@ -118,12 +126,12 @@ TUI_ORDER = check-tui
 endif
 
 FEATURE_SUMMARY_ORDER =
-ifneq ($(WITH_SNDFILE)$(WITH_PORTAUDIO)$(WITH_SNDIO)$(WITH_TUI),0000)
+ifneq ($(WITH_SNDFILE)$(WITH_PORTAUDIO)$(WITH_SNDIO)$(WITH_TUI)$(WITH_FLRIG),00000)
 FEATURE_SUMMARY_ORDER = feature-summary
 endif
 
 BACKEND_ORDER = $(FEATURE_SUMMARY_ORDER) $(SNDFILE_ORDER) \
-	$(PORTAUDIO_ORDER) $(SNDIO_ORDER) $(TUI_ORDER)
+	$(PORTAUDIO_ORDER) $(SNDIO_ORDER) $(TUI_ORDER) $(FLRIG_ORDER)
 
 APP_CORE_OBJS = $(CORE_SRCS:src/%.c=$(APP_OBJ_DIR)/src/%.o)
 APP_OBJS = $(APP_CORE_OBJS) $(APP_SRCS:src/%.c=$(APP_OBJ_DIR)/src/%.o)
@@ -175,6 +183,10 @@ ifeq ($(WITH_TUI),1)
 TEST_BINS += $(TEST_BIN_DIR)/test_tui
 endif
 
+ifeq ($(WITH_FLRIG),1)
+TEST_BINS += $(TEST_BIN_DIR)/test_cat_flrig
+endif
+
 all: carrierpress
 
 autodetect:
@@ -214,7 +226,7 @@ autodetect:
 	printf '  ncurses TUI: %s\n' "$$([ "$$tui" = 1 ] && printf enabled || printf disabled)"; \
 	printf '  sndio: %s (deferred Linux path, not auto-enabled)\n' "$$([ "$$sndio" = 1 ] && printf detected || printf missing)"; \
 	printf '  hamlib CAT: reserved, not detected in T2\n'; \
-	printf '  flrig CAT: reserved, not detected in T2\n'; \
+	printf '  flrig CAT: manual WITH_FLRIG=1 (not auto-enabled)\n'; \
 	$(MAKE) WITH_SNDFILE=$$sndfile WITH_PORTAUDIO=$$portaudio WITH_TUI=$$tui WITH_SNDIO=0 all
 
 carrierpress: $(APP_OBJS)
@@ -254,6 +266,10 @@ $(TEST_BIN_DIR)/test_chain_quality: $(TEST_OBJ_DIR)/tests/test_chain_quality.o $
 $(TEST_BIN_DIR)/test_cat: $(TEST_OBJ_DIR)/tests/test_cat.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_cat.o $(TEST_CORE_OBJS) $(LDLIBS)
+
+$(TEST_BIN_DIR)/test_cat_flrig: $(TEST_OBJ_DIR)/tests/test_cat_flrig.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_cat_flrig.o $(TEST_CORE_OBJS) $(LDLIBS)
 
 $(TEST_BIN_DIR)/test_compressor: $(TEST_OBJ_DIR)/tests/test_compressor.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
@@ -371,6 +387,9 @@ endif
 ifeq ($(WITH_TUI),1)
 	./$(TEST_BIN_DIR)/test_tui
 endif
+ifeq ($(WITH_FLRIG),1)
+	./$(TEST_BIN_DIR)/test_cat_flrig
+endif
 
 validate: $(VALIDATION_BINS)
 	./$(TEST_BIN_DIR)/test_validation
@@ -389,7 +408,7 @@ feature-summary:
 	@printf '  ncurses TUI: %s\n' "$$([ "$(WITH_TUI)" = 1 ] && printf enabled || printf disabled)"
 	@printf '  sndio: %s%s\n' "$$([ "$(WITH_SNDIO)" = 1 ] && printf enabled || printf disabled)" "$$([ "$(WITH_SNDIO)" = 1 ] && printf ' (deferred Linux path)' || printf '')"
 	@printf '  hamlib CAT: reserved\n'
-	@printf '  flrig CAT: reserved\n'
+	@printf '  flrig CAT: %s%s\n' "$$([ "$(WITH_FLRIG)" = 1 ] && printf enabled || printf disabled)" "$$([ "$(WITH_FLRIG)" = 1 ] && printf ' (read-only XML-RPC)' || printf ' (manual WITH_FLRIG=1)')"
 
 check-sndfile:
 	@mkdir -p $(BUILD_DIR)
@@ -411,6 +430,11 @@ check-tui:
 	@printf '#include <curses.h>\nint main(void) { initscr(); endwin(); return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/check-tui -lncurses >/dev/null 2>&1 || { printf 'error: missing ncurses development package/library. Install ncurses (for example libncurses-dev, ncurses-devel, or ncurses).\n'; exit 1; }
 	@rm -f $(BUILD_DIR)/check-tui
 
+check-flrig:
+	@mkdir -p $(BUILD_DIR)
+	@printf '#include <sys/types.h>\n#include <sys/socket.h>\n#include <netdb.h>\n#include <poll.h>\nint main(void) { return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/check-flrig >/dev/null 2>&1 || { printf 'error: missing POSIX socket headers required for WITH_FLRIG=1.\n'; exit 1; }
+	@rm -f $(BUILD_DIR)/check-flrig
+
 $(APP_OBJ_DIR)/src/%.o: src/%.c $(HEADERS) | $(BACKEND_ORDER)
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
@@ -427,7 +451,7 @@ clean:
 	rm -rf $(BUILD_DIR)
 	rm -f carrierpress libcarrierpress.a src/*.o tests/*.o
 	rm -f tests/test_agc tests/test_am tests/test_audio tests/test_auto_eq
-	rm -f tests/test_biquad tests/test_cat
+	rm -f tests/test_biquad tests/test_cat tests/test_cat_flrig
 	rm -f tests/test_bass_eq
 	rm -f tests/test_chain_quality
 	rm -f tests/test_compressor tests/test_crossover
@@ -444,4 +468,4 @@ clean:
 	rm -f tests/playout_report.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all autodetect check-portaudio check-sndfile check-sndio check-tui clean feature-summary professional-check quality test validate
+.PHONY: all autodetect check-flrig check-portaudio check-sndfile check-sndio check-tui clean feature-summary professional-check quality test validate

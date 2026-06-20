@@ -55,13 +55,13 @@ implemented until code, docs, and validation are complete.
 
 - [x] Add a clean CAT backend boundary before any protocol implementation.
 - [x] Keep CAT support optional and outside the DSP core.
-- [ ] Define build flags for CAT support only after dependency probing is settled.
+- [x] Define build flags for CAT support only after dependency probing is settled.
 - [x] Support read-only rig status first.
-- [ ] Read frequency.
-- [ ] Read mode.
-- [ ] Read PTT state.
+- [x] Read frequency.
+- [x] Read mode.
+- [x] Read PTT state.
 - [ ] Add optional PTT control only after safety checks are documented.
-- [ ] Support flrig XML-RPC or compatible control through a small host backend.
+- [x] Support flrig XML-RPC or compatible control through a small host backend.
 - [ ] Support hamlib only as an optional backend if development headers are
       available.
 - [x] Add a mock or simulator test path before requiring hardware.
