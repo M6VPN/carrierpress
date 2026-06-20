@@ -1,0 +1,13 @@
+# CarrierPress - Developed by M6VPN (M6VPN@tuta.com)
+# carrierpress/carrierpress.pc.in
+
+prefix=@PREFIX@
+exec_prefix=${prefix}
+libdir=@LIBDIR@
+includedir=@INCLUDEDIR@
+
+Name: CarrierPress
+Description: Clean-room AM and SSB baseband audio DSP core
+Version: @VERSION@
+Libs: -L${libdir} -lcarrierpress -lm
+Cflags: -I${includedir}/carrierpress

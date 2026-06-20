@@ -3,10 +3,19 @@
 
 CC	?= cc
 AR	?= ar
+INSTALL	?= install
 PKG_CONFIG ?= pkg-config
 CFLAGS	?= -std=c17 -Wall -Wextra -Wconversion -Wsign-conversion -pedantic
 CPPFLAGS += -Iinclude
 LDLIBS	+= -lm
+PREFIX	?= /usr/local
+BINDIR	?= $(PREFIX)/bin
+INCLUDEDIR ?= $(PREFIX)/include
+LIBDIR	?= $(PREFIX)/lib
+MANDIR	?= $(PREFIX)/share/man
+PKGCONFIGDIR ?= $(LIBDIR)/pkgconfig
+DESTDIR	?=
+VERSION	 = 0.1.0
 WITH_SNDFILE ?= 0
 WITH_PORTAUDIO ?= 0
 WITH_SNDIO ?= 0
@@ -77,6 +86,7 @@ TEST_SRCS = \
 	tests/test_restoration.c \
 	tests/test_resampler.c \
 	tests/test_ssb.c \
+	tests/test_version.c \
 	tests/test_waveform.c
 
 HEADERS = $(wildcard include/*.h)
@@ -207,6 +217,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_restoration \
 	$(TEST_BIN_DIR)/test_resampler \
 	$(TEST_BIN_DIR)/test_ssb \
+	$(TEST_BIN_DIR)/test_version \
 	$(TEST_BIN_DIR)/test_waveform
 
 ifeq ($(WITH_SNDFILE),1)
@@ -295,6 +306,14 @@ carrierpress: $(APP_OBJS)
 
 libcarrierpress.a: $(APP_CORE_OBJS)
 	$(AR) rcs $@ $(APP_CORE_OBJS)
+
+$(BUILD_DIR)/carrierpress.pc: carrierpress.pc.in
+	@mkdir -p $(BUILD_DIR)
+	sed -e 's|@PREFIX@|$(PREFIX)|g' \
+	    -e 's|@LIBDIR@|$(LIBDIR)|g' \
+	    -e 's|@INCLUDEDIR@|$(INCLUDEDIR)|g' \
+	    -e 's|@VERSION@|$(VERSION)|g' \
+	    carrierpress.pc.in > $@
 
 $(TEST_BIN_DIR)/test_agc: $(TEST_OBJ_DIR)/tests/test_agc.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
@@ -432,6 +451,10 @@ $(TEST_BIN_DIR)/test_validation: $(TEST_OBJ_DIR)/tests/test_validation.o $(TEST_
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_validation.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_version: $(TEST_OBJ_DIR)/tests/test_version.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_version.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_dc_blocker
 	./$(TEST_BIN_DIR)/test_agc
@@ -456,6 +479,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_restoration
 	./$(TEST_BIN_DIR)/test_resampler
 	./$(TEST_BIN_DIR)/test_ssb
+	./$(TEST_BIN_DIR)/test_version
 	./$(TEST_BIN_DIR)/test_waveform
 ifeq ($(WITH_SNDFILE),1)
 	./$(TEST_BIN_DIR)/test_wav
@@ -488,6 +512,35 @@ professional-check: $(PROFESSIONAL_BINS)
 
 release-check:
 	./scripts/release-check.sh
+
+install: carrierpress libcarrierpress.a $(BUILD_DIR)/carrierpress.pc docs/carrierpress.1
+	$(INSTALL) -d $(DESTDIR)$(BINDIR)
+	$(INSTALL) -d $(DESTDIR)$(INCLUDEDIR)/carrierpress
+	$(INSTALL) -d $(DESTDIR)$(LIBDIR)
+	$(INSTALL) -d $(DESTDIR)$(PKGCONFIGDIR)
+	$(INSTALL) -d $(DESTDIR)$(MANDIR)/man1
+	$(INSTALL) -m 755 carrierpress $(DESTDIR)$(BINDIR)/carrierpress
+	$(INSTALL) -m 644 $(HEADERS) $(DESTDIR)$(INCLUDEDIR)/carrierpress/
+	$(INSTALL) -m 644 libcarrierpress.a $(DESTDIR)$(LIBDIR)/libcarrierpress.a
+	$(INSTALL) -m 644 $(BUILD_DIR)/carrierpress.pc $(DESTDIR)$(PKGCONFIGDIR)/carrierpress.pc
+	$(INSTALL) -m 644 docs/carrierpress.1 $(DESTDIR)$(MANDIR)/man1/carrierpress.1
+
+uninstall:
+	rm -f $(DESTDIR)$(BINDIR)/carrierpress
+	rm -f $(DESTDIR)$(LIBDIR)/libcarrierpress.a
+	rm -f $(DESTDIR)$(PKGCONFIGDIR)/carrierpress.pc
+	rm -f $(DESTDIR)$(MANDIR)/man1/carrierpress.1
+	rm -rf $(DESTDIR)$(INCLUDEDIR)/carrierpress
+
+install-smoke:
+	rm -rf $(BUILD_DIR)/stage
+	$(MAKE) all
+	$(MAKE) DESTDIR=$(BUILD_DIR)/stage PREFIX=/usr install
+	test -x $(BUILD_DIR)/stage/usr/bin/carrierpress
+	test -f $(BUILD_DIR)/stage/usr/lib/libcarrierpress.a
+	test -f $(BUILD_DIR)/stage/usr/lib/pkgconfig/carrierpress.pc
+	test -f $(BUILD_DIR)/stage/usr/share/man/man1/carrierpress.1
+	test -f $(BUILD_DIR)/stage/usr/include/carrierpress/carrierpress.h
 
 feature-summary:
 	@printf 'CarrierPress feature summary:\n'
@@ -581,4 +634,4 @@ clean:
 	rm -f tests/playout_report.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean feature-summary professional-check quality release-check test validate
+.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean feature-summary install install-smoke professional-check quality release-check test uninstall validate

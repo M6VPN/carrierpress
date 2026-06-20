@@ -220,6 +220,42 @@ Build and run tests with optional WAV playout support:
 make WITH_SNDFILE=1 WITH_PORTAUDIO=1 test
 ```
 
+Print the installed version:
+
+```sh
+./carrierpress --version
+```
+
+Install under a local prefix:
+
+```sh
+make
+make PREFIX="$HOME/.local" install
+```
+
+Stage an install for packaging review:
+
+```sh
+make DESTDIR=build/stage PREFIX=/usr install
+make install-smoke
+```
+
+Uninstall from the same prefix:
+
+```sh
+make PREFIX="$HOME/.local" uninstall
+```
+
+The install target copies the `carrierpress` binary, public headers,
+`libcarrierpress.a`, `carrierpress.pc`, and `carrierpress(1)`. If your shell
+cannot find the staged tools, set `PATH`, `PKG_CONFIG_PATH`, or `MANPATH` for
+your chosen prefix:
+
+```sh
+pkg-config --cflags --libs carrierpress
+man carrierpress
+```
+
 The active Linux-host validation path is:
 
 ```sh

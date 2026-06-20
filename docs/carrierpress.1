@@ -1,0 +1,169 @@
+.\" CarrierPress - Developed by M6VPN (M6VPN@tuta.com)
+.\" carrierpress/docs/carrierpress.1
+.Dd June 21, 2026
+.Dt CARRIERPRESS 1
+.Os
+.Sh NAME
+.Nm carrierpress
+.Nd AM and SSB baseband audio processor foundation
+.Sh SYNOPSIS
+.Nm
+.Fl -version
+.Nm
+.Fl -self-test
+.Op processing options
+.Nm
+.Fl -input Ar input.wav
+.Fl -output Ar output.wav
+.Op processing options
+.Nm
+.Fl -play Ar input.wav
+.Op Fl -output-device Ar N
+.Op Fl -tui | Fl -gui
+.Op processing options
+.Nm
+.Fl -playlist Ar playlist.txt
+.Op Fl -output-device Ar N
+.Op Fl -tui | Fl -gui
+.Op processing options
+.Nm
+.Fl -live
+.Op Fl -input-device Ar N
+.Op Fl -output-device Ar N
+.Op Fl -sample-rate Ar HZ
+.Op Fl -channels Ar N
+.Op Fl -block-size Ar FRAMES
+.Op Fl -tui | Fl -gui
+.Op processing options
+.Nm
+.Fl -cat-backend Cm none | mock | flrig | hamlib
+.Fl -cat-status
+.Op CAT options
+.Sh DESCRIPTION
+.Nm
+is a clean-room C17 audio processor foundation for AM and SSB baseband audio
+chains. It can run deterministic self-tests, process WAV files when built with
+libsndfile, process live host audio when built with PortAudio or sndio, play WAV
+files to a host output device when built with libsndfile and PortAudio, and
+display monitor state through optional ncurses TUI or SDL3 GUI frontends.
+.Pp
+.Nm
+does not generate RF, certify transmitter compliance, provide regulatory
+approval, or implement PTT control. Users remain responsible for licence
+limits, occupied bandwidth, station-control requirements, transmitter limits,
+and local radio rules.
+.Sh OPTIONS
+.Bl -tag -width Ds
+.It Fl -version
+Print the CarrierPress version and exit.
+.It Fl -self-test
+Run a deterministic synthetic audio test through the current configured chain.
+.It Fl -input Ar input.wav Fl -output Ar output.wav
+Process a WAV file in fixed-size blocks. Requires a build with
+.Dv WITH_SNDFILE=1 .
+.It Fl -play Ar input.wav
+Play one WAV file through the processing chain to a host output device. Requires
+a build with
+.Dv WITH_SNDFILE=1
+and
+.Dv WITH_PORTAUDIO=1 .
+.It Fl -playlist Ar playlist.txt
+Play a text playlist of WAV files through the processing chain.
+.It Fl -live
+Run live host audio processing.
+.It Fl -list-devices
+List available live audio devices.
+.It Fl -tui
+Use the optional ncurses monitor. Requires
+.Dv WITH_TUI=1 .
+.It Fl -gui
+Use the optional SDL3 monitor. Requires
+.Dv WITH_GUI=1 .
+.It Fl -gui-demo
+Run the deterministic GUI monitor demo.
+.It Fl -gui-demo-screenshot Ar path
+Render one deterministic GUI monitor frame to a BMP file.
+.It Fl -cat-status
+Print one read-only CAT status snapshot and exit.
+.El
+.Sh PROCESSING OPTIONS
+Common processing options include:
+.Bl -tag -width Ds
+.It Fl -dehummer Fl -hum-frequency Cm 50 | 60 Fl -hum-harmonics Ar N
+Enable fixed-frequency hum notches.
+.It Fl -analyze
+Enable the restoration analyzer tap.
+.It Fl -declipper
+Enable the conservative declipper research stage.
+.It Fl -natural-dynamics
+Enable the natural dynamics stage.
+.It Fl -low-level-boost
+Enable the low-level boost stage.
+.It Fl -multiband
+Enable the first multiband compressor foundation.
+.It Fl -bass-eq
+Enable static bass EQ.
+.It Fl -am Fl -am-preset Cm am-safe | am-shortwave | am-wide | am-voice
+Enable AM baseband audio output shaping.
+.It Fl -ssb Fl -ssb-preset Cm ssb-speech | ssb-narrow | ssb-wide
+Enable SSB baseband audio output shaping.
+.El
+.Sh CAT STATUS
+CAT support is read-only in this release. The
+.Cm mock ,
+.Cm flrig ,
+and
+.Cm hamlib
+backends can report frequency, mode, and PTT state for display. They do not key
+a transmitter, set frequency, set mode, or send transmit commands.
+.Sh VALIDATION
+Run the base validation profile before a local release:
+.Bd -literal -offset indent
+make release-check
+.Ed
+.Pp
+Useful individual checks are:
+.Bd -literal -offset indent
+make
+make test
+make -j test
+make validate
+make quality
+make professional-check
+.Ed
+.Sh EXAMPLES
+Print the installed version:
+.Bd -literal -offset indent
+carrierpress --version
+.Ed
+.Pp
+Run the built-in self-test:
+.Bd -literal -offset indent
+carrierpress --self-test
+.Ed
+.Pp
+Process a WAV file:
+.Bd -literal -offset indent
+carrierpress --input input.wav --output output.wav
+.Ed
+.Pp
+Play a WAV file through output device 19:
+.Bd -literal -offset indent
+carrierpress --play input.wav --output-device 19
+.Ed
+.Pp
+Run live audio with the TUI:
+.Bd -literal -offset indent
+carrierpress --live --tui
+.Ed
+.Pp
+Print mock CAT status:
+.Bd -literal -offset indent
+carrierpress --cat-backend mock --cat-frequency-hz 14230000 --cat-mode USB --cat-ptt off --cat-status
+.Ed
+.Sh SEE ALSO
+.Xr pkg-config 1 ,
+.Xr make 1
+.Pp
+Project documentation is installed with the source tree under
+.Pa docs/ .

@@ -139,6 +139,7 @@ the local vendored path.
   draft releases.
 - Confirm `docs/release-assets-v0.1.md` lists only optional local evidence
   assets.
+- Run `make install-smoke` before packaging or prefix-install testing.
 - Confirm `git status --short` contains only intentional release changes.
 - Draft release notes that list implemented audio and host features as v0.1
   foundations, not final broadcast-processing claims.

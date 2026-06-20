@@ -100,6 +100,11 @@ main(int argc, char *argv[])
 	cp_cat_default_config(&cat_config);
 	block_config.sample_rate = CP_SELF_TEST_RATE;
 
+	if (argc == 2 && strcmp(argv[1], "--version") == 0) {
+		printf("CarrierPress %s\n", CP_VERSION_STRING);
+		return 0;
+	}
+
 	for (arg = 1; arg < argc; arg++) {
 		if (strcmp(argv[arg], "--self-test") == 0) {
 			self_test_mode = 1;
@@ -1491,6 +1496,7 @@ print_restoration_metrics(const struct cp_restoration_metrics *metrics)
 static void
 usage(const char *program)
 {
+	printf("usage: %s --version\n", program);
 	printf("usage: %s --self-test\n", program);
 	printf("usage: %s --self-test --dehummer --hum-frequency 50 "
 	    "--hum-harmonics 4\n", program);

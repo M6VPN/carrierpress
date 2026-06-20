@@ -28,5 +28,6 @@
 #include "cp_sndio.h"
 #include "cp_ssb.h"
 #include "cp_types.h"
+#include "cp_version.h"
 
 #endif

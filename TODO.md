@@ -113,3 +113,14 @@ implemented until code, docs, and validation are complete.
 - [x] Keep release docs free of RF generation, transmitter compliance, and
       regulatory approval claims.
 - [x] Preserve read-only CAT and deferred PTT-control status.
+
+## R3 Install and Packaging Polish
+
+- [x] Add local `install` and `uninstall` Makefile targets.
+- [x] Support staged installs with `DESTDIR` and configurable `PREFIX`.
+- [x] Install the binary, public headers, static library, pkg-config metadata,
+      and man page.
+- [x] Add base pkg-config metadata without optional dependency requirements.
+- [x] Add a `carrierpress(1)` man page.
+- [x] Add `carrierpress --version`.
+- [x] Add a non-root `install-smoke` target for packaging review.
