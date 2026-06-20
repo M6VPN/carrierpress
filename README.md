@@ -269,6 +269,14 @@ the default timeout is short enough for foreground status polling. Use
 CAT support does not send transmit commands, set PTT, set frequency, set mode,
 or key a radio.
 
+### CAT PTT Safety
+
+CAT support is read-only in the current code. flrig and hamlib PTT state is
+readback only, and no PTT control exists. Any future PTT-control feature must be
+compiled explicitly, enabled explicitly at runtime, and follow
+[`docs/cat-ptt-safety.md`](docs/cat-ptt-safety.md) before any transmitter
+control is allowed.
+
 Build the read-only hamlib CAT backend:
 
 ```sh

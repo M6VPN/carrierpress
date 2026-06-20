@@ -60,6 +60,10 @@ frequency, set mode, or key PTT. The foreground live or playout loop may
 refresh a CAT snapshot for display; no CAT work runs inside the real-time audio
 callback.
 
+Future PTT control must remain host-side, separate from DSP processing, and
+outside every real-time audio callback. It must follow
+`docs/cat-ptt-safety.md` before any transmit-control command is added.
+
 The optional SDL3 GUI monitor is a host-side display boundary. It consumes the
 same monitor and CAT snapshots used by text meters and the TUI. SDL rendering,
 event polling, and GUI shutdown checks run in the foreground live or playout

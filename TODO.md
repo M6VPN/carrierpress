@@ -83,3 +83,14 @@ implemented until code, docs, and validation are complete.
 - [x] Add a manual GUI smoke-test checklist.
 - [x] Add screenshot or visual-regression notes only after a toolkit is chosen.
 - [x] Keep the CLI fully usable without GUI support.
+
+## T5 Optional PTT Control - Deferred
+
+- [ ] Implement an explicit compile-time PTT-control gate.
+- [ ] Implement a runtime arming gate.
+- [ ] Implement mock-only PTT state-machine tests.
+- [ ] Implement emergency RX/drop command.
+- [ ] Add a manual dummy-load hardware test checklist.
+- [ ] Add flrig PTT control only after mock tests pass.
+- [ ] Add hamlib PTT control only after mock tests pass.
+- [ ] Keep all PTT commands out of real-time callbacks.
