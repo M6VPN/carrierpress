@@ -128,6 +128,13 @@ struct cp_portaudio_runtime {
 	atomic_int control_status;
 	atomic_uint status_flags;
 	atomic_int dsp_status;
+#ifdef CP_WITH_GUI
+	int waveform_enabled;
+	atomic_uint waveform_valid;
+	atomic_uint waveform_point_count;
+	atomic_uint waveform_channel_count;
+	atomic_int waveform_values[CP_WAVEFORM_POINTS];
+#endif
 };
 
 static void		cp_pa_apply_pending_control(
@@ -141,6 +148,10 @@ static int		cp_pa_init_processor(struct cp_portaudio_runtime *,
 			    const struct cp_audio_config *, double);
 static void		cp_pa_load_snapshot(struct cp_portaudio_runtime *,
 			    struct cp_monitor_snapshot *);
+#ifdef CP_WITH_GUI
+static void		cp_pa_load_waveform(struct cp_portaudio_runtime *,
+			    struct cp_waveform_snapshot *);
+#endif
 static int		cp_pa_rate_supported(const PaStreamParameters *,
 			    const PaStreamParameters *, double);
 static int		cp_pa_select_sample_rate(
@@ -161,6 +172,10 @@ static void		cp_pa_store_control_request(
 			    const struct cp_control_command *);
 #endif
 static void		cp_pa_store_meters(struct cp_portaudio_runtime *);
+#ifdef CP_WITH_GUI
+static void		cp_pa_store_waveform(struct cp_portaudio_runtime *,
+			    const struct cp_waveform_snapshot *);
+#endif
 static int		cp_pa_stream_callback(const void *, void *,
 			    unsigned long, const PaStreamCallbackTimeInfo *,
 			    PaStreamCallbackFlags, void *);
@@ -239,6 +254,7 @@ cp_portaudio_run(const struct cp_audio_config *config,
 #ifdef CP_WITH_GUI
 	struct cp_gui gui;
 	struct cp_gui_view gui_view;
+	struct cp_waveform_snapshot waveform;
 #endif
 	int status;
 
@@ -360,6 +376,9 @@ cp_portaudio_run(const struct cp_audio_config *config,
 		    CP_PA_SLEEP_MS :
 		    (long)config->meter_interval_ms);
 		cp_pa_load_snapshot(&runtime, &snapshot);
+#ifdef CP_WITH_GUI
+		cp_pa_load_waveform(&runtime, &waveform);
+#endif
 #ifdef CP_WITH_TUI
 		if (config->tui_enabled) {
 			(void)cp_cat_snapshot_update(cat_config,
@@ -387,6 +406,7 @@ cp_portaudio_run(const struct cp_audio_config *config,
 			gui_view.config        = config;
 			gui_view.snapshot      = &snapshot;
 			gui_view.cat_snapshot  = &cat_snapshot;
+			gui_view.waveform      = &waveform;
 			gui_view.output_device = (int)output_device;
 			if (cp_gui_update(&gui, &gui_view) != CP_OK ||
 			    cp_gui_should_stop(&gui))
@@ -591,6 +611,14 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 
 	runtime->channels   = config->channels;
 	runtime->block_size = config->block_size;
+#ifdef CP_WITH_GUI
+	runtime->waveform_enabled = config->gui_enabled;
+	atomic_init(&runtime->waveform_valid, 0u);
+	atomic_init(&runtime->waveform_point_count, 0u);
+	atomic_init(&runtime->waveform_channel_count, 0u);
+	for (band = 0; band < CP_WAVEFORM_POINTS; band++)
+		atomic_init(&runtime->waveform_values[band], 0);
+#endif
 	atomic_init(&runtime->input_peak, 0u);
 	atomic_init(&runtime->input_rms, 0u);
 	atomic_init(&runtime->output_peak, 0u);
@@ -905,6 +933,34 @@ cp_pa_load_snapshot(struct cp_portaudio_runtime *runtime,
 		    atomic_load(&runtime->band2_gr_db_centibel[band]);
 	}
 }
+
+#ifdef CP_WITH_GUI
+static void
+cp_pa_load_waveform(struct cp_portaudio_runtime *runtime,
+	struct cp_waveform_snapshot *snapshot)
+{
+	size_t index;
+	unsigned int point_count;
+
+	if (runtime == NULL || snapshot == NULL)
+		return;
+
+	cp_waveform_clear(snapshot);
+	if (!atomic_load(&runtime->waveform_valid))
+		return;
+
+	point_count = atomic_load(&runtime->waveform_point_count);
+	if (point_count > CP_WAVEFORM_POINTS)
+		point_count = CP_WAVEFORM_POINTS;
+	snapshot->point_count = point_count;
+	snapshot->channel_count =
+	    atomic_load(&runtime->waveform_channel_count);
+	for (index = 0; index < snapshot->point_count; index++)
+		snapshot->values[index] =
+		    atomic_load(&runtime->waveform_values[index]);
+	snapshot->valid = snapshot->point_count >= 2;
+}
+#endif
 
 static void
 cp_pa_print_flags(unsigned int flags)
@@ -1380,6 +1436,32 @@ cp_pa_store_meters(struct cp_portaudio_runtime *runtime)
 	atomic_store(&runtime->ssb_preset, snapshot.ssb_preset);
 }
 
+#ifdef CP_WITH_GUI
+static void
+cp_pa_store_waveform(struct cp_portaudio_runtime *runtime,
+	const struct cp_waveform_snapshot *snapshot)
+{
+	size_t index;
+
+	if (runtime == NULL || snapshot == NULL)
+		return;
+	if (!snapshot->valid || snapshot->point_count > CP_WAVEFORM_POINTS) {
+		atomic_store(&runtime->waveform_valid, 0u);
+		return;
+	}
+
+	atomic_store(&runtime->waveform_valid, 0u);
+	for (index = 0; index < snapshot->point_count; index++)
+		atomic_store(&runtime->waveform_values[index],
+		    snapshot->values[index]);
+	atomic_store(&runtime->waveform_point_count,
+	    (unsigned int)snapshot->point_count);
+	atomic_store(&runtime->waveform_channel_count,
+	    (unsigned int)snapshot->channel_count);
+	atomic_store(&runtime->waveform_valid, 1u);
+}
+#endif
+
 static int
 cp_pa_stream_callback(const void *input_buffer, void *output_buffer,
 	unsigned long frame_count, const PaStreamCallbackTimeInfo *time_info,
@@ -1388,6 +1470,9 @@ cp_pa_stream_callback(const void *input_buffer, void *output_buffer,
 	struct cp_portaudio_runtime *runtime;
 	const cp_sample_t *input;
 	cp_sample_t *output;
+#ifdef CP_WITH_GUI
+	struct cp_waveform_snapshot waveform;
+#endif
 	int status;
 
 	(void)time_info;
@@ -1418,6 +1503,12 @@ cp_pa_stream_callback(const void *input_buffer, void *output_buffer,
 		return paAbort;
 	}
 
+#ifdef CP_WITH_GUI
+	if (runtime->waveform_enabled &&
+	    cp_waveform_capture(&waveform, output, (size_t)frame_count,
+	    runtime->channels) == CP_OK)
+		cp_pa_store_waveform(runtime, &waveform);
+#endif
 	cp_pa_store_meters(runtime);
 
 	return paContinue;

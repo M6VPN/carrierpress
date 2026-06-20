@@ -890,9 +890,12 @@ run_gui_demo(const struct cp_audio_config *config,
 	struct cp_gui gui;
 	struct cp_gui_view view;
 	struct cp_monitor_snapshot snapshot;
+	struct cp_waveform_snapshot waveform;
+	cp_sample_t demo_samples[CP_WAVEFORM_POINTS];
 	unsigned int tick;
 	cp_sample_t phase;
 	cp_sample_t level;
+	size_t index;
 	int status;
 
 	if (config == NULL || cat_config == NULL)
@@ -930,6 +933,13 @@ run_gui_demo(const struct cp_audio_config *config,
 		snapshot.ssb_enabled = 1;
 		if ((tick % 20u) == 0)
 			snapshot.stream_flags = CP_MONITOR_PRIMING_OUTPUT;
+		for (index = 0; index < CP_WAVEFORM_POINTS; index++) {
+			phase = ((cp_sample_t)index / (cp_sample_t)
+			    CP_WAVEFORM_POINTS) * CP_TWO_PI * 3.0f;
+			demo_samples[index] = level * 0.8f * sinf(phase);
+		}
+		(void)cp_waveform_capture(&waveform, demo_samples,
+		    CP_WAVEFORM_POINTS, CP_CHANNELS_MONO);
 
 		(void)cp_cat_snapshot_update(cat_config, &cat_snapshot);
 		memset(&view, 0, sizeof(view));
@@ -937,6 +947,7 @@ run_gui_demo(const struct cp_audio_config *config,
 		view.config = config;
 		view.snapshot = &snapshot;
 		view.cat_snapshot = &cat_snapshot;
+		view.waveform = &waveform;
 		view.output_device = config->output_device;
 		status = cp_gui_update(&gui, &view);
 		if (status != CP_OK)

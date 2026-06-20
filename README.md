@@ -155,7 +155,8 @@ make WITH_GUI=1 WITH_SNDFILE=1 WITH_PORTAUDIO=1
 
 The GUI monitor is separate from the ncurses TUI. SDL3 rendering and event
 polling run in the foreground host loop, not in the real-time audio callback.
-T4A reserves waveform and spectrum panels for later work.
+The GUI waveform panel shows a monitor-only preview of processed output audio.
+It does not alter audio samples. Spectrum display remains deferred.
 
 Build with both optional WAV and PortAudio support:
 
@@ -321,9 +322,12 @@ GUI support not enabled. Rebuild with WITH_GUI=1.
 ```
 
 The GUI monitor shows transport state, input and output peak/RMS meters, AGC
-state, stream flags, processing-chain state, and read-only CAT status. It is an
-engineering monitor and does not replace the ncurses TUI. The waveform and
-spectrum panels are reserved for a later T4 slice.
+state, stream flags, processing-chain state, read-only CAT status, and a
+processed-output waveform preview. The waveform preview is monitor-only. Live
+capture uses preallocated storage and does not allocate, print, lock, or call
+SDL from the audio callback. For stereo audio, the preview draws channel 1. It
+is an engineering monitor and does not replace the ncurses TUI. Spectrum display
+remains deferred.
 
 Run the same self-test with the M9.3 restoration analyzer enabled:
 
@@ -848,7 +852,8 @@ make WITH_GUI=1
 ```
 
 Run the hardware-free GUI demo and confirm the window opens, mock CAT appears,
-`q` exits cleanly, Escape exits cleanly, and closing the window exits cleanly:
+the processed-output waveform moves, `q` exits cleanly, Escape exits cleanly,
+and closing the window exits cleanly:
 
 ```sh
 ./carrierpress --gui-demo --cat-backend mock --cat-frequency-hz 14230000 --cat-mode USB --cat-ptt off
@@ -892,7 +897,7 @@ This is not part of the active Linux-host validation gate.
 
 ## Development
 
-The core library has no optional audio backend dependency. WAV support lives in `cp_wav.c`, PortAudio support lives in `cp_portaudio.c`, sndio support lives in `cp_sndio.c`, WAV playout lives in `cp_playout.c`, the ncurses monitor lives in `cp_tui.c`, and read-only CAT status lives in `cp_cat.c`. The SDL3 GUI monitor lives in `cp_gui_sdl3.c` and is compiled only with `WITH_GUI=1`. GUI text formatting lives in dependency-free formatter helpers so it can be tested without SDL3. The flrig XML-RPC client lives in `cp_cat_flrig.c` and is compiled only with `WITH_FLRIG=1`. The hamlib client lives in `cp_cat_hamlib.c` and is compiled only with `WITH_HAMLIB=1`. CAT mock status is dependency-free and host-side. Process functions use caller-owned buffers and explicit state structs so real-time callbacks can remain malloc-free and deterministic.
+The core library has no optional audio backend dependency. WAV support lives in `cp_wav.c`, PortAudio support lives in `cp_portaudio.c`, sndio support lives in `cp_sndio.c`, WAV playout lives in `cp_playout.c`, the ncurses monitor lives in `cp_tui.c`, and read-only CAT status lives in `cp_cat.c`. The SDL3 GUI monitor lives in `cp_gui_sdl3.c` and is compiled only with `WITH_GUI=1`. GUI text formatting lives in dependency-free formatter helpers so it can be tested without SDL3. Processed-output waveform capture lives in dependency-free fixed-size helpers and feeds only the monitor path. The flrig XML-RPC client lives in `cp_cat_flrig.c` and is compiled only with `WITH_FLRIG=1`. The hamlib client lives in `cp_cat_hamlib.c` and is compiled only with `WITH_HAMLIB=1`. CAT mock status is dependency-free and host-side. Process functions use caller-owned buffers and explicit state structs so real-time callbacks can remain malloc-free and deterministic.
 
 The current development baseline is Linux-host first. That means normal builds,
 WAV processing, PortAudio live mode, WAV playout, TUI monitoring, and the

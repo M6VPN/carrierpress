@@ -7,6 +7,7 @@
 #include <sys/types.h>
 
 #include "cp_gui_format.h"
+#include "cp_waveform.h"
 
 struct cp_gui {
 	int active;
@@ -20,6 +21,7 @@ struct cp_gui_view {
 	const struct cp_audio_config *config;
 	const struct cp_monitor_snapshot *snapshot;
 	const struct cp_cat_snapshot *cat_snapshot;
+	const struct cp_waveform_snapshot *waveform;
 	const char *path;
 	size_t playlist_index;
 	size_t playlist_count;

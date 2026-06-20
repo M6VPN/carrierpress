@@ -22,6 +22,8 @@ static void	cp_gui_draw_bar(SDL_Renderer *, float, float, float);
 static void	cp_gui_draw_panel(SDL_Renderer *, float, float, float, float,
 		    const char *);
 static void	cp_gui_draw_text(SDL_Renderer *, float, float, const char *);
+static void	cp_gui_draw_waveform(SDL_Renderer *, float, float, float, float,
+		    const struct cp_waveform_snapshot *);
 static void	cp_gui_poll_events(struct cp_gui *);
 
 void
@@ -154,8 +156,9 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	cp_gui_draw_text(renderer, 28.0f, 302.0f, chain);
 
 	cp_gui_draw_panel(renderer, CP_GUI_MARGIN, 388.0f, 448.0f, 116.0f,
-	    "Waveform");
-	cp_gui_draw_text(renderer, 28.0f, 430.0f, "waveform reserved");
+	    "Processed Output Waveform");
+	cp_gui_draw_waveform(renderer, 28.0f, 414.0f, 424.0f, 72.0f,
+	    view->waveform);
 
 	cp_gui_draw_panel(renderer, 480.0f, 388.0f, 464.0f, 116.0f,
 	    "Spectrum");
@@ -228,6 +231,59 @@ cp_gui_draw_text(SDL_Renderer *renderer, float x, float y, const char *text)
 
 	(void)SDL_SetRenderDrawColor(renderer, 220, 226, 232, 255);
 	(void)SDL_RenderDebugText(renderer, x, y, text);
+}
+
+static void
+cp_gui_draw_waveform(SDL_Renderer *renderer, float x, float y, float w,
+	float h, const struct cp_waveform_snapshot *waveform)
+{
+	cp_sample_t sample;
+	float center;
+	float last_x;
+	float last_y;
+	float next_x;
+	float next_y;
+	float usable_h;
+	float usable_w;
+	size_t index;
+
+	if (renderer == NULL)
+		return;
+	if (waveform == NULL || !waveform->valid ||
+	    waveform->point_count < 2) {
+		cp_gui_draw_text(renderer, x, y + 24.0f,
+		    "waveform unavailable");
+		return;
+	}
+
+	usable_w = w;
+	usable_h = h;
+	center = y + usable_h * 0.5f;
+	(void)SDL_SetRenderDrawColor(renderer, 80, 92, 104, 255);
+	(void)SDL_RenderLine(renderer, x, center, x + usable_w, center);
+
+	(void)SDL_SetRenderDrawColor(renderer, 78, 184, 214, 255);
+	sample = cp_waveform_value_to_sample(waveform->values[0]);
+	last_x = x;
+	last_y = center - sample * usable_h * 0.45f;
+	for (index = 1; index < waveform->point_count; index++) {
+		sample = cp_waveform_value_to_sample(waveform->values[index]);
+		next_x = x + usable_w * (float)index /
+		    (float)(waveform->point_count - 1);
+		next_y = center - sample * usable_h * 0.45f;
+		if (next_y < y)
+			next_y = y;
+		if (next_y > y + usable_h)
+			next_y = y + usable_h;
+		if (last_y < y)
+			last_y = y;
+		if (last_y > y + usable_h)
+			last_y = y + usable_h;
+		(void)SDL_RenderLine(renderer, last_x, last_y, next_x,
+		    next_y);
+		last_x = next_x;
+		last_y = next_y;
+	}
 }
 
 static void

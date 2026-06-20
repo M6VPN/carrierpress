@@ -75,7 +75,7 @@ implemented until code, docs, and validation are complete.
 - [x] Do not replace the ncurses TUI.
 - [x] Choose the GUI toolkit after dependency and portability review.
 - [x] Reuse existing monitor snapshot data where possible.
-- [ ] Display processed output waveform.
+- [x] Display processed output waveform.
 - [ ] Display processed output spectrum.
 - [x] Display input and output peak/RMS meters.
 - [x] Display AGC, limiter, AM, SSB, multiband, bass EQ, and restoration state.

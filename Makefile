@@ -45,7 +45,8 @@ CORE_SRCS = \
 	src/cp_natural_dynamics.c \
 	src/cp_restoration.c \
 	src/cp_resampler.c \
-	src/cp_ssb.c
+	src/cp_ssb.c \
+	src/cp_waveform.c
 
 APP_SRCS = src/main.c
 
@@ -74,7 +75,8 @@ TEST_SRCS = \
 	tests/test_quality_report.c \
 	tests/test_restoration.c \
 	tests/test_resampler.c \
-	tests/test_ssb.c
+	tests/test_ssb.c \
+	tests/test_waveform.c
 
 HEADERS = $(wildcard include/*.h)
 
@@ -193,7 +195,8 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_natural_dynamics \
 	$(TEST_BIN_DIR)/test_restoration \
 	$(TEST_BIN_DIR)/test_resampler \
-	$(TEST_BIN_DIR)/test_ssb
+	$(TEST_BIN_DIR)/test_ssb \
+	$(TEST_BIN_DIR)/test_waveform
 
 ifeq ($(WITH_SNDFILE),1)
 TEST_BINS += $(TEST_BIN_DIR)/test_wav
@@ -395,6 +398,10 @@ $(TEST_BIN_DIR)/test_wav: $(TEST_OBJ_DIR)/tests/test_wav.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_wav.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_waveform: $(TEST_OBJ_DIR)/tests/test_waveform.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_waveform.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_validation: $(TEST_OBJ_DIR)/tests/test_validation.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_validation.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -423,6 +430,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_restoration
 	./$(TEST_BIN_DIR)/test_resampler
 	./$(TEST_BIN_DIR)/test_ssb
+	./$(TEST_BIN_DIR)/test_waveform
 ifeq ($(WITH_SNDFILE),1)
 	./$(TEST_BIN_DIR)/test_wav
 endif
@@ -525,6 +533,7 @@ clean:
 	rm -f tests/test_professional_check
 	rm -f tests/test_quality_report
 	rm -f tests/test_resampler tests/test_restoration tests/test_ssb
+	rm -f tests/test_waveform
 	rm -f tests/test_playout tests/test_tui tests/test_validation tests/test_wav
 	rm -f tests/playout_bad.txt tests/playout_good.txt
 	rm -f tests/playout_report.txt

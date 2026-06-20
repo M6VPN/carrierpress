@@ -250,6 +250,7 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 #ifdef CP_WITH_GUI
 	struct cp_gui gui;
 	struct cp_gui_view gui_view;
+	struct cp_waveform_snapshot waveform;
 #endif
 	sf_count_t frames_read;
 	size_t block_frames;
@@ -456,6 +457,7 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 #endif
 #ifdef CP_WITH_GUI
 	gui.active = 0;
+	cp_waveform_clear(&waveform);
 	if (audio_config.gui_enabled && cp_gui_init(&gui) != CP_OK) {
 #ifdef CP_WITH_TUI
 		cp_tui_close(&tui);
@@ -530,6 +532,11 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 			result = CP_PLAYOUT_ERR_PROCESS;
 			break;
 		}
+#ifdef CP_WITH_GUI
+		if (audio_config.gui_enabled)
+			(void)cp_waveform_capture(&waveform, output,
+			    process_frames, channels);
+#endif
 		error = Pa_WriteStream(stream, output,
 		    (unsigned long)process_frames);
 		if (error != paNoError) {
@@ -584,6 +591,7 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 			gui_view.config         = &audio_config;
 			gui_view.snapshot       = &snapshot;
 			gui_view.cat_snapshot   = &cat_snapshot;
+			gui_view.waveform       = &waveform;
 			gui_view.path           = path;
 			gui_view.playlist_index = config->playlist_index;
 			gui_view.playlist_count = config->playlist_count;
