@@ -24,12 +24,13 @@ Offline WAV processing is available as an optional M1 foundation when built with
 - Optional [sndio](https://sndio.org/) development package for OpenBSD-style live audio
 - Optional [ncurses](https://invisible-island.net/ncurses/) development package for the live TUI monitor
 - Optional [SDL3](https://wiki.libsdl.org/SDL3/FrontPage) development package for the GUI monitor
+- Optional [FFTW](https://www.fftw.org/) single-precision development package for the GUI spectrum monitor
 - Optional [hamlib](https://hamlib.github.io/) development package for read-only CAT status
 
 The DSP core builds without PortAudio, libsndfile, sndio, ncurses, SDL3, or
-CAT control libraries. CAT includes a dependency-free read-only mock backend and an
-optional read-only flrig XML-RPC backend plus an optional read-only hamlib
-backend. If your system is missing optional
+FFTW, or CAT control libraries. CAT includes a dependency-free read-only mock
+backend and an optional read-only flrig XML-RPC backend plus an optional
+read-only hamlib backend. If your system is missing optional
 WAV support, install the libsndfile development package manually. Common
 package names are `libsndfile1-dev`, `libsndfile-devel`, or `libsndfile`. If
 your system is missing optional PortAudio support, install the PortAudio
@@ -42,6 +43,9 @@ package names are `libncurses-dev`, `ncurses-devel`, or `ncurses`.
 If your system is missing optional GUI support, install the SDL3 development
 package manually. Common package names are `libsdl3-dev`, `SDL3-devel`,
 `SDL3`, or `sdl3`.
+If your system is missing optional FFTW support, install the single-precision
+FFTW development package manually. Common package names are `libfftw3-dev`,
+`fftw-devel`, `fftw3`, or `fftw3f`.
 If your system is missing optional hamlib support, install the hamlib
 development package manually. Common package names are `hamlib`, `libhamlib`,
 `libhamlib-dev`, or `hamlib-devel`.
@@ -61,10 +65,11 @@ make autodetect
 ```
 
 `make autodetect` compiles small dependency probes for libsndfile, PortAudio,
-ncurses, and sndio. It prints a feature summary, prints missing package or
-library names, and then builds with available libsndfile, PortAudio, and
-ncurses support. sndio is detected and reported, but it is not auto-enabled on
-the active Linux path because remaining sndio work is deferred.
+ncurses, SDL3, FFTW, and sndio. It prints a feature summary, prints missing
+package or library names, and then builds with available libsndfile, PortAudio,
+and ncurses support. SDL3 and FFTW are detected and reported, but they remain
+manual GUI-monitor options. sndio is detected and reported, but it is not
+auto-enabled on the active Linux path because remaining sndio work is deferred.
 
 Explicit feature overrides still work and remain the preferred command when
 you need a reproducible build profile:
@@ -77,6 +82,9 @@ make WITH_GUI=1
 make WITH_GUI=1 WITH_TUI=1
 make WITH_GUI=1 WITH_PORTAUDIO=1
 make WITH_GUI=1 WITH_SNDFILE=1 WITH_PORTAUDIO=1
+make WITH_GUI=1 WITH_FFTW=1
+make WITH_GUI=1 WITH_PORTAUDIO=1 WITH_FFTW=1
+make WITH_GUI=1 WITH_SNDFILE=1 WITH_PORTAUDIO=1 WITH_FFTW=1
 make WITH_SNDFILE=1 WITH_PORTAUDIO=1
 make WITH_FLRIG=1
 make WITH_FLRIG=1 WITH_TUI=1
@@ -316,6 +324,12 @@ Run the GUI demo without audio hardware:
 ./carrierpress --gui-demo --cat-backend mock --cat-frequency-hz 14230000 --cat-mode USB --cat-ptt off
 ```
 
+Save one deterministic GUI demo screenshot without audio hardware:
+
+```sh
+./carrierpress --gui-demo-screenshot build/gui-demo.bmp --cat-backend mock --cat-frequency-hz 14230000 --cat-mode USB --cat-ptt off
+```
+
 Run live or playout monitoring with the SDL3 GUI:
 
 ```sh
@@ -340,6 +354,9 @@ blocking work from the audio callback. FFTW planning and execution run outside
 the callback. For stereo audio, the waveform preview draws channel 1 and the
 spectrum preview averages channels for display. It is an engineering monitor,
 not a calibrated spectrum analyser, and does not replace the ncurses TUI.
+Screenshot and visual-regression checks are manual or optional. They are not
+required by base builds or normal tests. See
+[`docs/gui-visual-regression.md`](docs/gui-visual-regression.md).
 
 Run the same self-test with the M9.3 restoration analyzer enabled:
 
@@ -862,6 +879,15 @@ Build with GUI support:
 ```sh
 make WITH_GUI=1
 make WITH_GUI=1 WITH_FFTW=1
+make WITH_GUI=1 WITH_PORTAUDIO=1 WITH_FFTW=1
+make WITH_GUI=1 WITH_SNDFILE=1 WITH_PORTAUDIO=1 WITH_FFTW=1
+```
+
+Save a deterministic BMP screenshot and inspect it before running interactive
+checks:
+
+```sh
+./carrierpress --gui-demo-screenshot build/gui-demo.bmp --cat-backend mock --cat-frequency-hz 14230000 --cat-mode USB --cat-ptt off
 ```
 
 Run the hardware-free GUI demo and confirm the window opens, mock CAT appears,

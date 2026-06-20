@@ -90,6 +90,28 @@ cp_gui_should_stop(const struct cp_gui *gui)
 }
 
 int
+cp_gui_save_bmp(struct cp_gui *gui, const char *path)
+{
+	SDL_Renderer *renderer;
+	SDL_Surface *surface;
+	int status;
+
+	if (gui == NULL || path == NULL || path[0] == '\0' ||
+	    !gui->active)
+		return CP_ERR_NULL;
+
+	renderer = (SDL_Renderer *)gui->renderer;
+	surface = SDL_RenderReadPixels(renderer, NULL);
+	if (surface == NULL)
+		return CP_ERR_RANGE;
+
+	status = SDL_SaveBMP(surface, path) ? CP_OK : CP_ERR_RANGE;
+	SDL_DestroySurface(surface);
+
+	return status;
+}
+
+int
 cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 {
 	SDL_Renderer *renderer;

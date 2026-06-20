@@ -81,5 +81,5 @@ implemented until code, docs, and validation are complete.
 - [x] Display AGC, limiter, AM, SSB, multiband, bass EQ, and restoration state.
 - [x] Keep GUI rendering off the real-time audio callback.
 - [x] Add a manual GUI smoke-test checklist.
-- [ ] Add screenshot or visual-regression notes only after a toolkit is chosen.
+- [x] Add screenshot or visual-regression notes only after a toolkit is chosen.
 - [x] Keep the CLI fully usable without GUI support.

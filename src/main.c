@@ -43,7 +43,7 @@ static int	parse_uint_arg(const char *, unsigned int *);
 static int	parse_uint64_arg(const char *, uint64_t *);
 static int	run_cat_status(const struct cp_cat_config *);
 static int	run_gui_demo(const struct cp_audio_config *,
-		    const struct cp_cat_config *);
+		    const struct cp_cat_config *, const char *);
 static int	run_list_devices(void);
 static int	run_live_audio(const struct cp_audio_config *,
 		    const struct cp_cat_config *);
@@ -69,6 +69,7 @@ main(int argc, char *argv[])
 	const char *output_path;
 	const char *play_path;
 	const char *playlist_path;
+	const char *gui_screenshot_path;
 	struct cp_audio_config audio_config;
 	struct cp_block_config block_config;
 	struct cp_cat_config cat_config;
@@ -87,6 +88,7 @@ main(int argc, char *argv[])
 	output_path  = NULL;
 	play_path    = NULL;
 	playlist_path = NULL;
+	gui_screenshot_path = NULL;
 	cat_status_mode = 0;
 	channels_explicit = 0;
 	gui_demo_mode = 0;
@@ -333,6 +335,16 @@ main(int argc, char *argv[])
 #ifdef CP_WITH_GUI
 			gui_demo_mode = 1;
 			audio_config.gui_enabled = 1;
+#else
+			printf("GUI support not enabled. Rebuild with WITH_GUI=1.\n");
+			return 1;
+#endif
+		} else if (strcmp(argv[arg], "--gui-demo-screenshot") == 0 &&
+		    arg + 1 < argc) {
+#ifdef CP_WITH_GUI
+			gui_demo_mode = 1;
+			audio_config.gui_enabled = 1;
+			gui_screenshot_path = argv[++arg];
 #else
 			printf("GUI support not enabled. Rebuild with WITH_GUI=1.\n");
 			return 1;
@@ -630,7 +642,8 @@ main(int argc, char *argv[])
 			return 1;
 		}
 
-		return run_gui_demo(&audio_config, &cat_config);
+		return run_gui_demo(&audio_config, &cat_config,
+		    gui_screenshot_path);
 	}
 
 	if (cat_status_mode) {
@@ -883,7 +896,7 @@ run_cat_status(const struct cp_cat_config *config)
 
 static int
 run_gui_demo(const struct cp_audio_config *config,
-	const struct cp_cat_config *cat_config)
+	const struct cp_cat_config *cat_config, const char *screenshot_path)
 {
 #ifdef CP_WITH_GUI
 	struct cp_cat_snapshot cat_snapshot;
@@ -985,6 +998,13 @@ run_gui_demo(const struct cp_audio_config *config,
 		status = cp_gui_update(&gui, &view);
 		if (status != CP_OK)
 			break;
+		if (screenshot_path != NULL) {
+			status = cp_gui_save_bmp(&gui, screenshot_path);
+			if (status != CP_OK)
+				printf("carrierpress: could not save GUI "
+				    "screenshot\n");
+			break;
+		}
 		tick++;
 		cp_gui_delay_ms(50u);
 	}
@@ -997,6 +1017,7 @@ run_gui_demo(const struct cp_audio_config *config,
 #else
 	(void)config;
 	(void)cat_config;
+	(void)screenshot_path;
 
 	printf("GUI support not enabled. Rebuild with WITH_GUI=1.\n");
 	return 1;
@@ -1486,6 +1507,9 @@ usage(const char *program)
 	    program);
 	printf("usage: %s --gui-demo --cat-backend mock --cat-frequency-hz "
 	    "14230000 --cat-mode USB --cat-ptt off\n", program);
+	printf("usage: %s --gui-demo-screenshot build/gui-demo.bmp "
+	    "--cat-backend mock --cat-frequency-hz 14230000 "
+	    "--cat-mode USB --cat-ptt off\n", program);
 	printf("usage: %s --cat-backend mock --cat-frequency-hz 14230000 "
 	    "--cat-mode USB --cat-ptt off --cat-status\n", program);
 	printf("usage: %s --cat-backend flrig --cat-host 127.0.0.1 "

@@ -37,6 +37,7 @@ struct cp_gui_view {
 void	cp_gui_close(struct cp_gui *);
 void	cp_gui_delay_ms(unsigned int);
 int	cp_gui_init(struct cp_gui *);
+int	cp_gui_save_bmp(struct cp_gui *, const char *);
 int	cp_gui_should_stop(const struct cp_gui *);
 int	cp_gui_update(struct cp_gui *, const struct cp_gui_view *);
 
