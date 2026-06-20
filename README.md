@@ -28,11 +28,37 @@ The DSP core builds without PortAudio, libsndfile, sndio, or ncurses. If your sy
 
 ## Setup
 
-Build the CLI and core objects:
+Build the CLI and core objects without optional host dependencies:
 
 ```sh
 make
 ```
+
+Build with autodetected Linux-host optional features:
+
+```sh
+make autodetect
+```
+
+`make autodetect` compiles small dependency probes for libsndfile, PortAudio,
+ncurses, and sndio. It prints a feature summary, prints missing package or
+library names, and then builds with available libsndfile, PortAudio, and
+ncurses support. sndio is detected and reported, but it is not auto-enabled on
+the active Linux path because remaining sndio work is deferred.
+
+Explicit feature overrides still work and remain the preferred command when
+you need a reproducible build profile:
+
+```sh
+make WITH_SNDFILE=1
+make WITH_PORTAUDIO=1
+make WITH_PORTAUDIO=1 WITH_TUI=1
+make WITH_SNDFILE=1 WITH_PORTAUDIO=1
+```
+
+If an explicit optional dependency is missing, the build fails with the package
+or library name to install manually. CarrierPress does not run package managers
+or use `sudo`.
 
 Build and run the normal test set:
 

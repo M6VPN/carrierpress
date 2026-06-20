@@ -36,20 +36,20 @@ implemented until code, docs, and validation are complete.
 
 ## T2 Build Auto-Detection Cleanup
 
-- [ ] Add a documented `make autodetect` target or default build detection path.
-- [ ] Detect available libsndfile support.
-- [ ] Detect available PortAudio support.
-- [ ] Detect available ncurses support.
-- [ ] Detect available sndio support without making sndio active Linux work.
-- [ ] Reserve detection hooks for future hamlib or flrig support.
-- [ ] Print a feature summary before building optional targets.
-- [ ] Print missing package or library names without installing anything.
-- [ ] Keep explicit `WITH_SNDFILE=1`, `WITH_PORTAUDIO=1`, `WITH_TUI=1`, and
+- [x] Add a documented `make autodetect` target or default build detection path.
+- [x] Detect available libsndfile support.
+- [x] Detect available PortAudio support.
+- [x] Detect available ncurses support.
+- [x] Detect available sndio support without making sndio active Linux work.
+- [x] Reserve detection hooks for future hamlib or flrig support.
+- [x] Print a feature summary before building optional targets.
+- [x] Print missing package or library names without installing anything.
+- [x] Keep explicit `WITH_SNDFILE=1`, `WITH_PORTAUDIO=1`, `WITH_TUI=1`, and
       `WITH_SNDIO=1` overrides working.
-- [ ] Keep `make` deterministic under parallel builds.
-- [ ] Ensure generated object directories remain separated by feature set.
-- [ ] Update README build commands after auto-detection is implemented.
-- [ ] Validate `make`, `make test`, `make -j test`, and optional builds.
+- [x] Keep `make` deterministic under parallel builds.
+- [x] Ensure generated object directories remain separated by feature set.
+- [x] Update README build commands after auto-detection is implemented.
+- [x] Validate `make`, `make test`, `make -j test`, and optional builds.
 
 ## T3 flrig and hamlib CAT Control
 

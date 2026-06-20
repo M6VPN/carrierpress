@@ -10,6 +10,8 @@ WITH_SNDFILE ?= 0
 WITH_PORTAUDIO ?= 0
 WITH_SNDIO ?= 0
 WITH_TUI ?= 0
+WITH_HAMLIB ?= 0
+WITH_FLRIG ?= 0
 
 BUILD_DIR = build
 FEATURE_DIR = base
@@ -112,7 +114,13 @@ CORE_SRCS += src/cp_tui.c
 TUI_ORDER = check-tui
 endif
 
-BACKEND_ORDER = $(SNDFILE_ORDER) $(PORTAUDIO_ORDER) $(SNDIO_ORDER) $(TUI_ORDER)
+FEATURE_SUMMARY_ORDER =
+ifneq ($(WITH_SNDFILE)$(WITH_PORTAUDIO)$(WITH_SNDIO)$(WITH_TUI),0000)
+FEATURE_SUMMARY_ORDER = feature-summary
+endif
+
+BACKEND_ORDER = $(FEATURE_SUMMARY_ORDER) $(SNDFILE_ORDER) \
+	$(PORTAUDIO_ORDER) $(SNDIO_ORDER) $(TUI_ORDER)
 
 APP_CORE_OBJS = $(CORE_SRCS:src/%.c=$(APP_OBJ_DIR)/src/%.o)
 APP_OBJS = $(APP_CORE_OBJS) $(APP_SRCS:src/%.c=$(APP_OBJ_DIR)/src/%.o)
@@ -160,6 +168,46 @@ TEST_BINS += $(TEST_BIN_DIR)/test_playout
 endif
 
 all: carrierpress
+
+autodetect:
+	@mkdir -p $(BUILD_DIR)
+	@set -e; \
+	sndfile=0; portaudio=0; ncurses=0; tui=0; sndio=0; \
+	if printf '#include <sndfile.h>\nint main(void) { return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/autodetect-sndfile -lsndfile >/dev/null 2>&1; then \
+		sndfile=1; \
+	else \
+		printf 'missing: libsndfile development package/library. Install libsndfile (for example libsndfile1-dev, libsndfile-devel, or libsndfile).\n'; \
+	fi; \
+	rm -f $(BUILD_DIR)/autodetect-sndfile; \
+	if printf '#include <portaudio.h>\nint main(void) { return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/autodetect-portaudio -lportaudio >/dev/null 2>&1; then \
+		portaudio=1; \
+	else \
+		printf 'missing: PortAudio development package/library. Install PortAudio (for example portaudio19-dev, portaudio-devel, or portaudio).\n'; \
+	fi; \
+	rm -f $(BUILD_DIR)/autodetect-portaudio; \
+	if printf '#include <curses.h>\nint main(void) { initscr(); endwin(); return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/autodetect-tui -lncurses >/dev/null 2>&1; then \
+		ncurses=1; \
+	else \
+		printf 'missing: ncurses development package/library. Install ncurses (for example libncurses-dev, ncurses-devel, or ncurses).\n'; \
+	fi; \
+	rm -f $(BUILD_DIR)/autodetect-tui; \
+	if printf '#include <sndio.h>\nint main(void) { return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/autodetect-sndio -lsndio >/dev/null 2>&1; then \
+		sndio=1; \
+	else \
+		printf 'missing: sndio development package/library. Install sndio (for example sndio, sndio-devel, or libsndio-dev).\n'; \
+	fi; \
+	rm -f $(BUILD_DIR)/autodetect-sndio; \
+	if [ "$$portaudio" = 1 ] && [ "$$ncurses" = 1 ]; then \
+		tui=1; \
+	fi; \
+	printf 'CarrierPress autodetect summary:\n'; \
+	printf '  libsndfile: %s\n' "$$([ "$$sndfile" = 1 ] && printf enabled || printf disabled)"; \
+	printf '  PortAudio: %s\n' "$$([ "$$portaudio" = 1 ] && printf enabled || printf disabled)"; \
+	printf '  ncurses TUI: %s\n' "$$([ "$$tui" = 1 ] && printf enabled || printf disabled)"; \
+	printf '  sndio: %s (deferred Linux path, not auto-enabled)\n' "$$([ "$$sndio" = 1 ] && printf detected || printf missing)"; \
+	printf '  hamlib CAT: reserved, not detected in T2\n'; \
+	printf '  flrig CAT: reserved, not detected in T2\n'; \
+	$(MAKE) WITH_SNDFILE=$$sndfile WITH_PORTAUDIO=$$portaudio WITH_TUI=$$tui WITH_SNDIO=0 all
 
 carrierpress: $(APP_OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(APP_OBJS) $(LDLIBS)
@@ -314,6 +362,15 @@ quality: $(QUALITY_BINS)
 professional-check: $(PROFESSIONAL_BINS)
 	./$(TEST_BIN_DIR)/test_professional_check
 
+feature-summary:
+	@printf 'CarrierPress feature summary:\n'
+	@printf '  libsndfile: %s\n' "$$([ "$(WITH_SNDFILE)" = 1 ] && printf enabled || printf disabled)"
+	@printf '  PortAudio: %s\n' "$$([ "$(WITH_PORTAUDIO)" = 1 ] && printf enabled || printf disabled)"
+	@printf '  ncurses TUI: %s\n' "$$([ "$(WITH_TUI)" = 1 ] && printf enabled || printf disabled)"
+	@printf '  sndio: %s%s\n' "$$([ "$(WITH_SNDIO)" = 1 ] && printf enabled || printf disabled)" "$$([ "$(WITH_SNDIO)" = 1 ] && printf ' (deferred Linux path)' || printf '')"
+	@printf '  hamlib CAT: reserved\n'
+	@printf '  flrig CAT: reserved\n'
+
 check-sndfile:
 	@mkdir -p $(BUILD_DIR)
 	@printf '#include <sndfile.h>\nint main(void) { return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/check-sndfile -lsndfile >/dev/null 2>&1 || { printf 'error: missing libsndfile development package/library. Install libsndfile (for example libsndfile1-dev, libsndfile-devel, or libsndfile).\n'; exit 1; }
@@ -367,4 +424,4 @@ clean:
 	rm -f tests/playout_report.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all check-portaudio check-sndfile check-sndio check-tui clean professional-check quality test validate
+.PHONY: all autodetect check-portaudio check-sndfile check-sndio check-tui clean feature-summary professional-check quality test validate
