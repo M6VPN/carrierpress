@@ -7,6 +7,9 @@
 #include <sys/types.h>
 
 #include "cp_gui_format.h"
+#ifdef CP_WITH_FFTW
+#include "cp_spectrum.h"
+#endif
 #include "cp_waveform.h"
 
 struct cp_gui {
@@ -22,6 +25,9 @@ struct cp_gui_view {
 	const struct cp_monitor_snapshot *snapshot;
 	const struct cp_cat_snapshot *cat_snapshot;
 	const struct cp_waveform_snapshot *waveform;
+#ifdef CP_WITH_FFTW
+	const struct cp_spectrum_snapshot *spectrum;
+#endif
 	const char *path;
 	size_t playlist_index;
 	size_t playlist_count;

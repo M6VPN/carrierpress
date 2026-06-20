@@ -76,7 +76,7 @@ implemented until code, docs, and validation are complete.
 - [x] Choose the GUI toolkit after dependency and portability review.
 - [x] Reuse existing monitor snapshot data where possible.
 - [x] Display processed output waveform.
-- [ ] Display processed output spectrum.
+- [x] Display processed output spectrum.
 - [x] Display input and output peak/RMS meters.
 - [x] Display AGC, limiter, AM, SSB, multiband, bass EQ, and restoration state.
 - [x] Keep GUI rendering off the real-time audio callback.

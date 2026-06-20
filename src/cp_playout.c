@@ -22,6 +22,9 @@
 #include "cp_playout.h"
 #include "cp_restoration.h"
 #include "cp_resampler.h"
+#ifdef CP_WITH_FFTW
+#include "cp_spectrum.h"
+#endif
 #ifdef CP_WITH_TUI
 #include "cp_tui.h"
 #endif
@@ -252,6 +255,12 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	struct cp_gui_view gui_view;
 	struct cp_waveform_snapshot waveform;
 #endif
+#ifdef CP_WITH_FFTW
+	struct cp_spectrum_analyzer spectrum_analyzer;
+	struct cp_spectrum_input spectrum_input;
+	struct cp_spectrum_snapshot spectrum;
+	int spectrum_ready;
+#endif
 	sf_count_t frames_read;
 	size_t block_frames;
 	size_t block_samples;
@@ -268,6 +277,9 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	int resampling;
 	int status;
 
+#ifdef CP_WITH_FFTW
+	spectrum_ready = 0;
+#endif
 	if (path == NULL || config == NULL)
 		return CP_PLAYOUT_ERR_NULL;
 	status = cp_playout_validate_config(config);
@@ -458,6 +470,10 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 #ifdef CP_WITH_GUI
 	gui.active = 0;
 	cp_waveform_clear(&waveform);
+#ifdef CP_WITH_FFTW
+	cp_spectrum_input_clear(&spectrum_input);
+	cp_spectrum_clear(&spectrum);
+#endif
 	if (audio_config.gui_enabled && cp_gui_init(&gui) != CP_OK) {
 #ifdef CP_WITH_TUI
 		cp_tui_close(&tui);
@@ -472,8 +488,33 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 		return CP_PLAYOUT_ERR_AUDIO;
 	}
 #endif
+#ifdef CP_WITH_FFTW
+	if (audio_config.gui_enabled &&
+	    cp_spectrum_analyzer_init(&spectrum_analyzer) != CP_OK) {
+#ifdef CP_WITH_GUI
+		cp_gui_close(&gui);
+#endif
+#ifdef CP_WITH_TUI
+		cp_tui_close(&tui);
+#endif
+		Pa_CloseStream(stream);
+		Pa_Terminate();
+		free(input);
+		free(output);
+		free(resampled);
+		free(scratch);
+		sf_close(input_file);
+		return CP_PLAYOUT_ERR_AUDIO;
+	}
+	if (audio_config.gui_enabled)
+		spectrum_ready = 1;
+#endif
 	error = Pa_StartStream(stream);
 	if (error != paNoError) {
+#ifdef CP_WITH_FFTW
+		if (spectrum_ready)
+			cp_spectrum_analyzer_close(&spectrum_analyzer);
+#endif
 #ifdef CP_WITH_GUI
 		cp_gui_close(&gui);
 #endif
@@ -537,6 +578,15 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 			(void)cp_waveform_capture(&waveform, output,
 			    process_frames, channels);
 #endif
+#ifdef CP_WITH_FFTW
+		if (spectrum_ready &&
+		    cp_spectrum_capture_input(&spectrum_input, output,
+		    process_frames, channels, output_rate) == CP_OK) {
+			if (cp_spectrum_analyze(&spectrum_analyzer,
+			    &spectrum_input, &spectrum) != CP_OK)
+				cp_spectrum_clear(&spectrum);
+		}
+#endif
 		error = Pa_WriteStream(stream, output,
 		    (unsigned long)process_frames);
 		if (error != paNoError) {
@@ -592,6 +642,9 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 			gui_view.snapshot       = &snapshot;
 			gui_view.cat_snapshot   = &cat_snapshot;
 			gui_view.waveform       = &waveform;
+#ifdef CP_WITH_FFTW
+			gui_view.spectrum       = &spectrum;
+#endif
 			gui_view.path           = path;
 			gui_view.playlist_index = config->playlist_index;
 			gui_view.playlist_count = config->playlist_count;
@@ -631,6 +684,10 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 #endif
 #ifdef CP_WITH_GUI
 	cp_gui_close(&gui);
+#endif
+#ifdef CP_WITH_FFTW
+	if (spectrum_ready)
+		cp_spectrum_analyzer_close(&spectrum_analyzer);
 #endif
 	Pa_CloseStream(stream);
 	Pa_Terminate();

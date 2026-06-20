@@ -21,6 +21,9 @@
 #include "cp_monitor.h"
 #include "cp_portaudio.h"
 #include "cp_restoration.h"
+#ifdef CP_WITH_FFTW
+#include "cp_spectrum.h"
+#endif
 #ifdef CP_WITH_TUI
 #include "cp_tui.h"
 #endif
@@ -135,6 +138,14 @@ struct cp_portaudio_runtime {
 	atomic_uint waveform_channel_count;
 	atomic_int waveform_values[CP_WAVEFORM_POINTS];
 #endif
+#ifdef CP_WITH_FFTW
+	int spectrum_enabled;
+	double spectrum_sample_rate;
+	atomic_uint spectrum_valid;
+	atomic_uint spectrum_frame_count;
+	atomic_uint spectrum_channel_count;
+	atomic_int spectrum_values[CP_SPECTRUM_FFT_SIZE];
+#endif
 };
 
 static void		cp_pa_apply_pending_control(
@@ -151,6 +162,11 @@ static void		cp_pa_load_snapshot(struct cp_portaudio_runtime *,
 #ifdef CP_WITH_GUI
 static void		cp_pa_load_waveform(struct cp_portaudio_runtime *,
 			    struct cp_waveform_snapshot *);
+#endif
+#ifdef CP_WITH_FFTW
+static void		cp_pa_load_spectrum_input(
+			    struct cp_portaudio_runtime *,
+			    struct cp_spectrum_input *);
 #endif
 static int		cp_pa_rate_supported(const PaStreamParameters *,
 			    const PaStreamParameters *, double);
@@ -175,6 +191,11 @@ static void		cp_pa_store_meters(struct cp_portaudio_runtime *);
 #ifdef CP_WITH_GUI
 static void		cp_pa_store_waveform(struct cp_portaudio_runtime *,
 			    const struct cp_waveform_snapshot *);
+#endif
+#ifdef CP_WITH_FFTW
+static void		cp_pa_store_spectrum_input(
+			    struct cp_portaudio_runtime *,
+			    const struct cp_spectrum_input *);
 #endif
 static int		cp_pa_stream_callback(const void *, void *,
 			    unsigned long, const PaStreamCallbackTimeInfo *,
@@ -256,8 +277,17 @@ cp_portaudio_run(const struct cp_audio_config *config,
 	struct cp_gui_view gui_view;
 	struct cp_waveform_snapshot waveform;
 #endif
+#ifdef CP_WITH_FFTW
+	struct cp_spectrum_analyzer spectrum_analyzer;
+	struct cp_spectrum_input spectrum_input;
+	struct cp_spectrum_snapshot spectrum;
+	int spectrum_ready;
+#endif
 	int status;
 
+#ifdef CP_WITH_FFTW
+	spectrum_ready = 0;
+#endif
 	status = cp_audio_validate_config(config);
 	if (status != CP_AUDIO_OK)
 		return CP_PORTAUDIO_ERR_CONFIG;
@@ -350,9 +380,33 @@ cp_portaudio_run(const struct cp_audio_config *config,
 		return CP_PORTAUDIO_ERR_CONFIG;
 	}
 #endif
+#ifdef CP_WITH_FFTW
+	cp_spectrum_input_clear(&spectrum_input);
+	cp_spectrum_clear(&spectrum);
+	if (config->gui_enabled &&
+	    cp_spectrum_analyzer_init(&spectrum_analyzer) != CP_OK) {
+#ifdef CP_WITH_GUI
+		cp_gui_close(&gui);
+#endif
+#ifdef CP_WITH_TUI
+		cp_tui_close(&tui);
+#endif
+		Pa_CloseStream(stream);
+		free(runtime.scratch);
+		free(runtime.zero_input);
+		Pa_Terminate();
+		return CP_PORTAUDIO_ERR_CONFIG;
+	}
+	if (config->gui_enabled)
+		spectrum_ready = 1;
+#endif
 
 	error = Pa_StartStream(stream);
 	if (error != paNoError) {
+#ifdef CP_WITH_FFTW
+		if (spectrum_ready)
+			cp_spectrum_analyzer_close(&spectrum_analyzer);
+#endif
 #ifdef CP_WITH_GUI
 		cp_gui_close(&gui);
 #endif
@@ -378,6 +432,14 @@ cp_portaudio_run(const struct cp_audio_config *config,
 		cp_pa_load_snapshot(&runtime, &snapshot);
 #ifdef CP_WITH_GUI
 		cp_pa_load_waveform(&runtime, &waveform);
+#endif
+#ifdef CP_WITH_FFTW
+		cp_pa_load_spectrum_input(&runtime, &spectrum_input);
+		if (spectrum_ready) {
+			if (cp_spectrum_analyze(&spectrum_analyzer,
+			    &spectrum_input, &spectrum) != CP_OK)
+				cp_spectrum_clear(&spectrum);
+		}
 #endif
 #ifdef CP_WITH_TUI
 		if (config->tui_enabled) {
@@ -407,6 +469,9 @@ cp_portaudio_run(const struct cp_audio_config *config,
 			gui_view.snapshot      = &snapshot;
 			gui_view.cat_snapshot  = &cat_snapshot;
 			gui_view.waveform      = &waveform;
+#ifdef CP_WITH_FFTW
+			gui_view.spectrum      = &spectrum;
+#endif
 			gui_view.output_device = (int)output_device;
 			if (cp_gui_update(&gui, &gui_view) != CP_OK ||
 			    cp_gui_should_stop(&gui))
@@ -433,6 +498,10 @@ cp_portaudio_run(const struct cp_audio_config *config,
 #endif
 #ifdef CP_WITH_GUI
 	cp_gui_close(&gui);
+#endif
+#ifdef CP_WITH_FFTW
+	if (spectrum_ready)
+		cp_spectrum_analyzer_close(&spectrum_analyzer);
 #endif
 	Pa_CloseStream(stream);
 	free(runtime.scratch);
@@ -618,6 +687,15 @@ cp_pa_init_processor(struct cp_portaudio_runtime *runtime,
 	atomic_init(&runtime->waveform_channel_count, 0u);
 	for (band = 0; band < CP_WAVEFORM_POINTS; band++)
 		atomic_init(&runtime->waveform_values[band], 0);
+#endif
+#ifdef CP_WITH_FFTW
+	runtime->spectrum_enabled = config->gui_enabled;
+	runtime->spectrum_sample_rate = sample_rate;
+	atomic_init(&runtime->spectrum_valid, 0u);
+	atomic_init(&runtime->spectrum_frame_count, 0u);
+	atomic_init(&runtime->spectrum_channel_count, 0u);
+	for (band = 0; band < CP_SPECTRUM_FFT_SIZE; band++)
+		atomic_init(&runtime->spectrum_values[band], 0);
 #endif
 	atomic_init(&runtime->input_peak, 0u);
 	atomic_init(&runtime->input_rms, 0u);
@@ -959,6 +1037,35 @@ cp_pa_load_waveform(struct cp_portaudio_runtime *runtime,
 		snapshot->values[index] =
 		    atomic_load(&runtime->waveform_values[index]);
 	snapshot->valid = snapshot->point_count >= 2;
+}
+#endif
+
+#ifdef CP_WITH_FFTW
+static void
+cp_pa_load_spectrum_input(struct cp_portaudio_runtime *runtime,
+	struct cp_spectrum_input *input)
+{
+	size_t index;
+	unsigned int frame_count;
+
+	if (runtime == NULL || input == NULL)
+		return;
+
+	cp_spectrum_input_clear(input);
+	if (!atomic_load(&runtime->spectrum_valid))
+		return;
+
+	frame_count = atomic_load(&runtime->spectrum_frame_count);
+	if (frame_count > CP_SPECTRUM_FFT_SIZE)
+		frame_count = CP_SPECTRUM_FFT_SIZE;
+	input->frame_count = frame_count;
+	input->channel_count =
+	    atomic_load(&runtime->spectrum_channel_count);
+	input->sample_rate_hz = runtime->spectrum_sample_rate;
+	for (index = 0; index < input->frame_count; index++)
+		input->values[index] =
+		    atomic_load(&runtime->spectrum_values[index]);
+	input->valid = input->frame_count > 0;
 }
 #endif
 
@@ -1462,6 +1569,32 @@ cp_pa_store_waveform(struct cp_portaudio_runtime *runtime,
 }
 #endif
 
+#ifdef CP_WITH_FFTW
+static void
+cp_pa_store_spectrum_input(struct cp_portaudio_runtime *runtime,
+	const struct cp_spectrum_input *input)
+{
+	size_t index;
+
+	if (runtime == NULL || input == NULL)
+		return;
+	if (!input->valid || input->frame_count > CP_SPECTRUM_FFT_SIZE) {
+		atomic_store(&runtime->spectrum_valid, 0u);
+		return;
+	}
+
+	atomic_store(&runtime->spectrum_valid, 0u);
+	for (index = 0; index < input->frame_count; index++)
+		atomic_store(&runtime->spectrum_values[index],
+		    input->values[index]);
+	atomic_store(&runtime->spectrum_frame_count,
+	    (unsigned int)input->frame_count);
+	atomic_store(&runtime->spectrum_channel_count,
+	    (unsigned int)input->channel_count);
+	atomic_store(&runtime->spectrum_valid, 1u);
+}
+#endif
+
 static int
 cp_pa_stream_callback(const void *input_buffer, void *output_buffer,
 	unsigned long frame_count, const PaStreamCallbackTimeInfo *time_info,
@@ -1472,6 +1605,9 @@ cp_pa_stream_callback(const void *input_buffer, void *output_buffer,
 	cp_sample_t *output;
 #ifdef CP_WITH_GUI
 	struct cp_waveform_snapshot waveform;
+#endif
+#ifdef CP_WITH_FFTW
+	struct cp_spectrum_input spectrum_input;
 #endif
 	int status;
 
@@ -1508,6 +1644,13 @@ cp_pa_stream_callback(const void *input_buffer, void *output_buffer,
 	    cp_waveform_capture(&waveform, output, (size_t)frame_count,
 	    runtime->channels) == CP_OK)
 		cp_pa_store_waveform(runtime, &waveform);
+#endif
+#ifdef CP_WITH_FFTW
+	if (runtime->spectrum_enabled &&
+	    cp_spectrum_capture_input(&spectrum_input, output,
+	    (size_t)frame_count, runtime->channels,
+	    runtime->spectrum_sample_rate) == CP_OK)
+		cp_pa_store_spectrum_input(runtime, &spectrum_input);
 #endif
 	cp_pa_store_meters(runtime);
 

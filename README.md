@@ -153,10 +153,20 @@ make WITH_GUI=1 WITH_PORTAUDIO=1
 make WITH_GUI=1 WITH_SNDFILE=1 WITH_PORTAUDIO=1
 ```
 
+Build with optional FFTW spectrum monitor support:
+
+```sh
+make WITH_FFTW=1
+make WITH_GUI=1 WITH_FFTW=1
+make WITH_GUI=1 WITH_PORTAUDIO=1 WITH_FFTW=1
+make WITH_GUI=1 WITH_SNDFILE=1 WITH_PORTAUDIO=1 WITH_FFTW=1
+```
+
 The GUI monitor is separate from the ncurses TUI. SDL3 rendering and event
 polling run in the foreground host loop, not in the real-time audio callback.
 The GUI waveform panel shows a monitor-only preview of processed output audio.
-It does not alter audio samples. Spectrum display remains deferred.
+With `WITH_FFTW=1`, the GUI spectrum panel shows a monitor-only processed-output
+spectrum preview. These displays do not alter audio samples.
 
 Build with both optional WAV and PortAudio support:
 
@@ -322,12 +332,14 @@ GUI support not enabled. Rebuild with WITH_GUI=1.
 ```
 
 The GUI monitor shows transport state, input and output peak/RMS meters, AGC
-state, stream flags, processing-chain state, read-only CAT status, and a
-processed-output waveform preview. The waveform preview is monitor-only. Live
-capture uses preallocated storage and does not allocate, print, lock, or call
-SDL from the audio callback. For stereo audio, the preview draws channel 1. It
-is an engineering monitor and does not replace the ncurses TUI. Spectrum display
-remains deferred.
+state, stream flags, processing-chain state, read-only CAT status, a
+processed-output waveform preview, and an optional FFTW spectrum preview. The
+waveform and spectrum previews are monitor-only. Live capture uses preallocated
+storage and does not allocate, print, lock, call FFTW planning, call SDL, or do
+blocking work from the audio callback. FFTW planning and execution run outside
+the callback. For stereo audio, the waveform preview draws channel 1 and the
+spectrum preview averages channels for display. It is an engineering monitor,
+not a calibrated spectrum analyser, and does not replace the ncurses TUI.
 
 Run the same self-test with the M9.3 restoration analyzer enabled:
 
@@ -849,11 +861,12 @@ Build with GUI support:
 
 ```sh
 make WITH_GUI=1
+make WITH_GUI=1 WITH_FFTW=1
 ```
 
 Run the hardware-free GUI demo and confirm the window opens, mock CAT appears,
-the processed-output waveform moves, `q` exits cleanly, Escape exits cleanly,
-and closing the window exits cleanly:
+the processed-output waveform moves, the optional FFTW spectrum moves, `q`
+exits cleanly, Escape exits cleanly, and closing the window exits cleanly:
 
 ```sh
 ./carrierpress --gui-demo --cat-backend mock --cat-frequency-hz 14230000 --cat-mode USB --cat-ptt off

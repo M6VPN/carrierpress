@@ -21,6 +21,10 @@
 static void	cp_gui_draw_bar(SDL_Renderer *, float, float, float);
 static void	cp_gui_draw_panel(SDL_Renderer *, float, float, float, float,
 		    const char *);
+#ifdef CP_WITH_FFTW
+static void	cp_gui_draw_spectrum(SDL_Renderer *, float, float, float, float,
+		    const struct cp_spectrum_snapshot *);
+#endif
 static void	cp_gui_draw_text(SDL_Renderer *, float, float, const char *);
 static void	cp_gui_draw_waveform(SDL_Renderer *, float, float, float, float,
 		    const struct cp_waveform_snapshot *);
@@ -161,8 +165,13 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	    view->waveform);
 
 	cp_gui_draw_panel(renderer, 480.0f, 388.0f, 464.0f, 116.0f,
-	    "Spectrum");
-	cp_gui_draw_text(renderer, 492.0f, 430.0f, "spectrum reserved");
+	    "Processed Output Spectrum");
+#ifdef CP_WITH_FFTW
+	cp_gui_draw_spectrum(renderer, 492.0f, 414.0f, 440.0f, 72.0f,
+	    view->spectrum);
+#else
+	cp_gui_draw_text(renderer, 492.0f, 430.0f, "spectrum unavailable");
+#endif
 	cp_gui_draw_text(renderer, 28.0f, 516.0f,
 	    "Keys: q or Escape stop");
 
@@ -232,6 +241,51 @@ cp_gui_draw_text(SDL_Renderer *renderer, float x, float y, const char *text)
 	(void)SDL_SetRenderDrawColor(renderer, 220, 226, 232, 255);
 	(void)SDL_RenderDebugText(renderer, x, y, text);
 }
+
+#ifdef CP_WITH_FFTW
+static void
+cp_gui_draw_spectrum(SDL_Renderer *renderer, float x, float y, float w,
+	float h, const struct cp_spectrum_snapshot *spectrum)
+{
+	SDL_FRect bar;
+	float bar_w;
+	float baseline;
+	float ratio;
+	size_t bin;
+
+	if (renderer == NULL)
+		return;
+	if (spectrum == NULL || !spectrum->valid ||
+	    spectrum->bin_count == 0) {
+		cp_gui_draw_text(renderer, x, y + 24.0f,
+		    "spectrum unavailable");
+		return;
+	}
+
+	baseline = y + h;
+	(void)SDL_SetRenderDrawColor(renderer, 80, 92, 104, 255);
+	(void)SDL_RenderLine(renderer, x, baseline, x + w, baseline);
+	(void)SDL_RenderLine(renderer, x, y, x, baseline);
+
+	bar_w = w / (float)spectrum->bin_count;
+	if (bar_w < 1.0f)
+		bar_w = 1.0f;
+	(void)SDL_SetRenderDrawColor(renderer, 214, 174, 78, 255);
+	for (bin = 0; bin < spectrum->bin_count; bin++) {
+		ratio = (float)spectrum->magnitudes[bin] /
+		    (float)CP_SPECTRUM_SCALE;
+		if (ratio < 0.0f)
+			ratio = 0.0f;
+		if (ratio > 1.0f)
+			ratio = 1.0f;
+		bar.x = x + (float)bin * bar_w;
+		bar.w = bar_w > 2.0f ? bar_w - 1.0f : bar_w;
+		bar.h = h * ratio;
+		bar.y = baseline - bar.h;
+		(void)SDL_RenderFillRect(renderer, &bar);
+	}
+}
+#endif
 
 static void
 cp_gui_draw_waveform(SDL_Renderer *renderer, float x, float y, float w,

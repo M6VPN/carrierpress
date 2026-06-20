@@ -64,8 +64,10 @@ The optional SDL3 GUI monitor is a host-side display boundary. It consumes the
 same monitor and CAT snapshots used by text meters and the TUI. SDL rendering,
 event polling, and GUI shutdown checks run in the foreground live or playout
 loop, not in the PortAudio callback. Processed-output waveform capture uses a
-fixed-size monitor snapshot and does not alter audio samples. Spectrum display
-remains deferred for later work.
+fixed-size monitor snapshot and does not alter audio samples. Optional FFTW
+spectrum analysis uses a fixed-size processed-output capture. The callback only
+copies monitor samples into preallocated storage; FFTW planning and execution
+run in the foreground monitor loop.
 
 Live TUI controls use a small command handoff. The foreground TUI validates key input into a preset command, stores one pending command atomically, and the callback applies it at the next block boundary. Playout TUI controls are applied between blocking file-output blocks. M7.4 keeps live and playout aligned by sharing host-to-DSP block config setup and processor snapshot extraction before live mode hands values to atomics. The sndio backend should keep using the same monitor snapshot and control boundary when deferred work resumes. The STM32H753 path should call the same block DSP model directly or through a CMSIS-DSP adapter when embedded work resumes.
 

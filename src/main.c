@@ -891,6 +891,12 @@ run_gui_demo(const struct cp_audio_config *config,
 	struct cp_gui_view view;
 	struct cp_monitor_snapshot snapshot;
 	struct cp_waveform_snapshot waveform;
+#ifdef CP_WITH_FFTW
+	struct cp_spectrum_analyzer spectrum_analyzer;
+	struct cp_spectrum_input spectrum_input;
+	struct cp_spectrum_snapshot spectrum;
+	cp_sample_t spectrum_samples[CP_SPECTRUM_FFT_SIZE];
+#endif
 	cp_sample_t demo_samples[CP_WAVEFORM_POINTS];
 	unsigned int tick;
 	cp_sample_t phase;
@@ -913,6 +919,14 @@ run_gui_demo(const struct cp_audio_config *config,
 		printf("carrierpress: GUI failed to start\n");
 		return 1;
 	}
+#ifdef CP_WITH_FFTW
+	if (cp_spectrum_analyzer_init(&spectrum_analyzer) != CP_OK) {
+		cp_gui_close(&gui);
+		return 1;
+	}
+	cp_spectrum_input_clear(&spectrum_input);
+	cp_spectrum_clear(&spectrum);
+#endif
 
 	tick = 0;
 	while (!stop_requested && !cp_gui_should_stop(&gui)) {
@@ -940,6 +954,22 @@ run_gui_demo(const struct cp_audio_config *config,
 		}
 		(void)cp_waveform_capture(&waveform, demo_samples,
 		    CP_WAVEFORM_POINTS, CP_CHANNELS_MONO);
+#ifdef CP_WITH_FFTW
+		for (index = 0; index < CP_SPECTRUM_FFT_SIZE; index++) {
+			phase = ((cp_sample_t)index / (cp_sample_t)
+			    CP_SPECTRUM_FFT_SIZE) * CP_TWO_PI;
+			spectrum_samples[index] = level * 0.65f *
+			    sinf(phase * 12.0f) + level * 0.25f *
+			    sinf(phase * 36.0f);
+		}
+		if (cp_spectrum_capture_input(&spectrum_input,
+		    spectrum_samples, CP_SPECTRUM_FFT_SIZE, CP_CHANNELS_MONO,
+		    config->sample_rate) == CP_OK) {
+			if (cp_spectrum_analyze(&spectrum_analyzer,
+			    &spectrum_input, &spectrum) != CP_OK)
+				cp_spectrum_clear(&spectrum);
+		}
+#endif
 
 		(void)cp_cat_snapshot_update(cat_config, &cat_snapshot);
 		memset(&view, 0, sizeof(view));
@@ -948,6 +978,9 @@ run_gui_demo(const struct cp_audio_config *config,
 		view.snapshot = &snapshot;
 		view.cat_snapshot = &cat_snapshot;
 		view.waveform = &waveform;
+#ifdef CP_WITH_FFTW
+		view.spectrum = &spectrum;
+#endif
 		view.output_device = config->output_device;
 		status = cp_gui_update(&gui, &view);
 		if (status != CP_OK)
@@ -956,6 +989,9 @@ run_gui_demo(const struct cp_audio_config *config,
 		cp_gui_delay_ms(50u);
 	}
 
+#ifdef CP_WITH_FFTW
+	cp_spectrum_analyzer_close(&spectrum_analyzer);
+#endif
 	cp_gui_close(&gui);
 	return status == CP_OK ? 0 : 1;
 #else

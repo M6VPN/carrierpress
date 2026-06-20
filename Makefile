@@ -12,6 +12,7 @@ WITH_PORTAUDIO ?= 0
 WITH_SNDIO ?= 0
 WITH_TUI ?= 0
 WITH_GUI ?= 0
+WITH_FFTW ?= 0
 WITH_HAMLIB ?= 0
 WITH_FLRIG ?= 0
 
@@ -149,14 +150,24 @@ CORE_SRCS += src/cp_gui_sdl3.c
 GUI_ORDER = check-gui
 endif
 
+ifeq ($(WITH_FFTW),1)
+FEATURE_DIR := $(FEATURE_DIR)-fftw
+CPPFLAGS += -DCP_WITH_FFTW \
+	$(shell $(PKG_CONFIG) --cflags fftw3f 2>/dev/null)
+LDLIBS += $(shell $(PKG_CONFIG) --libs fftw3f 2>/dev/null || printf -- '-lfftw3f')
+CORE_SRCS += src/cp_spectrum.c
+TEST_SRCS += tests/test_spectrum.c
+FFTW_ORDER = check-fftw
+endif
+
 FEATURE_SUMMARY_ORDER =
-ifneq ($(WITH_SNDFILE)$(WITH_PORTAUDIO)$(WITH_SNDIO)$(WITH_TUI)$(WITH_GUI)$(WITH_HAMLIB)$(WITH_FLRIG),0000000)
+ifneq ($(WITH_SNDFILE)$(WITH_PORTAUDIO)$(WITH_SNDIO)$(WITH_TUI)$(WITH_GUI)$(WITH_FFTW)$(WITH_HAMLIB)$(WITH_FLRIG),00000000)
 FEATURE_SUMMARY_ORDER = feature-summary
 endif
 
 BACKEND_ORDER = $(FEATURE_SUMMARY_ORDER) $(SNDFILE_ORDER) \
 	$(PORTAUDIO_ORDER) $(SNDIO_ORDER) $(TUI_ORDER) $(GUI_ORDER) \
-	$(HAMLIB_ORDER) $(FLRIG_ORDER)
+	$(FFTW_ORDER) $(HAMLIB_ORDER) $(FLRIG_ORDER)
 
 APP_CORE_OBJS = $(CORE_SRCS:src/%.c=$(APP_OBJ_DIR)/src/%.o)
 APP_OBJS = $(APP_CORE_OBJS) $(APP_SRCS:src/%.c=$(APP_OBJ_DIR)/src/%.o)
@@ -210,6 +221,10 @@ ifeq ($(WITH_TUI),1)
 TEST_BINS += $(TEST_BIN_DIR)/test_tui
 endif
 
+ifeq ($(WITH_FFTW),1)
+TEST_BINS += $(TEST_BIN_DIR)/test_spectrum
+endif
+
 ifeq ($(WITH_FLRIG),1)
 TEST_BINS += $(TEST_BIN_DIR)/test_cat_flrig
 endif
@@ -223,7 +238,7 @@ all: carrierpress
 autodetect:
 	@mkdir -p $(BUILD_DIR)
 	@set -e; \
-	sndfile=0; portaudio=0; ncurses=0; tui=0; sndio=0; \
+	sndfile=0; portaudio=0; ncurses=0; tui=0; sndio=0; fftw=0; \
 	gui=0; \
 	if printf '#include <sndfile.h>\nint main(void) { return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/autodetect-sndfile -lsndfile >/dev/null 2>&1; then \
 		sndfile=1; \
@@ -255,6 +270,12 @@ autodetect:
 		printf 'missing: SDL3 development package/library. Install SDL3, libsdl3-dev, SDL3-devel, or sdl3.\n'; \
 	fi; \
 	rm -f $(BUILD_DIR)/autodetect-gui; \
+	if $(PKG_CONFIG) --exists fftw3f >/dev/null 2>&1 && printf '#include <fftw3.h>\nint main(void) { fftwf_complex x[2]; (void)x; return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) $$($(PKG_CONFIG) --cflags fftw3f) -x c - -o $(BUILD_DIR)/autodetect-fftw $$($(PKG_CONFIG) --libs fftw3f) >/dev/null 2>&1; then \
+		fftw=1; \
+	else \
+		printf 'missing: FFTW single-precision development package/library. Install FFTW/fftw3f (for example libfftw3-dev, fftw-devel, or fftw3).\n'; \
+	fi; \
+	rm -f $(BUILD_DIR)/autodetect-fftw; \
 	if [ "$$portaudio" = 1 ] && [ "$$ncurses" = 1 ]; then \
 		tui=1; \
 	fi; \
@@ -263,6 +284,7 @@ autodetect:
 	printf '  PortAudio: %s\n' "$$([ "$$portaudio" = 1 ] && printf enabled || printf disabled)"; \
 	printf '  ncurses TUI: %s\n' "$$([ "$$tui" = 1 ] && printf enabled || printf disabled)"; \
 	printf '  SDL3 GUI: %s (manual WITH_GUI=1, not auto-enabled)\n' "$$([ "$$gui" = 1 ] && printf detected || printf missing)"; \
+	printf '  FFTW spectrum: %s (manual WITH_FFTW=1, not auto-enabled)\n' "$$([ "$$fftw" = 1 ] && printf detected || printf missing)"; \
 	printf '  sndio: %s (deferred Linux path, not auto-enabled)\n' "$$([ "$$sndio" = 1 ] && printf detected || printf missing)"; \
 	printf '  hamlib CAT: manual WITH_HAMLIB=1 (not auto-enabled)\n'; \
 	printf '  flrig CAT: manual WITH_FLRIG=1 (not auto-enabled)\n'; \
@@ -378,6 +400,10 @@ $(TEST_BIN_DIR)/test_ssb: $(TEST_OBJ_DIR)/tests/test_ssb.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_ssb.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_spectrum: $(TEST_OBJ_DIR)/tests/test_spectrum.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_spectrum.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_tui: $(TEST_OBJ_DIR)/tests/test_tui.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_tui.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -440,6 +466,9 @@ endif
 ifeq ($(WITH_TUI),1)
 	./$(TEST_BIN_DIR)/test_tui
 endif
+ifeq ($(WITH_FFTW),1)
+	./$(TEST_BIN_DIR)/test_spectrum
+endif
 ifeq ($(WITH_FLRIG),1)
 	./$(TEST_BIN_DIR)/test_cat_flrig
 endif
@@ -463,6 +492,7 @@ feature-summary:
 	@printf '  PortAudio: %s\n' "$$([ "$(WITH_PORTAUDIO)" = 1 ] && printf enabled || printf disabled)"
 	@printf '  ncurses TUI: %s\n' "$$([ "$(WITH_TUI)" = 1 ] && printf enabled || printf disabled)"
 	@printf '  SDL3 GUI: %s%s\n' "$$([ "$(WITH_GUI)" = 1 ] && printf enabled || printf disabled)" "$$([ "$(WITH_GUI)" = 1 ] && printf ' (monitor)' || printf ' (manual WITH_GUI=1)')"
+	@printf '  FFTW spectrum: %s%s\n' "$$([ "$(WITH_FFTW)" = 1 ] && printf enabled || printf disabled)" "$$([ "$(WITH_FFTW)" = 1 ] && printf ' (monitor)' || printf ' (manual WITH_FFTW=1)')"
 	@printf '  sndio: %s%s\n' "$$([ "$(WITH_SNDIO)" = 1 ] && printf enabled || printf disabled)" "$$([ "$(WITH_SNDIO)" = 1 ] && printf ' (deferred Linux path)' || printf '')"
 	@printf '  hamlib CAT: %s%s\n' "$$([ "$(WITH_HAMLIB)" = 1 ] && printf enabled || printf disabled)" "$$([ "$(WITH_HAMLIB)" = 1 ] && printf ' (read-only)' || printf ' (manual WITH_HAMLIB=1)')"
 	@printf '  flrig CAT: %s%s\n' "$$([ "$(WITH_FLRIG)" = 1 ] && printf enabled || printf disabled)" "$$([ "$(WITH_FLRIG)" = 1 ] && printf ' (read-only XML-RPC)' || printf ' (manual WITH_FLRIG=1)')"
@@ -492,6 +522,15 @@ check-gui:
 	@$(PKG_CONFIG) --exists sdl3 >/dev/null 2>&1 || { printf 'error: missing SDL3 development package/library. Install SDL3, libsdl3-dev, SDL3-devel, or sdl3.\n'; exit 1; }
 	@printf '#include <SDL3/SDL.h>\nint main(void) { SDL_Window *w = 0; SDL_Renderer *r = 0; (void)SDL_CreateWindowAndRenderer("test", 32, 32, 0, &w, &r); if (r != 0) (void)SDL_RenderDebugText(r, 0.0f, 0.0f, "x"); return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) $$($(PKG_CONFIG) --cflags sdl3) -x c - -o $(BUILD_DIR)/check-gui $$($(PKG_CONFIG) --libs sdl3) >/dev/null 2>&1 || { printf 'error: missing SDL3 development package/library. Install SDL3, libsdl3-dev, SDL3-devel, or sdl3.\n'; exit 1; }
 	@rm -f $(BUILD_DIR)/check-gui
+
+check-fftw:
+	@mkdir -p $(BUILD_DIR)
+	@if $(PKG_CONFIG) --exists fftw3f >/dev/null 2>&1; then \
+		printf '#include <fftw3.h>\nint main(void) { fftwf_complex x[2]; (void)x; return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) $$($(PKG_CONFIG) --cflags fftw3f) -x c - -o $(BUILD_DIR)/check-fftw $$($(PKG_CONFIG) --libs fftw3f) >/dev/null 2>&1 || { printf 'error: missing FFTW single-precision development package/library. Install FFTW/fftw3f (for example libfftw3-dev, fftw-devel, or fftw3).\n'; exit 1; }; \
+	else \
+		printf '#include <fftw3.h>\nint main(void) { fftwf_complex x[2]; (void)x; return 0; }\n' | $(CC) $(CPPFLAGS) $(CFLAGS) -x c - -o $(BUILD_DIR)/check-fftw -lfftw3f >/dev/null 2>&1 || { printf 'error: missing FFTW single-precision development package/library. Install FFTW/fftw3f (for example libfftw3-dev, fftw-devel, or fftw3).\n'; exit 1; }; \
+	fi
+	@rm -f $(BUILD_DIR)/check-fftw
 
 check-flrig:
 	@mkdir -p $(BUILD_DIR)
@@ -532,11 +571,11 @@ clean:
 	rm -f tests/test_natural_dynamics
 	rm -f tests/test_professional_check
 	rm -f tests/test_quality_report
-	rm -f tests/test_resampler tests/test_restoration tests/test_ssb
+	rm -f tests/test_resampler tests/test_restoration tests/test_spectrum tests/test_ssb
 	rm -f tests/test_waveform
 	rm -f tests/test_playout tests/test_tui tests/test_validation tests/test_wav
 	rm -f tests/playout_bad.txt tests/playout_good.txt
 	rm -f tests/playout_report.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all autodetect check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean feature-summary professional-check quality test validate
+.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean feature-summary professional-check quality test validate
