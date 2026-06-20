@@ -86,15 +86,28 @@ test_config_validation(void)
 	}
 	cp_playout_default_config(&config);
 	config.audio_config.sample_rate = CP_AUDIO_MIN_SAMPLE_RATE - 1.0;
-	if (cp_playout_validate_config(&config) != CP_PLAYOUT_ERR_AUDIO) {
+	if (cp_playout_validate_config(&config) != CP_PLAYOUT_ERR_CONFIG) {
 		printf("test_playout: bad audio config accepted\n");
 		return 0;
 	}
 	cp_playout_default_config(&config);
 	config.audio_config.am_config.enabled = 1;
 	config.audio_config.ssb_config.enabled = 1;
-	if (cp_playout_validate_config(&config) != CP_PLAYOUT_ERR_AUDIO) {
+	if (cp_playout_validate_config(&config) != CP_PLAYOUT_ERR_CONFIG) {
 		printf("test_playout: AM and SSB config accepted\n");
+		return 0;
+	}
+	cp_playout_default_config(&config);
+	config.audio_config.auto_eq_config.enabled = 1;
+	if (cp_audio_config_set_format(&config.audio_config,
+	    CP_CHANNELS_STEREO, 24000.0) != CP_AUDIO_OK ||
+	    cp_playout_validate_config(&config) != CP_PLAYOUT_OK) {
+		printf("test_playout: 24000 Hz synced config rejected\n");
+		return 0;
+	}
+	config.audio_config.auto_eq_config.sample_rate = 48000.0f;
+	if (cp_playout_validate_config(&config) != CP_PLAYOUT_ERR_CONFIG) {
+		printf("test_playout: unsynced auto EQ config accepted\n");
 		return 0;
 	}
 

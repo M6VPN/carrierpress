@@ -494,31 +494,11 @@ main(int argc, char *argv[])
 		}
 	}
 
-	audio_config.bass_eq_config.channel_count = audio_config.channels;
-	audio_config.bass_eq_config.sample_rate =
-	    (cp_sample_t)audio_config.sample_rate;
-	audio_config.am_config.channel_count = audio_config.channels;
-	audio_config.am_config.sample_rate = (cp_sample_t)audio_config.sample_rate;
-	audio_config.restoration_config.channel_count = audio_config.channels;
-	audio_config.restoration_config.sample_rate =
-	    (cp_sample_t)audio_config.sample_rate;
-	audio_config.declipper_config.channel_count = audio_config.channels;
-	audio_config.declipper_config.sample_rate =
-	    (cp_sample_t)audio_config.sample_rate;
-	audio_config.auto_eq_config.channel_count = audio_config.channels;
-	audio_config.auto_eq_config.sample_rate =
-	    (cp_sample_t)audio_config.sample_rate;
-	audio_config.natural_dynamics_config.channel_count =
-	    audio_config.channels;
-	audio_config.natural_dynamics_config.sample_rate =
-	    (cp_sample_t)audio_config.sample_rate;
-	audio_config.low_level_boost_config.channel_count =
-	    audio_config.channels;
-	audio_config.low_level_boost_config.sample_rate =
-	    (cp_sample_t)audio_config.sample_rate;
-	audio_config.ssb_config.channel_count = audio_config.channels;
-	audio_config.ssb_config.sample_rate =
-	    (cp_sample_t)audio_config.sample_rate;
+	if (cp_audio_config_set_format(&audio_config, audio_config.channels,
+	    audio_config.sample_rate) != CP_AUDIO_OK) {
+		usage(argv[0]);
+		return 1;
+	}
 	if (block_config.am_config.enabled && block_config.ssb_config.enabled) {
 		usage(argv[0]);
 		return 1;

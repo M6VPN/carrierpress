@@ -104,6 +104,8 @@ int		cp_audio_backend_from_string(const char *,
 const char	*cp_audio_backend_string(enum cp_audio_backend);
 int		cp_audio_choose_sample_rate(const struct cp_audio_config *,
 		    double, double, int, int, int, double *);
+int		cp_audio_config_set_format(struct cp_audio_config *, size_t,
+		    double);
 void		cp_audio_default_config(struct cp_audio_config *);
 int		cp_audio_select_device_candidate(
 		    const struct cp_audio_config *,

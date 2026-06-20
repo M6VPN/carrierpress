@@ -300,29 +300,17 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	    config->audio_config.sample_rate : input_rate;
 
 	audio_config = config->audio_config;
-	audio_config.sample_rate = output_rate;
 	audio_config.sample_rate_explicit = 1;
-	audio_config.channels = channels;
-	audio_config.bass_eq_config.sample_rate = (cp_sample_t)output_rate;
-	audio_config.bass_eq_config.channel_count = channels;
-	audio_config.am_config.sample_rate = (cp_sample_t)output_rate;
-	audio_config.am_config.channel_count = channels;
-	audio_config.restoration_config.sample_rate = (cp_sample_t)output_rate;
-	audio_config.restoration_config.channel_count = channels;
-	audio_config.declipper_config.sample_rate = (cp_sample_t)output_rate;
-	audio_config.declipper_config.channel_count = channels;
-	audio_config.natural_dynamics_config.sample_rate =
-	    (cp_sample_t)output_rate;
-	audio_config.natural_dynamics_config.channel_count = channels;
-	audio_config.low_level_boost_config.sample_rate =
-	    (cp_sample_t)output_rate;
-	audio_config.low_level_boost_config.channel_count = channels;
-	audio_config.ssb_config.sample_rate = (cp_sample_t)output_rate;
-	audio_config.ssb_config.channel_count = channels;
+	status = cp_audio_config_set_format(&audio_config, channels,
+	    output_rate);
+	if (status != CP_AUDIO_OK) {
+		sf_close(input_file);
+		return CP_PLAYOUT_ERR_CONFIG;
+	}
 	status = cp_audio_validate_config(&audio_config);
 	if (status != CP_AUDIO_OK) {
 		sf_close(input_file);
-		return CP_PLAYOUT_ERR_AUDIO;
+		return CP_PLAYOUT_ERR_CONFIG;
 	}
 
 	error = Pa_Initialize();
@@ -359,23 +347,12 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	    !cp_playout_rates_equal(output_rate,
 	    output_info->defaultSampleRate)) {
 		output_rate = output_info->defaultSampleRate;
-		audio_config.sample_rate = output_rate;
-		audio_config.bass_eq_config.sample_rate =
-		    (cp_sample_t)output_rate;
-		audio_config.am_config.sample_rate = (cp_sample_t)output_rate;
-		audio_config.restoration_config.sample_rate =
-		    (cp_sample_t)output_rate;
-		audio_config.declipper_config.sample_rate =
-		    (cp_sample_t)output_rate;
-		audio_config.natural_dynamics_config.sample_rate =
-		    (cp_sample_t)output_rate;
-		audio_config.low_level_boost_config.sample_rate =
-		    (cp_sample_t)output_rate;
-		audio_config.ssb_config.sample_rate = (cp_sample_t)output_rate;
-		if (cp_audio_validate_config(&audio_config) != CP_AUDIO_OK) {
+		if (cp_audio_config_set_format(&audio_config, channels,
+		    output_rate) != CP_AUDIO_OK ||
+		    cp_audio_validate_config(&audio_config) != CP_AUDIO_OK) {
 			Pa_Terminate();
 			sf_close(input_file);
-			return CP_PLAYOUT_ERR_AUDIO;
+			return CP_PLAYOUT_ERR_CONFIG;
 		}
 		status = cp_playout_open_output_stream(&stream,
 		    &output_params, output_rate, block_frames);
@@ -673,6 +650,8 @@ cp_playout_status_string(int status)
 		return "unsupported playout format: use WAV in this milestone";
 	case CP_PLAYOUT_ERR_METER:
 		return "invalid playout meter interval";
+	case CP_PLAYOUT_ERR_CONFIG:
+		return "invalid playout audio config";
 	default:
 		return "unknown playout error";
 	}
@@ -695,7 +674,7 @@ cp_playout_validate_config(const struct cp_playout_config *config)
 		return CP_PLAYOUT_ERR_METER;
 	status = cp_audio_validate_config(&config->audio_config);
 	if (status != CP_AUDIO_OK)
-		return CP_PLAYOUT_ERR_AUDIO;
+		return CP_PLAYOUT_ERR_CONFIG;
 
 	return CP_PLAYOUT_OK;
 }

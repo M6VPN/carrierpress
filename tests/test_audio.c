@@ -11,6 +11,7 @@
 
 static int	test_backend_parse(void);
 static int	test_block_config_from_audio(void);
+static int	test_config_set_format(void);
 static int	test_device_selection(void);
 static int	test_sample_rate_choice(void);
 static int	test_validate_config(void);
@@ -23,6 +24,8 @@ main(void)
 	if (!test_backend_parse())
 		return 1;
 	if (!test_block_config_from_audio())
+		return 1;
+	if (!test_config_set_format())
 		return 1;
 	if (!test_device_selection())
 		return 1;
@@ -138,6 +141,69 @@ test_block_config_from_audio(void)
 	if (cp_block_config_from_audio(&block_config, &audio_config,
 	    CP_CHANNELS_MONO, 48000.0f) != CP_ERR_RANGE) {
 		printf("test_audio: AM and SSB block config accepted\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_config_set_format(void)
+{
+	struct cp_audio_config config;
+
+	cp_audio_default_config(&config);
+	config.auto_eq_config.enabled = 1;
+	if (cp_audio_config_set_format(&config, CP_CHANNELS_STEREO,
+	    24000.0) != CP_AUDIO_OK) {
+		printf("test_audio: stereo format sync failed\n");
+		return 0;
+	}
+	if (config.channels != CP_CHANNELS_STEREO ||
+	    config.sample_rate != 24000.0 ||
+	    config.bass_eq_config.sample_rate != 24000.0f ||
+	    config.am_config.sample_rate != 24000.0f ||
+	    config.declipper_config.sample_rate != 24000.0f ||
+	    config.auto_eq_config.sample_rate != 24000.0f ||
+	    config.natural_dynamics_config.sample_rate != 24000.0f ||
+	    config.low_level_boost_config.sample_rate != 24000.0f ||
+	    config.restoration_config.sample_rate != 24000.0f ||
+	    config.ssb_config.sample_rate != 24000.0f) {
+		printf("test_audio: sample rate sync mismatch\n");
+		return 0;
+	}
+	if (cp_audio_validate_config(&config) != CP_AUDIO_OK) {
+		printf("test_audio: synced stereo config rejected\n");
+		return 0;
+	}
+
+	if (cp_audio_config_set_format(&config, CP_CHANNELS_MONO,
+	    44100.0) != CP_AUDIO_OK) {
+		printf("test_audio: mono format sync failed\n");
+		return 0;
+	}
+	if (config.channels != CP_CHANNELS_MONO ||
+	    config.bass_eq_config.channel_count != CP_CHANNELS_MONO ||
+	    config.am_config.channel_count != CP_CHANNELS_MONO ||
+	    config.declipper_config.channel_count != CP_CHANNELS_MONO ||
+	    config.auto_eq_config.channel_count != CP_CHANNELS_MONO ||
+	    config.natural_dynamics_config.channel_count !=
+	    CP_CHANNELS_MONO ||
+	    config.low_level_boost_config.channel_count !=
+	    CP_CHANNELS_MONO ||
+	    config.restoration_config.channel_count != CP_CHANNELS_MONO ||
+	    config.ssb_config.channel_count != CP_CHANNELS_MONO) {
+		printf("test_audio: channel sync mismatch\n");
+		return 0;
+	}
+	if (cp_audio_config_set_format(&config, 3, 48000.0) !=
+	    CP_AUDIO_ERR_CHANNEL) {
+		printf("test_audio: invalid channel sync accepted\n");
+		return 0;
+	}
+	if (cp_audio_config_set_format(&config, CP_CHANNELS_STEREO,
+	    CP_AUDIO_MIN_SAMPLE_RATE - 1.0) != CP_AUDIO_ERR_RATE) {
+		printf("test_audio: invalid rate sync accepted\n");
 		return 0;
 	}
 

@@ -31,7 +31,8 @@ enum cp_playout_status {
 	CP_PLAYOUT_ERR_READ       = -709,
 	CP_PLAYOUT_ERR_WRITE      = -710,
 	CP_PLAYOUT_ERR_UNSUPPORTED = -711,
-	CP_PLAYOUT_ERR_METER      = -712
+	CP_PLAYOUT_ERR_METER      = -712,
+	CP_PLAYOUT_ERR_CONFIG     = -713
 };
 
 struct cp_playlist {

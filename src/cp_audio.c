@@ -111,6 +111,41 @@ cp_audio_choose_sample_rate(const struct cp_audio_config *config,
 	return CP_AUDIO_ERR_RATE;
 }
 
+int
+cp_audio_config_set_format(struct cp_audio_config *config, size_t channels,
+	double sample_rate)
+{
+	if (config == NULL)
+		return CP_AUDIO_ERR_NULL;
+	if (channels != CP_CHANNELS_MONO && channels != CP_CHANNELS_STEREO)
+		return CP_AUDIO_ERR_CHANNEL;
+	if (!cp_audio_rate_valid(sample_rate))
+		return CP_AUDIO_ERR_RATE;
+
+	config->channels = channels;
+	config->sample_rate = sample_rate;
+	config->bass_eq_config.channel_count = channels;
+	config->bass_eq_config.sample_rate = (cp_sample_t)sample_rate;
+	config->am_config.channel_count = channels;
+	config->am_config.sample_rate = (cp_sample_t)sample_rate;
+	config->declipper_config.channel_count = channels;
+	config->declipper_config.sample_rate = (cp_sample_t)sample_rate;
+	config->auto_eq_config.channel_count = channels;
+	config->auto_eq_config.sample_rate = (cp_sample_t)sample_rate;
+	config->natural_dynamics_config.channel_count = channels;
+	config->natural_dynamics_config.sample_rate =
+	    (cp_sample_t)sample_rate;
+	config->low_level_boost_config.channel_count = channels;
+	config->low_level_boost_config.sample_rate =
+	    (cp_sample_t)sample_rate;
+	config->restoration_config.channel_count = channels;
+	config->restoration_config.sample_rate = (cp_sample_t)sample_rate;
+	config->ssb_config.channel_count = channels;
+	config->ssb_config.sample_rate = (cp_sample_t)sample_rate;
+
+	return CP_AUDIO_OK;
+}
+
 void
 cp_audio_default_config(struct cp_audio_config *config)
 {
@@ -166,6 +201,8 @@ cp_audio_default_config(struct cp_audio_config *config)
 	config->ssb_config.channel_count = config->channels;
 	config->ssb_config.sample_rate = (cp_sample_t)config->sample_rate;
 	config->tui_enabled = 0;
+	(void)cp_audio_config_set_format(config, config->channels,
+	    config->sample_rate);
 }
 
 int
