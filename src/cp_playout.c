@@ -41,6 +41,7 @@ static int	cp_playout_open_output_stream(PaStream **,
 static int	cp_playout_output_device_contains(PaDeviceIndex, const char *);
 static int	cp_playout_output_matches(const struct cp_audio_config *,
 		    PaDeviceIndex, size_t);
+static PaTime	cp_playout_output_latency(const PaDeviceInfo *);
 static int	cp_playout_rate_valid(double);
 static int	cp_playout_rates_equal(double, double);
 static int	cp_playout_read_line(FILE *, char *, size_t, int *);
@@ -276,6 +277,7 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	int result;
 	int resampling;
 	int status;
+	unsigned int block_stream_flags;
 
 #ifdef CP_WITH_FFTW
 	spectrum_ready = 0;
@@ -369,7 +371,7 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	output_params.device = output_device;
 	output_params.channelCount = (int)channels;
 	output_params.sampleFormat = paFloat32;
-	output_params.suggestedLatency = output_info->defaultLowOutputLatency;
+	output_params.suggestedLatency = cp_playout_output_latency(output_info);
 	output_params.hostApiSpecificStreamInfo = NULL;
 
 	status = cp_playout_open_output_stream(&stream, &output_params,
@@ -567,6 +569,7 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 		}
 		if (process_frames == 0)
 			continue;
+		block_stream_flags = 0;
 		status = cp_block_process(&processor, process_input, output,
 		    scratch, output_block_samples, process_frames);
 		if (status != CP_OK) {
@@ -590,14 +593,20 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 		error = Pa_WriteStream(stream, output,
 		    (unsigned long)process_frames);
 		if (error != paNoError) {
-			result = CP_PLAYOUT_ERR_WRITE;
-			break;
+			if (error == paOutputUnderflowed) {
+				block_stream_flags |=
+				    CP_MONITOR_OUTPUT_UNDERFLOW;
+			} else {
+				result = CP_PLAYOUT_ERR_WRITE;
+				break;
+			}
 		}
 		status = cp_playout_build_snapshot(&processor, &snapshot);
 		if (status != CP_PLAYOUT_OK) {
 			result = status;
 			break;
 		}
+		snapshot.stream_flags |= block_stream_flags;
 #ifdef CP_WITH_TUI
 		if (audio_config.tui_enabled) {
 			(void)cp_cat_snapshot_update(&config->cat_config,
@@ -1001,6 +1010,17 @@ cp_playout_output_device_contains(PaDeviceIndex device, const char *needle)
 		return 1;
 
 	return 0;
+}
+
+static PaTime
+cp_playout_output_latency(const PaDeviceInfo *device_info)
+{
+	if (device_info == NULL)
+		return 0.0;
+	if (device_info->defaultHighOutputLatency > 0.0)
+		return device_info->defaultHighOutputLatency;
+
+	return device_info->defaultLowOutputLatency;
 }
 
 static int
