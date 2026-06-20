@@ -128,6 +128,15 @@ Run the stricter professional validation gate:
 make professional-check
 ```
 
+Run the v0.1 release validation profile:
+
+```sh
+make release-check
+```
+
+Release validation and manual tag checks are documented in
+[`docs/release-checklist.md`](docs/release-checklist.md).
+
 Build with optional WAV support:
 
 ```sh

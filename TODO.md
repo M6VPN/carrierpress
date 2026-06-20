@@ -94,3 +94,12 @@ implemented until code, docs, and validation are complete.
 - [ ] Add flrig PTT control only after mock tests pass.
 - [ ] Add hamlib PTT control only after mock tests pass.
 - [ ] Keep all PTT commands out of real-time callbacks.
+
+## R1 v0.1 Release Hardening
+
+- [x] Add a v0.1 release checklist.
+- [x] Add a reproducible release validation helper.
+- [x] Keep required release checks dependency-light.
+- [x] Keep optional dependency checks opt-in.
+- [x] Document local Hamlib 4.7.1 validation without hardcoding the path.
+- [x] Preserve read-only CAT and deferred PTT-control status.

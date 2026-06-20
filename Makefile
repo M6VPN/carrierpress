@@ -486,6 +486,9 @@ quality: $(QUALITY_BINS)
 professional-check: $(PROFESSIONAL_BINS)
 	./$(TEST_BIN_DIR)/test_professional_check
 
+release-check:
+	./scripts/release-check.sh
+
 feature-summary:
 	@printf 'CarrierPress feature summary:\n'
 	@printf '  libsndfile: %s\n' "$$([ "$(WITH_SNDFILE)" = 1 ] && printf enabled || printf disabled)"
@@ -578,4 +581,4 @@ clean:
 	rm -f tests/playout_report.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean feature-summary professional-check quality test validate
+.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean feature-summary professional-check quality release-check test validate
