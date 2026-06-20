@@ -5,6 +5,7 @@
 #define CP_TUI_H
 
 #include "cp_audio.h"
+#include "cp_cat.h"
 #include "cp_control.h"
 #include "cp_monitor.h"
 
@@ -23,6 +24,7 @@ struct cp_tui_view {
 	enum cp_tui_mode mode;
 	const struct cp_audio_config *config;
 	const struct cp_monitor_snapshot *snapshot;
+	const struct cp_cat_snapshot *cat_snapshot;
 	const char *path;
 	size_t playlist_index;
 	size_t playlist_count;
@@ -33,6 +35,8 @@ struct cp_tui_view {
 void	cp_tui_close(struct cp_tui *);
 const char
 	*cp_tui_active_mode_string(const struct cp_monitor_snapshot *);
+int	cp_tui_format_cat_status(const struct cp_cat_snapshot *,
+	    char *, size_t);
 int	cp_tui_format_key_help(const struct cp_tui_view *,
 	    enum cp_control_bank, char *, size_t);
 int	cp_tui_format_mode_status(const struct cp_monitor_snapshot *,

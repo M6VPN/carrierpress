@@ -53,10 +53,10 @@ implemented until code, docs, and validation are complete.
 
 ## T3 flrig and hamlib CAT Control
 
-- [ ] Add a clean CAT backend boundary before any protocol implementation.
-- [ ] Keep CAT support optional and outside the DSP core.
+- [x] Add a clean CAT backend boundary before any protocol implementation.
+- [x] Keep CAT support optional and outside the DSP core.
 - [ ] Define build flags for CAT support only after dependency probing is settled.
-- [ ] Support read-only rig status first.
+- [x] Support read-only rig status first.
 - [ ] Read frequency.
 - [ ] Read mode.
 - [ ] Read PTT state.
@@ -64,9 +64,9 @@ implemented until code, docs, and validation are complete.
 - [ ] Support flrig XML-RPC or compatible control through a small host backend.
 - [ ] Support hamlib only as an optional backend if development headers are
       available.
-- [ ] Add a mock or simulator test path before requiring hardware.
-- [ ] Show CAT status in the TUI without blocking audio processing.
-- [ ] Document that users remain responsible for licence limits and station
+- [x] Add a mock or simulator test path before requiring hardware.
+- [x] Show CAT status in the TUI without blocking audio processing.
+- [x] Document that users remain responsible for licence limits and station
       control requirements.
 
 ## T4 Optional GUI Monitor

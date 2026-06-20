@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "carrierpress.h"
+#include "cp_cat.h"
 #include "cp_playout.h"
 #include "cp_portaudio.h"
 #include "cp_sndio.h"
@@ -38,12 +39,17 @@ static int	parse_multiband_preset(const char *,
 static int	parse_ssb_preset(struct cp_ssb_config *, const char *);
 static int	parse_size_arg(const char *, size_t *);
 static int	parse_uint_arg(const char *, unsigned int *);
+static int	parse_uint64_arg(const char *, uint64_t *);
+static int	run_cat_status(const struct cp_cat_config *);
 static int	run_list_devices(void);
-static int	run_live_audio(const struct cp_audio_config *);
+static int	run_live_audio(const struct cp_audio_config *,
+		    const struct cp_cat_config *);
 static int	run_playout_file(const char *, const struct cp_audio_config *,
-		    const struct cp_block_config *, volatile sig_atomic_t *);
+		    const struct cp_block_config *, const struct cp_cat_config *,
+		    volatile sig_atomic_t *);
 static int	run_playout_playlist(const char *, const struct cp_audio_config *,
-		    const struct cp_block_config *, volatile sig_atomic_t *);
+		    const struct cp_block_config *, const struct cp_cat_config *,
+		    volatile sig_atomic_t *);
 static int	run_wav_process(const char *, const char *,
 		    const struct cp_block_config *);
 static int	run_self_test(const struct cp_block_config *);
@@ -62,9 +68,12 @@ main(int argc, char *argv[])
 	const char *playlist_path;
 	struct cp_audio_config audio_config;
 	struct cp_block_config block_config;
+	struct cp_cat_config cat_config;
 	double parsed_double;
+	uint64_t parsed_uint64;
 	size_t parsed_size;
 	int arg;
+	int cat_status_mode;
 	int channels_explicit;
 	int live_mode;
 	int list_devices;
@@ -74,12 +83,14 @@ main(int argc, char *argv[])
 	output_path  = NULL;
 	play_path    = NULL;
 	playlist_path = NULL;
+	cat_status_mode = 0;
 	channels_explicit = 0;
 	live_mode    = 0;
 	list_devices = 0;
 	self_test_mode = 0;
 	cp_audio_default_config(&audio_config);
 	cp_block_default_config(&block_config, CP_CHANNELS_MONO);
+	cp_cat_default_config(&cat_config);
 	block_config.sample_rate = CP_SELF_TEST_RATE;
 
 	for (arg = 1; arg < argc; arg++) {
@@ -100,6 +111,39 @@ main(int argc, char *argv[])
 			list_devices = 1;
 		} else if (strcmp(argv[arg], "--live") == 0) {
 			live_mode = 1;
+		} else if (strcmp(argv[arg], "--cat-backend") == 0 &&
+		    arg + 1 < argc) {
+			if (cp_cat_backend_from_string(argv[++arg],
+			    &cat_config.backend) != CP_OK) {
+				usage(argv[0]);
+				return 1;
+			}
+			cat_config.enabled = cat_config.backend !=
+			    CP_CAT_BACKEND_NONE;
+		} else if (strcmp(argv[arg], "--cat-frequency-hz") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_uint64_arg(argv[++arg], &parsed_uint64)) {
+				usage(argv[0]);
+				return 1;
+			}
+			cat_config.mock_frequency_hz = parsed_uint64;
+		} else if (strcmp(argv[arg], "--cat-mode") == 0 &&
+		    arg + 1 < argc) {
+			if (cp_cat_mode_set(cat_config.mock_mode,
+			    sizeof(cat_config.mock_mode), argv[++arg]) !=
+			    CP_OK) {
+				usage(argv[0]);
+				return 1;
+			}
+		} else if (strcmp(argv[arg], "--cat-ptt") == 0 &&
+		    arg + 1 < argc) {
+			if (cp_cat_ptt_from_string(argv[++arg],
+			    &cat_config.mock_ptt) != CP_OK) {
+				usage(argv[0]);
+				return 1;
+			}
+		} else if (strcmp(argv[arg], "--cat-status") == 0) {
+			cat_status_mode = 1;
 		} else if (strcmp(argv[arg], "--analyze") == 0) {
 			block_config.restoration_config.enabled = 1;
 			audio_config.restoration_config.enabled = 1;
@@ -504,6 +548,17 @@ main(int argc, char *argv[])
 		return 1;
 	}
 
+	if (cat_status_mode) {
+		if (input_path != NULL || output_path != NULL ||
+		    play_path != NULL || playlist_path != NULL ||
+		    live_mode || list_devices || self_test_mode) {
+			usage(argv[0]);
+			return 1;
+		}
+
+		return run_cat_status(&cat_config);
+	}
+
 	if (self_test_mode) {
 		if (input_path != NULL || output_path != NULL ||
 		    play_path != NULL || playlist_path != NULL ||
@@ -529,10 +584,10 @@ main(int argc, char *argv[])
 		}
 		if (play_path != NULL)
 			return run_playout_file(play_path, &audio_config,
-			    &block_config, &stop_requested);
+			    &block_config, &cat_config, &stop_requested);
 
 		return run_playout_playlist(playlist_path, &audio_config,
-		    &block_config, &stop_requested);
+		    &block_config, &cat_config, &stop_requested);
 	}
 
 	if (input_path != NULL || output_path != NULL) {
@@ -558,7 +613,7 @@ main(int argc, char *argv[])
 	}
 
 	if (live_mode)
-		return run_live_audio(&audio_config);
+		return run_live_audio(&audio_config, &cat_config);
 
 	usage(argv[0]);
 	return 1;
@@ -705,6 +760,42 @@ parse_uint_arg(const char *text, unsigned int *value)
 }
 
 static int
+parse_uint64_arg(const char *text, uint64_t *value)
+{
+	char *end;
+	unsigned long long parsed;
+
+	if (text == NULL || value == NULL || text[0] == '\0' ||
+	    text[0] == '-')
+		return 0;
+
+	errno = 0;
+	parsed = strtoull(text, &end, 10);
+	if (errno != 0 || end == text || *end != '\0')
+		return 0;
+	*value = (uint64_t)parsed;
+	return 1;
+}
+
+static int
+run_cat_status(const struct cp_cat_config *config)
+{
+	struct cp_cat_snapshot snapshot;
+	char buffer[128];
+	int status;
+
+	status = cp_cat_snapshot_update(config, &snapshot);
+	if (status != CP_OK)
+		return 1;
+	status = cp_cat_snapshot_format(&snapshot, buffer, sizeof(buffer));
+	if (status != CP_OK)
+		return 1;
+
+	printf("%s\n", buffer);
+	return 0;
+}
+
+static int
 run_list_devices(void)
 {
 #ifdef CP_WITH_PORTAUDIO
@@ -725,9 +816,12 @@ run_list_devices(void)
 }
 
 static int
-run_live_audio(const struct cp_audio_config *config)
+run_live_audio(const struct cp_audio_config *config,
+	const struct cp_cat_config *cat_config)
 {
 	int status;
+
+	(void)cat_config;
 
 	status = cp_audio_validate_config(config);
 	if (status != CP_AUDIO_OK) {
@@ -762,7 +856,7 @@ run_live_audio(const struct cp_audio_config *config)
 #endif
 
 #ifdef CP_WITH_PORTAUDIO
-	status = cp_portaudio_run(config, &stop_requested);
+	status = cp_portaudio_run(config, cat_config, &stop_requested);
 	if (status != CP_PORTAUDIO_OK) {
 		printf("carrierpress: PortAudio failed: %s\n",
 		    cp_portaudio_status_string(status));
@@ -792,6 +886,7 @@ run_live_audio(const struct cp_audio_config *config)
 static int
 run_playout_file(const char *path, const struct cp_audio_config *audio_config,
 	const struct cp_block_config *block_config,
+	const struct cp_cat_config *cat_config,
 	volatile sig_atomic_t *stop_flag)
 {
 #ifdef CP_WITH_PLAYOUT
@@ -808,6 +903,7 @@ run_playout_file(const char *path, const struct cp_audio_config *audio_config,
 	cp_playout_default_config(&config);
 	config.audio_config = *audio_config;
 	config.block_config = *block_config;
+	config.cat_config = *cat_config;
 	config.block_frames = audio_config->block_size;
 	config.meter_interval_ms = audio_config->meter_interval_ms;
 	config.stop_requested = stop_flag;
@@ -824,6 +920,7 @@ run_playout_file(const char *path, const struct cp_audio_config *audio_config,
 	(void)path;
 	(void)audio_config;
 	(void)block_config;
+	(void)cat_config;
 	(void)stop_flag;
 
 	printf("Playout support not enabled. Rebuild with WITH_SNDFILE=1 "
@@ -836,6 +933,7 @@ static int
 run_playout_playlist(const char *path,
 	const struct cp_audio_config *audio_config,
 	const struct cp_block_config *block_config,
+	const struct cp_cat_config *cat_config,
 	volatile sig_atomic_t *stop_flag)
 {
 #ifdef CP_WITH_PLAYOUT
@@ -852,6 +950,7 @@ run_playout_playlist(const char *path,
 	cp_playout_default_config(&config);
 	config.audio_config = *audio_config;
 	config.block_config = *block_config;
+	config.cat_config = *cat_config;
 	config.block_frames = audio_config->block_size;
 	config.meter_interval_ms = audio_config->meter_interval_ms;
 	config.stop_requested = stop_flag;
@@ -868,6 +967,7 @@ run_playout_playlist(const char *path,
 	(void)path;
 	(void)audio_config;
 	(void)block_config;
+	(void)cat_config;
 	(void)stop_flag;
 
 	printf("Playout support not enabled. Rebuild with WITH_SNDFILE=1 "
@@ -1165,6 +1265,8 @@ usage(const char *program)
 	printf("usage: %s --play input.wav [--output-device N]\n", program);
 	printf("usage: %s --playlist playlist.txt [--output-device N]\n",
 	    program);
+	printf("usage: %s --cat-backend mock --cat-frequency-hz 14230000 "
+	    "--cat-mode USB --cat-ptt off --cat-status\n", program);
 	printf("usage: %s --list-devices\n", program);
 	printf("usage: %s --live [--input-device N] [--output-device N]\n",
 	    program);
@@ -1202,4 +1304,7 @@ usage(const char *program)
 	printf("SSB options: --ssb --ssb-preset "
 	    "ssb-speech|ssb-narrow|ssb-wide|ssb-gentle --ssb-lowpass HZ "
 	    "--ssb-highpass HZ --ssb-phase-rotator --ssb-peak FLOAT\n");
+	printf("CAT options: --cat-backend none|mock|flrig|hamlib "
+	    "--cat-frequency-hz N --cat-mode MODE "
+	    "--cat-ptt off|on|unknown --cat-status\n");
 }

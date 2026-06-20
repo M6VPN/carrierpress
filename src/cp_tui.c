@@ -41,7 +41,7 @@ static void	cp_tui_draw_box_line(int, int, const char *, int);
 static void	cp_tui_draw_chain(int, int,
 		    const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_details(int, int,
-		    const struct cp_monitor_snapshot *);
+		    const struct cp_tui_view *);
 static void	cp_tui_draw_meters(int, int,
 		    const struct cp_monitor_snapshot *);
 static void	cp_tui_draw_mode(int, int, const struct cp_tui_view *,
@@ -130,7 +130,7 @@ cp_tui_update_view(struct cp_tui *tui, const struct cp_tui_view *view,
 		cp_tui_draw_mode(rows, cols, view, tui->control_bank);
 		cp_tui_draw_meters(rows, cols, view->snapshot);
 		cp_tui_draw_chain(rows, cols, view->snapshot);
-		cp_tui_draw_details(rows, cols, view->snapshot);
+		cp_tui_draw_details(rows, cols, view);
 	}
 	refresh();
 
@@ -159,6 +159,18 @@ const char *
 cp_tui_active_mode_string(const struct cp_monitor_snapshot *snapshot)
 {
 	return cp_tui_processing_mode_name(cp_tui_processing_mode(snapshot));
+}
+
+int
+cp_tui_format_cat_status(const struct cp_cat_snapshot *snapshot,
+	char *buffer, size_t buffer_size)
+{
+	if (buffer == NULL || buffer_size == 0)
+		return CP_ERR_NULL;
+	if (snapshot == NULL)
+		return cp_tui_snprintf(buffer, buffer_size, "CAT disabled");
+
+	return cp_cat_snapshot_format(snapshot, buffer, buffer_size);
 }
 
 int
@@ -373,15 +385,17 @@ cp_tui_draw_chain(int rows, int cols,
 }
 
 static void
-cp_tui_draw_details(int rows, int cols,
-	const struct cp_monitor_snapshot *snapshot)
+cp_tui_draw_details(int rows, int cols, const struct cp_tui_view *view)
 {
+	const struct cp_monitor_snapshot *snapshot;
 	const char *am_preset;
 	const char *bass_preset;
 	const char *ssb_preset;
+	char cat_text[CP_TUI_TEXT_SIZE];
 	size_t band;
 
 	(void)rows;
+	snapshot = view->snapshot;
 	am_preset = cp_am_preset_string((enum cp_am_preset)
 	    snapshot->am_preset);
 	ssb_preset = cp_ssb_preset_string((enum cp_ssb_preset)
@@ -441,6 +455,11 @@ cp_tui_draw_details(int rows, int cols,
 		    cp_monitor_centibel_to_db(
 		    snapshot->band_gr_db_centibel[band]));
 	}
+
+	if (cp_tui_format_cat_status(view->cat_snapshot, cat_text,
+	    sizeof(cat_text)) != CP_OK)
+		cat_text[0] = '\0';
+	cp_tui_draw_text(22, 2, cols, "%s", cat_text);
 }
 
 static void

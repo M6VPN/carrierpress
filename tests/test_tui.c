@@ -7,9 +7,11 @@
 #include <string.h>
 
 #include "cp_audio.h"
+#include "cp_cat.h"
 #include "cp_monitor.h"
 #include "cp_tui.h"
 
+static int	test_cat_status(void);
 static int	test_key_help(void);
 static int	test_mode_state(void);
 
@@ -20,8 +22,60 @@ main(void)
 		return 1;
 	if (!test_key_help())
 		return 1;
+	if (!test_cat_status())
+		return 1;
 
 	return 0;
+}
+
+static int
+test_cat_status(void)
+{
+	struct cp_cat_config config;
+	struct cp_cat_snapshot snapshot;
+	char buffer[256];
+
+	if (cp_tui_format_cat_status(NULL, buffer, sizeof(buffer)) != CP_OK ||
+	    strcmp(buffer, "CAT disabled") != 0) {
+		printf("test_tui: disabled CAT status mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+
+	cp_cat_default_config(&config);
+	config.backend = CP_CAT_BACKEND_MOCK;
+	config.enabled = 1;
+	config.mock_frequency_hz = 14230000ULL;
+	config.mock_ptt = CP_CAT_PTT_OFF;
+	if (cp_cat_mode_set(config.mock_mode, sizeof(config.mock_mode),
+	    "USB") != CP_OK) {
+		printf("test_tui: CAT mode setup failed\n");
+		return 0;
+	}
+	if (cp_cat_snapshot_update(&config, &snapshot) != CP_OK ||
+	    cp_tui_format_cat_status(&snapshot, buffer,
+	    sizeof(buffer)) != CP_OK) {
+		printf("test_tui: mock CAT status failed\n");
+		return 0;
+	}
+	if (strstr(buffer, "CAT mock ok") == NULL ||
+	    strstr(buffer, "14230000 Hz") == NULL ||
+	    strstr(buffer, "mode=USB") == NULL ||
+	    strstr(buffer, "ptt=RX") == NULL) {
+		printf("test_tui: mock CAT status mismatch: %s\n", buffer);
+		return 0;
+	}
+
+	config.mock_status = CP_CAT_STATUS_STALE;
+	if (cp_cat_snapshot_update(&config, &snapshot) != CP_OK ||
+	    cp_tui_format_cat_status(&snapshot, buffer,
+	    sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "stale") == NULL) {
+		printf("test_tui: stale CAT status mismatch: %s\n", buffer);
+		return 0;
+	}
+
+	return 1;
 }
 
 static int

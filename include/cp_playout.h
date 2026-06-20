@@ -10,6 +10,7 @@
 
 #include "cp_audio.h"
 #include "cp_block.h"
+#include "cp_cat.h"
 #include "cp_monitor.h"
 
 #define CP_PLAYOUT_DEFAULT_BLOCK_FRAMES	512
@@ -50,6 +51,7 @@ struct cp_playlist_error {
 struct cp_playout_config {
 	struct cp_audio_config audio_config;
 	struct cp_block_config block_config;
+	struct cp_cat_config cat_config;
 	size_t block_frames;
 	unsigned int meter_interval_ms;
 	volatile sig_atomic_t *stop_requested;

@@ -24,7 +24,19 @@ Offline WAV processing is available as an optional M1 foundation when built with
 - Optional [sndio](https://sndio.org/) development package for OpenBSD-style live audio
 - Optional [ncurses](https://invisible-island.net/ncurses/) development package for the live TUI monitor
 
-The DSP core builds without PortAudio, libsndfile, sndio, or ncurses. If your system is missing optional WAV support, install the libsndfile development package manually. Common package names are `libsndfile1-dev`, `libsndfile-devel`, or `libsndfile`. If your system is missing optional PortAudio support, install the PortAudio development package manually. Common package names are `portaudio19-dev`, `portaudio-devel`, or `portaudio`. If your system is missing optional sndio support, install the sndio development package manually. Common package names are `sndio`, `sndio-devel`, or `libsndio-dev`. If your system is missing optional TUI support, install the ncurses development package manually. Common package names are `libncurses-dev`, `ncurses-devel`, or `ncurses`.
+The DSP core builds without PortAudio, libsndfile, sndio, ncurses, or CAT
+control libraries. The current CAT milestone slice includes a dependency-free
+read-only mock backend for status display and tests. If your system is missing
+optional WAV support, install the libsndfile development package manually.
+Common package names are `libsndfile1-dev`, `libsndfile-devel`, or
+`libsndfile`. If your system is missing optional PortAudio support, install the
+PortAudio development package manually. Common package names are
+`portaudio19-dev`, `portaudio-devel`, or `portaudio`. If your system is
+missing optional sndio support, install the sndio development package manually.
+Common package names are `sndio`, `sndio-devel`, or `libsndio-dev`. If your
+system is missing optional TUI support, install the ncurses development package
+manually. Common package names are `libncurses-dev`, `ncurses-devel`, or
+`ncurses`.
 
 ## Setup
 
@@ -168,6 +180,29 @@ Run the built-in synthetic tone through the v0.1 chain:
 ```
 
 The command prints input and output meter values plus AGC gain, gain dB, and gate state.
+
+Print a one-shot read-only mock CAT status:
+
+```sh
+./carrierpress --cat-backend mock --cat-frequency-hz 14230000 --cat-mode USB --cat-ptt off --cat-status
+./carrierpress --cat-backend none --cat-status
+```
+
+This T3A slice is a CAT boundary and simulator only. It does not connect to a
+radio, send transmit commands, key PTT, or implement flrig or hamlib protocol
+support. `flrig` and `hamlib` are accepted as reserved backend names and report
+unavailable until those backends are implemented in a later milestone.
+
+Show mock CAT status in the TUI while running live or playout mode:
+
+```sh
+./carrierpress --live --tui --cat-backend mock --cat-frequency-hz 14230000 --cat-mode USB --cat-ptt off
+./carrierpress --play input.wav --tui --cat-backend mock --cat-frequency-hz 14230000 --cat-mode USB --cat-ptt off
+```
+
+CAT status is read outside the real-time audio callback. Users remain
+responsible for licence limits, station-control requirements, and transmitter
+operating rules.
 
 Run the same self-test with the M9.3 restoration analyzer enabled:
 
@@ -544,7 +579,10 @@ active, AM controls are shown locked unless the AM bank is explicitly selected.
 The key footer changes by context. Live mode shows stop, bank selection,
 dehummer, multiband, and preset keys. Single-file play mode shows the same
 processing keys for file playout. Playlist mode adds `n next` when another item
-is available.
+is available. The detailed status area includes read-only CAT status when a CAT
+snapshot is available. With the current mock backend this can show frequency,
+mode, PTT readback state, stale/error state, or disabled state without real
+hardware.
 
 Print meters once per second:
 
@@ -697,7 +735,7 @@ This is not part of the active Linux-host validation gate.
 
 ## Development
 
-The core library has no optional audio backend dependency. WAV support lives in `cp_wav.c`, PortAudio support lives in `cp_portaudio.c`, sndio support lives in `cp_sndio.c`, WAV playout lives in `cp_playout.c`, and the ncurses monitor lives in `cp_tui.c`. Optional files are compiled only when requested. Process functions use caller-owned buffers and explicit state structs so real-time callbacks can remain malloc-free and deterministic.
+The core library has no optional audio backend dependency. WAV support lives in `cp_wav.c`, PortAudio support lives in `cp_portaudio.c`, sndio support lives in `cp_sndio.c`, WAV playout lives in `cp_playout.c`, the ncurses monitor lives in `cp_tui.c`, and read-only CAT status lives in `cp_cat.c`. Optional files are compiled only when requested. CAT mock status is dependency-free and host-side. Process functions use caller-owned buffers and explicit state structs so real-time callbacks can remain malloc-free and deterministic.
 
 The current development baseline is Linux-host first. That means normal builds,
 WAV processing, PortAudio live mode, WAV playout, TUI monitoring, and the
@@ -748,6 +786,10 @@ presets, and skip to the next track during playlist playout. AM and SSB controls
 are split into explicit banks so AM preset keys do not affect SSB mode, and SSB
 preset keys do not affect AM mode. It does not expose arbitrary DSP parameter
 editing.
+
+CAT status is a host-side read-only boundary in this milestone slice. The mock
+backend is used for tests and TUI display without requiring a radio. Real flrig
+and hamlib backends, live polling, and any PTT control remain deferred.
 
 ## Restoration Analysis And Declipper
 

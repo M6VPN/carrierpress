@@ -13,6 +13,7 @@
 #include <portaudio.h>
 #include <sndfile.h>
 
+#include "cp_cat.h"
 #include "cp_control.h"
 #include "cp_declipper.h"
 #include "cp_playout.h"
@@ -68,6 +69,7 @@ cp_playout_default_config(struct cp_playout_config *config)
 
 	cp_audio_default_config(&config->audio_config);
 	cp_block_default_config(&config->block_config, CP_CHANNELS_STEREO);
+	cp_cat_default_config(&config->cat_config);
 	config->block_frames = CP_PLAYOUT_DEFAULT_BLOCK_FRAMES;
 	config->meter_interval_ms = CP_AUDIO_DEFAULT_METER_MS;
 	config->stop_requested = NULL;
@@ -234,6 +236,7 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	struct cp_resampler resampler;
 	struct cp_resampler_config resampler_config;
 #ifdef CP_WITH_TUI
+	struct cp_cat_snapshot cat_snapshot;
 	struct cp_control_command command;
 	struct cp_tui tui;
 	struct cp_tui_view tui_view;
@@ -504,10 +507,13 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 		}
 #ifdef CP_WITH_TUI
 		if (audio_config.tui_enabled) {
+			(void)cp_cat_snapshot_update(&config->cat_config,
+			    &cat_snapshot);
 			memset(&tui_view, 0, sizeof(tui_view));
 			tui_view.mode           = CP_TUI_MODE_PLAYOUT;
 			tui_view.config         = &audio_config;
 			tui_view.snapshot       = &snapshot;
+			tui_view.cat_snapshot   = &cat_snapshot;
 			tui_view.path           = path;
 			tui_view.playlist_index = config->playlist_index;
 			tui_view.playlist_count = config->playlist_count;

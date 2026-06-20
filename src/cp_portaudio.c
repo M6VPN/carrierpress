@@ -12,6 +12,7 @@
 #include <portaudio.h>
 
 #include "cp_block.h"
+#include "cp_cat.h"
 #include "cp_control.h"
 #include "cp_declipper.h"
 #include "cp_monitor.h"
@@ -209,6 +210,7 @@ cp_portaudio_list_devices(void)
 
 int
 cp_portaudio_run(const struct cp_audio_config *config,
+	const struct cp_cat_config *cat_config,
 	volatile sig_atomic_t *stop_requested)
 {
 	PaStreamParameters input_params;
@@ -223,15 +225,17 @@ cp_portaudio_run(const struct cp_audio_config *config,
 	struct cp_monitor_snapshot snapshot;
 	double stream_rate;
 #ifdef CP_WITH_TUI
+	struct cp_cat_snapshot cat_snapshot;
 	struct cp_control_command command;
 	struct cp_tui tui;
+	struct cp_tui_view tui_view;
 #endif
 	int status;
 
 	status = cp_audio_validate_config(config);
 	if (status != CP_AUDIO_OK)
 		return CP_PORTAUDIO_ERR_CONFIG;
-	if (stop_requested == NULL)
+	if (cat_config == NULL || stop_requested == NULL)
 		return CP_PORTAUDIO_ERR_CONFIG;
 #ifndef CP_WITH_TUI
 	if (config->tui_enabled)
@@ -325,7 +329,15 @@ cp_portaudio_run(const struct cp_audio_config *config,
 		cp_pa_load_snapshot(&runtime, &snapshot);
 #ifdef CP_WITH_TUI
 		if (config->tui_enabled) {
-			if (cp_tui_update(&tui, config, &snapshot, &command))
+			(void)cp_cat_snapshot_update(cat_config,
+			    &cat_snapshot);
+			memset(&tui_view, 0, sizeof(tui_view));
+			tui_view.mode          = CP_TUI_MODE_LIVE;
+			tui_view.config        = config;
+			tui_view.snapshot      = &snapshot;
+			tui_view.cat_snapshot  = &cat_snapshot;
+			tui_view.output_device = (int)output_device;
+			if (cp_tui_update_view(&tui, &tui_view, &command))
 				*stop_requested = 1;
 			if (command.type != CP_CONTROL_COMMAND_NONE &&
 			    command.type != CP_CONTROL_COMMAND_STOP)
