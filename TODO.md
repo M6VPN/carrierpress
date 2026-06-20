@@ -62,7 +62,7 @@ implemented until code, docs, and validation are complete.
 - [x] Read PTT state.
 - [ ] Add optional PTT control only after safety checks are documented.
 - [x] Support flrig XML-RPC or compatible control through a small host backend.
-- [ ] Support hamlib only as an optional backend if development headers are
+- [x] Support hamlib only as an optional backend if development headers are
       available.
 - [x] Add a mock or simulator test path before requiring hardware.
 - [x] Show CAT status in the TUI without blocking audio processing.

@@ -23,10 +23,12 @@ Offline WAV processing is available as an optional M1 foundation when built with
 - Optional [PortAudio](https://www.portaudio.com/) development package for live USB sound-card processing
 - Optional [sndio](https://sndio.org/) development package for OpenBSD-style live audio
 - Optional [ncurses](https://invisible-island.net/ncurses/) development package for the live TUI monitor
+- Optional [hamlib](https://hamlib.github.io/) development package for read-only CAT status
 
 The DSP core builds without PortAudio, libsndfile, sndio, ncurses, or CAT
 control libraries. CAT includes a dependency-free read-only mock backend and an
-optional read-only flrig XML-RPC backend. If your system is missing optional
+optional read-only flrig XML-RPC backend plus an optional read-only hamlib
+backend. If your system is missing optional
 WAV support, install the libsndfile development package manually. Common
 package names are `libsndfile1-dev`, `libsndfile-devel`, or `libsndfile`. If
 your system is missing optional PortAudio support, install the PortAudio
@@ -36,6 +38,9 @@ support, install the sndio development package manually. Common package names
 are `sndio`, `sndio-devel`, or `libsndio-dev`. If your system is missing
 optional TUI support, install the ncurses development package manually. Common
 package names are `libncurses-dev`, `ncurses-devel`, or `ncurses`.
+If your system is missing optional hamlib support, install the hamlib
+development package manually. Common package names are `hamlib`, `libhamlib`,
+`libhamlib-dev`, or `hamlib-devel`.
 
 ## Setup
 
@@ -68,6 +73,9 @@ make WITH_SNDFILE=1 WITH_PORTAUDIO=1
 make WITH_FLRIG=1
 make WITH_FLRIG=1 WITH_TUI=1
 make WITH_FLRIG=1 WITH_PORTAUDIO=1 WITH_TUI=1
+make WITH_HAMLIB=1
+make WITH_HAMLIB=1 WITH_TUI=1
+make WITH_HAMLIB=1 WITH_PORTAUDIO=1 WITH_TUI=1
 ```
 
 If an explicit optional dependency is missing, the build fails with the package
@@ -219,8 +227,36 @@ the default timeout is short enough for foreground status polling. Use
 `--cat-host`, `--cat-port`, and `--cat-timeout-ms` to override them.
 
 CAT support does not send transmit commands, set PTT, set frequency, set mode,
-or key a radio. `hamlib` remains a reserved backend name until a later
-milestone.
+or key a radio.
+
+Build the read-only hamlib CAT backend:
+
+```sh
+make WITH_HAMLIB=1
+make WITH_HAMLIB=1 WITH_TUI=1
+make WITH_HAMLIB=1 WITH_PORTAUDIO=1 WITH_TUI=1
+```
+
+Print a one-shot read-only hamlib CAT status:
+
+```sh
+./carrierpress --cat-backend hamlib --cat-rig-model N --cat-rig-path PATH --cat-status
+```
+
+Run live or playout TUI mode with read-only hamlib status:
+
+```sh
+./carrierpress --live --tui --cat-backend hamlib --cat-rig-model N --cat-rig-path PATH
+./carrierpress --play input.wav --tui --cat-backend hamlib --cat-rig-model N --cat-rig-path PATH
+```
+
+The hamlib backend reads frequency, mode, and PTT readback only. It requires
+`--cat-rig-model` for real hardware so CarrierPress does not guess a radio.
+`--cat-rig-path` and `--cat-rig-speed` are optional and should match the rig
+connection. If hamlib is not built, no rig model is supplied, or the rig cannot
+be opened, CarrierPress prints or displays `unavailable` or `error` CAT status
+and audio processing continues. Hamlib model `1` is the hamlib dummy backend
+and can be used for a hardware-free read-only smoke test.
 
 Show mock CAT status in the TUI while running live or playout mode:
 
@@ -764,7 +800,7 @@ This is not part of the active Linux-host validation gate.
 
 ## Development
 
-The core library has no optional audio backend dependency. WAV support lives in `cp_wav.c`, PortAudio support lives in `cp_portaudio.c`, sndio support lives in `cp_sndio.c`, WAV playout lives in `cp_playout.c`, the ncurses monitor lives in `cp_tui.c`, and read-only CAT status lives in `cp_cat.c`. The flrig XML-RPC client lives in `cp_cat_flrig.c` and is compiled only with `WITH_FLRIG=1`. CAT mock status is dependency-free and host-side. Process functions use caller-owned buffers and explicit state structs so real-time callbacks can remain malloc-free and deterministic.
+The core library has no optional audio backend dependency. WAV support lives in `cp_wav.c`, PortAudio support lives in `cp_portaudio.c`, sndio support lives in `cp_sndio.c`, WAV playout lives in `cp_playout.c`, the ncurses monitor lives in `cp_tui.c`, and read-only CAT status lives in `cp_cat.c`. The flrig XML-RPC client lives in `cp_cat_flrig.c` and is compiled only with `WITH_FLRIG=1`. The hamlib client lives in `cp_cat_hamlib.c` and is compiled only with `WITH_HAMLIB=1`. CAT mock status is dependency-free and host-side. Process functions use caller-owned buffers and explicit state structs so real-time callbacks can remain malloc-free and deterministic.
 
 The current development baseline is Linux-host first. That means normal builds,
 WAV processing, PortAudio live mode, WAV playout, TUI monitoring, and the
@@ -819,7 +855,8 @@ editing.
 CAT status is a host-side read-only boundary in this milestone slice. The mock
 backend is used for tests and TUI display without requiring a radio. The flrig
 backend reads frequency, mode, and PTT state through XML-RPC when built with
-`WITH_FLRIG=1`. Hamlib and any PTT control remain deferred.
+`WITH_FLRIG=1`. The hamlib backend reads frequency, mode, and PTT state through
+hamlib when built with `WITH_HAMLIB=1`. PTT control remains deferred.
 
 ## Restoration Analysis And Declipper
 

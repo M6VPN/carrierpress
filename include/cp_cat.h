@@ -13,12 +13,17 @@
 #define CP_CAT_MODE_TEXT	16
 #define CP_CAT_STATUS_TEXT	64
 #define CP_CAT_HOST_TEXT	128
+#define CP_CAT_PATH_TEXT	256
 #define CP_CAT_DEFAULT_FREQUENCY_HZ	14230000ULL
 #define CP_CAT_FLRIG_DEFAULT_HOST	"127.0.0.1"
 #define CP_CAT_FLRIG_DEFAULT_PORT	12345u
+#define CP_CAT_HAMLIB_DEFAULT_RIG_MODEL	0u
+#define CP_CAT_HAMLIB_DEFAULT_RIG_SPEED	0u
 #define CP_CAT_DEFAULT_TIMEOUT_MS	150u
 #define CP_CAT_MIN_PORT		1u
 #define CP_CAT_MAX_PORT		65535u
+#define CP_CAT_MIN_RIG_SPEED	300u
+#define CP_CAT_MAX_RIG_SPEED	1000000u
 #define CP_CAT_MIN_TIMEOUT_MS	10u
 #define CP_CAT_MAX_TIMEOUT_MS	5000u
 
@@ -53,6 +58,9 @@ struct cp_cat_config {
 	char flrig_host[CP_CAT_HOST_TEXT];
 	unsigned int flrig_port;
 	unsigned int timeout_ms;
+	unsigned int hamlib_rig_model;
+	char hamlib_rig_path[CP_CAT_PATH_TEXT];
+	unsigned int hamlib_rig_speed;
 };
 
 struct cp_cat_snapshot {
@@ -70,6 +78,8 @@ const char	*cp_cat_backend_string(enum cp_cat_backend);
 int		cp_cat_backend_from_string(const char *,
 		    enum cp_cat_backend *);
 int		cp_cat_config_set_flrig_host(struct cp_cat_config *,
+		    const char *);
+int		cp_cat_config_set_hamlib_path(struct cp_cat_config *,
 		    const char *);
 void		cp_cat_default_config(struct cp_cat_config *);
 int		cp_cat_format_frequency(uint64_t, char *, size_t);

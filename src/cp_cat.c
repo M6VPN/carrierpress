@@ -13,6 +13,9 @@
 #ifdef CP_WITH_FLRIG
 #include "cp_cat_flrig.h"
 #endif
+#ifdef CP_WITH_HAMLIB
+#include "cp_cat_hamlib.h"
+#endif
 
 static int	cp_cat_snprintf(char *, size_t, const char *, ...);
 static int	cp_cat_string_equal(const char *, const char *);
@@ -72,6 +75,16 @@ cp_cat_config_set_flrig_host(struct cp_cat_config *config, const char *host)
 	    sizeof(config->flrig_host), host);
 }
 
+int
+cp_cat_config_set_hamlib_path(struct cp_cat_config *config, const char *path)
+{
+	if (config == NULL || path == NULL)
+		return CP_ERR_NULL;
+
+	return cp_cat_text_copy(config->hamlib_rig_path,
+	    sizeof(config->hamlib_rig_path), path);
+}
+
 void
 cp_cat_default_config(struct cp_cat_config *config)
 {
@@ -90,6 +103,8 @@ cp_cat_default_config(struct cp_cat_config *config)
 	    CP_CAT_FLRIG_DEFAULT_HOST);
 	config->flrig_port = CP_CAT_FLRIG_DEFAULT_PORT;
 	config->timeout_ms = CP_CAT_DEFAULT_TIMEOUT_MS;
+	config->hamlib_rig_model = CP_CAT_HAMLIB_DEFAULT_RIG_MODEL;
+	config->hamlib_rig_speed = CP_CAT_HAMLIB_DEFAULT_RIG_SPEED;
 }
 
 int
@@ -233,6 +248,18 @@ cp_cat_snapshot_update(const struct cp_cat_config *config,
 #endif
 	}
 
+	if (config->backend == CP_CAT_BACKEND_HAMLIB) {
+#ifdef CP_WITH_HAMLIB
+		return cp_cat_hamlib_snapshot_update(config, snapshot);
+#else
+		snapshot->status = CP_CAT_STATUS_UNAVAILABLE;
+		(void)cp_cat_text_copy(snapshot->status_text,
+		    sizeof(snapshot->status_text),
+		    "hamlib support not enabled");
+		return CP_OK;
+#endif
+	}
+
 	snapshot->status = CP_CAT_STATUS_UNAVAILABLE;
 	(void)cp_cat_text_copy(snapshot->status_text,
 	    sizeof(snapshot->status_text), "backend reserved");
@@ -274,6 +301,17 @@ cp_cat_validate_config(const struct cp_cat_config *config)
 			return CP_ERR_RANGE;
 		if (config->timeout_ms < CP_CAT_MIN_TIMEOUT_MS ||
 		    config->timeout_ms > CP_CAT_MAX_TIMEOUT_MS)
+			return CP_ERR_RANGE;
+	}
+	if (config->backend == CP_CAT_BACKEND_HAMLIB) {
+		if (!config->enabled)
+			return CP_OK;
+		if (config->timeout_ms < CP_CAT_MIN_TIMEOUT_MS ||
+		    config->timeout_ms > CP_CAT_MAX_TIMEOUT_MS)
+			return CP_ERR_RANGE;
+		if (config->hamlib_rig_speed != 0 &&
+		    (config->hamlib_rig_speed < CP_CAT_MIN_RIG_SPEED ||
+		    config->hamlib_rig_speed > CP_CAT_MAX_RIG_SPEED))
 			return CP_ERR_RANGE;
 	}
 

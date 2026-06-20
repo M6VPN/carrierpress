@@ -167,6 +167,27 @@ main(int argc, char *argv[])
 				usage(argv[0]);
 				return 1;
 			}
+		} else if (strcmp(argv[arg], "--cat-rig-model") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_uint_arg(argv[++arg],
+			    &cat_config.hamlib_rig_model)) {
+				usage(argv[0]);
+				return 1;
+			}
+		} else if (strcmp(argv[arg], "--cat-rig-path") == 0 &&
+		    arg + 1 < argc) {
+			if (cp_cat_config_set_hamlib_path(&cat_config,
+			    argv[++arg]) != CP_OK) {
+				usage(argv[0]);
+				return 1;
+			}
+		} else if (strcmp(argv[arg], "--cat-rig-speed") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_uint_arg(argv[++arg],
+			    &cat_config.hamlib_rig_speed)) {
+				usage(argv[0]);
+				return 1;
+			}
 		} else if (strcmp(argv[arg], "--cat-status") == 0) {
 			cat_status_mode = 1;
 		} else if (strcmp(argv[arg], "--analyze") == 0) {
@@ -1298,6 +1319,8 @@ usage(const char *program)
 	    "--cat-mode USB --cat-ptt off --cat-status\n", program);
 	printf("usage: %s --cat-backend flrig --cat-host 127.0.0.1 "
 	    "--cat-port 12345 --cat-status\n", program);
+	printf("usage: %s --cat-backend hamlib --cat-rig-model N "
+	    "[--cat-rig-path PATH] --cat-status\n", program);
 	printf("usage: %s --list-devices\n", program);
 	printf("usage: %s --live [--input-device N] [--output-device N]\n",
 	    program);
@@ -1338,5 +1361,6 @@ usage(const char *program)
 	printf("CAT options: --cat-backend none|mock|flrig|hamlib "
 	    "--cat-frequency-hz N --cat-mode MODE "
 	    "--cat-ptt off|on|unknown --cat-host HOST --cat-port PORT "
-	    "--cat-timeout-ms N --cat-status\n");
+	    "--cat-timeout-ms N --cat-rig-model N --cat-rig-path PATH "
+	    "--cat-rig-speed N --cat-status\n");
 }
