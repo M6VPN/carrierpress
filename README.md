@@ -13,6 +13,7 @@ Offline WAV processing is available as an optional M1 foundation when built with
 - [Requirements](#requirements)
 - [Setup](#setup)
 - [Examples](#examples)
+- [Profiles](#profiles)
 - [Usage](#usage)
 - [Development](#development)
 - [Roadmap](#roadmap)
@@ -303,6 +304,18 @@ make
 ./examples/self-test.sh
 ./examples/cat-mock-status.sh
 ```
+
+## Profiles
+
+Profile files are documented in
+[`docs/profile-format.md`](docs/profile-format.md). Safe starting profiles are
+in [`profiles/`](profiles/), including AM-safe, AM-shortwave, SSB-speech, and
+file-cleanup examples.
+
+Profiles are audio-chain settings only. They do not control CAT, PTT, rig
+frequency, rig mode, transmit state, flrig, hamlib, or station-control state.
+M11A defines and validates the profile format; CLI profile loading is planned
+for a later M11 slice.
 
 ## Usage
 

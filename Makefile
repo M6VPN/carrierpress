@@ -53,6 +53,7 @@ CORE_SRCS = \
 	src/cp_monitor.c \
 	src/cp_multiband.c \
 	src/cp_natural_dynamics.c \
+	src/cp_profile.c \
 	src/cp_restoration.c \
 	src/cp_resampler.c \
 	src/cp_ssb.c \
@@ -82,6 +83,7 @@ TEST_SRCS = \
 	tests/test_monitor.c \
 	tests/test_multiband.c \
 	tests/test_natural_dynamics.c \
+	tests/test_profile.c \
 	tests/test_quality_report.c \
 	tests/test_restoration.c \
 	tests/test_resampler.c \
@@ -214,6 +216,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_monitor \
 	$(TEST_BIN_DIR)/test_multiband \
 	$(TEST_BIN_DIR)/test_natural_dynamics \
+	$(TEST_BIN_DIR)/test_profile \
 	$(TEST_BIN_DIR)/test_restoration \
 	$(TEST_BIN_DIR)/test_resampler \
 	$(TEST_BIN_DIR)/test_ssb \
@@ -439,6 +442,10 @@ $(TEST_BIN_DIR)/test_professional_check: $(TEST_OBJ_DIR)/tests/test_professional
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_professional_check.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_profile: $(TEST_OBJ_DIR)/tests/test_profile.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_profile.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_wav: $(TEST_OBJ_DIR)/tests/test_wav.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_wav.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -476,6 +483,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_monitor
 	./$(TEST_BIN_DIR)/test_multiband
 	./$(TEST_BIN_DIR)/test_natural_dynamics
+	./$(TEST_BIN_DIR)/test_profile
 	./$(TEST_BIN_DIR)/test_restoration
 	./$(TEST_BIN_DIR)/test_resampler
 	./$(TEST_BIN_DIR)/test_ssb

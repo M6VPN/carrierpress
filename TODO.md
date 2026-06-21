@@ -164,13 +164,13 @@ implemented until code, docs, and validation are complete.
 
 ## M11 Preset and Profile Files
 
-- [ ] Define profile file format.
-- [ ] Add profile parser with strict validation.
-- [ ] Add AM-safe, AM-shortwave, SSB-speech, and file-cleanup example profiles.
+- [x] Define profile file format.
+- [x] Add profile parser with strict validation.
+- [x] Add AM-safe, AM-shortwave, SSB-speech, and file-cleanup example profiles.
 - [ ] Add profile CLI option.
-- [ ] Add profile tests.
+- [x] Add profile tests.
 - [ ] Document command-line override precedence.
-- [ ] Keep PTT and station-control settings out of ordinary audio profiles.
+- [x] Keep PTT and station-control settings out of ordinary audio profiles.
 
 ## M12 Config File Support
 
