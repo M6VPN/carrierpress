@@ -167,9 +167,9 @@ implemented until code, docs, and validation are complete.
 - [x] Define profile file format.
 - [x] Add profile parser with strict validation.
 - [x] Add AM-safe, AM-shortwave, SSB-speech, and file-cleanup example profiles.
-- [ ] Add profile CLI option.
+- [x] Add profile CLI option.
 - [x] Add profile tests.
-- [ ] Document command-line override precedence.
+- [x] Document command-line override precedence.
 - [x] Keep PTT and station-control settings out of ordinary audio profiles.
 
 ## M12 Config File Support

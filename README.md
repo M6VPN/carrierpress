@@ -314,8 +314,25 @@ file-cleanup examples.
 
 Profiles are audio-chain settings only. They do not control CAT, PTT, rig
 frequency, rig mode, transmit state, flrig, hamlib, or station-control state.
-M11A defines and validates the profile format; CLI profile loading is planned
-for a later M11 slice.
+
+Load a profile with `--profile PATH`:
+
+```sh
+./carrierpress --profile profiles/am-safe.profile --self-test
+./carrierpress --profile profiles/ssb-speech.profile --self-test
+./carrierpress --profile profiles/file-cleanup.profile --input in.wav --output out.wav
+```
+
+Defaults are created first, the profile is applied when `--profile` appears,
+and later command-line options override profile values. For example:
+
+```sh
+./carrierpress --profile profiles/am-safe.profile --am-preset am-voice --self-test
+./carrierpress --profile profiles/ssb-speech.profile --ssb-preset ssb-narrow --self-test
+```
+
+Options before `--profile` may be overwritten by the loaded profile. Only one
+profile may be loaded in this M11 slice.
 
 ## Usage
 

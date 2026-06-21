@@ -1,8 +1,8 @@
 # CarrierPress Profile Format
 
 CarrierPress profiles are dependency-free text files for repeatable audio-chain
-settings. M11A defines and validates profiles only. Runtime profile loading
-through the main CLI is planned for a later M11 slice.
+settings. Use `--profile PATH` to load a profile before running self-test, WAV
+processing, playout, live mode, TUI, or GUI monitor commands.
 
 Profiles do not control CAT, PTT, rig frequency, rig mode, transmit state, or
 station-control state. CarrierPress profiles are audio workflow files only.
@@ -47,8 +47,8 @@ station-control state. CarrierPress profiles are audio workflow files only.
 | `am_preset`            | `off`, `am-safe`, `am-shortwave`, `am-wide`, `am-voice` |
 | `ssb_preset`           | `off`, `ssb-speech`, `ssb-narrow`, `ssb-wide`, `ssb-gentle` |
 
-The `bass_eq = custom` form is not accepted in M11A because there is no
-profile-level custom bass EQ parameter set yet.
+The `bass_eq = custom` form is not accepted because there is no profile-level
+custom bass EQ parameter set yet.
 
 ## Mode Rules
 
@@ -83,6 +83,34 @@ includes:
 
 This keeps profile files separate from CAT readback and from any future T5
 PTT-control work.
+
+## Runtime Usage
+
+Load a profile with `--profile PATH`:
+
+```sh
+./carrierpress --profile profiles/am-safe.profile --self-test
+./carrierpress --profile profiles/ssb-speech.profile --self-test
+./carrierpress --profile profiles/file-cleanup.profile --input in.wav --output out.wav
+```
+
+Profiles are applied when `--profile` appears in the command line. Defaults are
+created first, the profile is applied next, and later command-line options
+override profile values.
+
+This means command order matters:
+
+```sh
+./carrierpress --profile profiles/am-safe.profile --am-preset am-voice --self-test
+./carrierpress --profile profiles/ssb-speech.profile --ssb-preset ssb-narrow --self-test
+```
+
+Options before `--profile` may be overwritten by the loaded profile. Only one
+profile may be loaded in this M11 slice.
+
+An explicit later `--am` or `--am-preset` selects AM and disables SSB. An
+explicit later `--ssb` or `--ssb-preset` selects SSB and disables AM. CarrierPress
+still rejects any final configuration that has both AM and SSB enabled.
 
 ## Example
 

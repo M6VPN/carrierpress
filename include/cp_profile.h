@@ -13,6 +13,9 @@
 #include "cp_ssb.h"
 #include "cp_types.h"
 
+struct cp_audio_config;
+struct cp_block_config;
+
 #define CP_PROFILE_NAME_SIZE		64
 #define CP_PROFILE_DESCRIPTION_SIZE	192
 #define CP_PROFILE_KEY_SIZE		64
@@ -109,6 +112,8 @@ struct cp_profile_error {
 	char message[CP_PROFILE_ERROR_SIZE];
 };
 
+int		cp_profile_apply_to_configs(const struct cp_profile *,
+		    struct cp_block_config *, struct cp_audio_config *);
 void		cp_profile_init(struct cp_profile *);
 int		cp_profile_mode_from_string(const char *,
 		    enum cp_profile_mode *);

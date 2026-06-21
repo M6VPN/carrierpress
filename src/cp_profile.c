@@ -10,8 +10,24 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cp_audio.h"
+#include "cp_block.h"
 #include "cp_profile.h"
 
+static int	cp_profile_apply_am_preset(
+		    enum cp_profile_am_preset_setting,
+		    struct cp_block_config *, struct cp_audio_config *);
+static int	cp_profile_apply_bass_eq(
+		    enum cp_profile_bass_eq_setting,
+		    struct cp_block_config *, struct cp_audio_config *);
+static int	cp_profile_apply_mode(enum cp_profile_mode,
+		    struct cp_block_config *, struct cp_audio_config *);
+static int	cp_profile_apply_multiband(
+		    enum cp_profile_multiband_setting,
+		    enum cp_multiband_preset *, int *);
+static int	cp_profile_apply_ssb_preset(
+		    enum cp_profile_ssb_preset_setting,
+		    struct cp_block_config *, struct cp_audio_config *);
 static int	cp_profile_copy_text(char *, size_t, const char *);
 static int	cp_profile_forbidden_key(const char *);
 static int	cp_profile_parse_am_preset(const char *,
@@ -30,6 +46,120 @@ static int	cp_profile_set_error(struct cp_profile_error *, size_t,
 static char	*cp_profile_trim(char *);
 static int	cp_profile_value_seen(unsigned int, size_t, const char *,
 		    struct cp_profile_error *);
+
+int
+cp_profile_apply_to_configs(const struct cp_profile *profile,
+	struct cp_block_config *block_config, struct cp_audio_config *audio_config)
+{
+	int status;
+
+	if (profile == NULL || block_config == NULL || audio_config == NULL)
+		return CP_ERR_NULL;
+
+	status = cp_profile_validate(profile, NULL);
+	if (status != CP_OK)
+		return status;
+
+	if (profile->seen_mode) {
+		status = cp_profile_apply_mode(profile->mode, block_config,
+		    audio_config);
+		if (status != CP_OK)
+			return status;
+	}
+	if (profile->seen_dehummer) {
+		block_config->dehummer_enabled =
+		    profile->dehummer == CP_PROFILE_SWITCH_ON;
+		audio_config->dehummer_enabled = block_config->dehummer_enabled;
+	}
+	if (profile->seen_hum_frequency) {
+		block_config->hum_base_frequency =
+		    (cp_sample_t)profile->hum_frequency;
+		audio_config->hum_base_frequency =
+		    block_config->hum_base_frequency;
+	}
+	if (profile->seen_hum_harmonics) {
+		block_config->hum_harmonic_count = profile->hum_harmonics;
+		audio_config->hum_harmonic_count =
+		    block_config->hum_harmonic_count;
+	}
+	if (profile->seen_multiband) {
+		status = cp_profile_apply_multiband(profile->multiband,
+		    &block_config->multiband_preset,
+		    &block_config->multiband_enabled);
+		if (status != CP_OK)
+			return status;
+		audio_config->multiband_preset = block_config->multiband_preset;
+		audio_config->multiband_enabled =
+		    block_config->multiband_enabled;
+	}
+	if (profile->seen_multiband_bands) {
+		block_config->multiband_band_count =
+		    profile->multiband_bands;
+		audio_config->multiband_band_count =
+		    block_config->multiband_band_count;
+	}
+	if (profile->seen_multiband2) {
+		status = cp_profile_apply_multiband(profile->multiband2,
+		    &block_config->multiband2_preset,
+		    &block_config->multiband2_enabled);
+		if (status != CP_OK)
+			return status;
+		audio_config->multiband2_preset =
+		    block_config->multiband2_preset;
+		audio_config->multiband2_enabled =
+		    block_config->multiband2_enabled;
+	}
+	if (profile->seen_multiband2_bands) {
+		block_config->multiband2_band_count =
+		    profile->multiband2_bands;
+		audio_config->multiband2_band_count =
+		    block_config->multiband2_band_count;
+	}
+	if (profile->seen_bass_eq) {
+		status = cp_profile_apply_bass_eq(profile->bass_eq,
+		    block_config, audio_config);
+		if (status != CP_OK)
+			return status;
+	}
+	if (profile->seen_natural_dynamics) {
+		block_config->natural_dynamics_config.enabled =
+		    profile->natural_dynamics == CP_PROFILE_SWITCH_ON;
+		audio_config->natural_dynamics_config =
+		    block_config->natural_dynamics_config;
+	}
+	if (profile->seen_low_level_boost) {
+		block_config->low_level_boost_config.enabled =
+		    profile->low_level_boost == CP_PROFILE_SWITCH_ON;
+		audio_config->low_level_boost_config =
+		    block_config->low_level_boost_config;
+	}
+	if (profile->seen_restoration_analysis) {
+		block_config->restoration_config.enabled =
+		    profile->restoration_analysis == CP_PROFILE_SWITCH_ON;
+		audio_config->restoration_config =
+		    block_config->restoration_config;
+	}
+	if (profile->seen_declipper) {
+		block_config->declipper_config.enabled =
+		    profile->declipper == CP_PROFILE_SWITCH_ON;
+		audio_config->declipper_config =
+		    block_config->declipper_config;
+	}
+	if (profile->seen_am_preset) {
+		status = cp_profile_apply_am_preset(profile->am_preset,
+		    block_config, audio_config);
+		if (status != CP_OK)
+			return status;
+	}
+	if (profile->seen_ssb_preset) {
+		status = cp_profile_apply_ssb_preset(profile->ssb_preset,
+		    block_config, audio_config);
+		if (status != CP_OK)
+			return status;
+	}
+
+	return CP_OK;
+}
 
 void
 cp_profile_init(struct cp_profile *profile)
@@ -415,6 +545,166 @@ cp_profile_validate(const struct cp_profile *profile,
 		return cp_profile_set_error(error, 0, "ssb_preset",
 		    "neutral and file-cleanup profiles must not force SSB");
 
+	return CP_OK;
+}
+
+static int
+cp_profile_apply_am_preset(enum cp_profile_am_preset_setting preset,
+	struct cp_block_config *block_config, struct cp_audio_config *audio_config)
+{
+	enum cp_am_preset am_preset;
+	int status;
+
+	if (preset == CP_PROFILE_AM_PRESET_OFF) {
+		block_config->am_config.enabled = 0;
+		audio_config->am_config = block_config->am_config;
+		return CP_OK;
+	}
+	switch (preset) {
+	case CP_PROFILE_AM_PRESET_SAFE:
+		am_preset = CP_AM_PRESET_SAFE;
+		break;
+	case CP_PROFILE_AM_PRESET_SHORTWAVE:
+		am_preset = CP_AM_PRESET_SHORTWAVE;
+		break;
+	case CP_PROFILE_AM_PRESET_WIDE:
+		am_preset = CP_AM_PRESET_WIDE;
+		break;
+	case CP_PROFILE_AM_PRESET_VOICE:
+		am_preset = CP_AM_PRESET_VOICE;
+		break;
+	default:
+		return CP_ERR_RANGE;
+	}
+
+	status = cp_am_apply_preset_id(&block_config->am_config, am_preset);
+	if (status != CP_OK)
+		return status;
+	block_config->am_config.enabled = 1;
+	block_config->ssb_config.enabled = 0;
+	audio_config->am_config = block_config->am_config;
+	audio_config->ssb_config = block_config->ssb_config;
+	return CP_OK;
+}
+
+static int
+cp_profile_apply_bass_eq(enum cp_profile_bass_eq_setting setting,
+	struct cp_block_config *block_config, struct cp_audio_config *audio_config)
+{
+	enum cp_bass_eq_preset preset;
+	int status;
+
+	if (setting == CP_PROFILE_BASS_EQ_OFF) {
+		block_config->bass_eq_config.enabled = 0;
+		audio_config->bass_eq_config = block_config->bass_eq_config;
+		return CP_OK;
+	}
+	switch (setting) {
+	case CP_PROFILE_BASS_EQ_WARM:
+		preset = CP_BASS_EQ_PRESET_WARM;
+		break;
+	case CP_PROFILE_BASS_EQ_MUSIC:
+		preset = CP_BASS_EQ_PRESET_MUSIC;
+		break;
+	case CP_PROFILE_BASS_EQ_SPEECH:
+		preset = CP_BASS_EQ_PRESET_SPEECH;
+		break;
+	default:
+		return CP_ERR_RANGE;
+	}
+
+	status = cp_bass_eq_apply_preset_id(&block_config->bass_eq_config,
+	    preset);
+	if (status != CP_OK)
+		return status;
+	block_config->bass_eq_config.enabled = 1;
+	audio_config->bass_eq_config = block_config->bass_eq_config;
+	return CP_OK;
+}
+
+static int
+cp_profile_apply_mode(enum cp_profile_mode mode,
+	struct cp_block_config *block_config, struct cp_audio_config *audio_config)
+{
+	if (mode == CP_PROFILE_MODE_AM) {
+		block_config->am_config.enabled = 1;
+		block_config->ssb_config.enabled = 0;
+	} else if (mode == CP_PROFILE_MODE_SSB) {
+		block_config->am_config.enabled = 0;
+		block_config->ssb_config.enabled = 1;
+	} else if (mode == CP_PROFILE_MODE_NEUTRAL ||
+	    mode == CP_PROFILE_MODE_FILE_CLEANUP) {
+		block_config->am_config.enabled = 0;
+		block_config->ssb_config.enabled = 0;
+	} else {
+		return CP_ERR_RANGE;
+	}
+	audio_config->am_config = block_config->am_config;
+	audio_config->ssb_config = block_config->ssb_config;
+	return CP_OK;
+}
+
+static int
+cp_profile_apply_multiband(enum cp_profile_multiband_setting setting,
+	enum cp_multiband_preset *preset, int *enabled)
+{
+	if (preset == NULL || enabled == NULL)
+		return CP_ERR_NULL;
+	if (setting == CP_PROFILE_MULTIBAND_OFF) {
+		*enabled = 0;
+		return CP_OK;
+	}
+	if (setting == CP_PROFILE_MULTIBAND_SPEECH) {
+		*preset = CP_MULTIBAND_PRESET_SPEECH;
+		*enabled = 1;
+		return CP_OK;
+	}
+	if (setting == CP_PROFILE_MULTIBAND_MUSIC) {
+		*preset = CP_MULTIBAND_PRESET_MUSIC;
+		*enabled = 1;
+		return CP_OK;
+	}
+
+	return CP_ERR_RANGE;
+}
+
+static int
+cp_profile_apply_ssb_preset(enum cp_profile_ssb_preset_setting preset,
+	struct cp_block_config *block_config, struct cp_audio_config *audio_config)
+{
+	enum cp_ssb_preset ssb_preset;
+	int status;
+
+	if (preset == CP_PROFILE_SSB_PRESET_OFF) {
+		block_config->ssb_config.enabled = 0;
+		audio_config->ssb_config = block_config->ssb_config;
+		return CP_OK;
+	}
+	switch (preset) {
+	case CP_PROFILE_SSB_PRESET_SPEECH:
+		ssb_preset = CP_SSB_PRESET_SPEECH;
+		break;
+	case CP_PROFILE_SSB_PRESET_NARROW:
+		ssb_preset = CP_SSB_PRESET_NARROW;
+		break;
+	case CP_PROFILE_SSB_PRESET_WIDE:
+		ssb_preset = CP_SSB_PRESET_WIDE;
+		break;
+	case CP_PROFILE_SSB_PRESET_GENTLE:
+		ssb_preset = CP_SSB_PRESET_GENTLE;
+		break;
+	default:
+		return CP_ERR_RANGE;
+	}
+
+	status = cp_ssb_apply_preset_id(&block_config->ssb_config,
+	    ssb_preset);
+	if (status != CP_OK)
+		return status;
+	block_config->am_config.enabled = 0;
+	block_config->ssb_config.enabled = 1;
+	audio_config->am_config = block_config->am_config;
+	audio_config->ssb_config = block_config->ssb_config;
 	return CP_OK;
 }
 

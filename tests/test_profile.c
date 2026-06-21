@@ -6,8 +6,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "cp_audio.h"
+#include "cp_block.h"
 #include "cp_profile.h"
 
+static int	test_apply_examples(void);
 static int	test_am_conflict_rejected(void);
 static int	test_comments_and_blank_lines(void);
 static int	test_duplicate_key_rejected(void);
@@ -22,6 +25,8 @@ int
 main(void)
 {
 	if (!test_valid_examples())
+		return 1;
+	if (!test_apply_examples())
 		return 1;
 	if (!test_unknown_key_rejected())
 		return 1;
@@ -41,6 +46,100 @@ main(void)
 		return 1;
 
 	return 0;
+}
+
+static int
+test_apply_examples(void)
+{
+	struct cp_audio_config audio_config;
+	struct cp_block_config block_config;
+	struct cp_profile profile;
+	struct cp_profile_error error;
+
+	cp_audio_default_config(&audio_config);
+	cp_block_default_config(&block_config, CP_CHANNELS_STEREO);
+	if (cp_profile_parse_file("profiles/am-safe.profile", &profile,
+	    &error) != CP_OK ||
+	    cp_profile_apply_to_configs(&profile, &block_config,
+	    &audio_config) != CP_OK ||
+	    !block_config.am_config.enabled ||
+	    block_config.ssb_config.enabled ||
+	    !audio_config.am_config.enabled ||
+	    audio_config.ssb_config.enabled ||
+	    block_config.am_config.highpass_hz != 60.0f ||
+	    block_config.dehummer_enabled != 1 ||
+	    block_config.hum_base_frequency != 50.0f ||
+	    block_config.hum_harmonic_count != 4 ||
+	    block_config.multiband_enabled != 1 ||
+	    block_config.multiband_preset != CP_MULTIBAND_PRESET_SPEECH ||
+	    block_config.multiband2_enabled != 0 ||
+	    block_config.bass_eq_config.enabled != 0 ||
+	    block_config.natural_dynamics_config.enabled != 1 ||
+	    block_config.low_level_boost_config.enabled != 0 ||
+	    block_config.restoration_config.enabled != 1 ||
+	    block_config.declipper_config.enabled != 0) {
+		printf("test_profile: am-safe apply failed\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&audio_config);
+	cp_block_default_config(&block_config, CP_CHANNELS_STEREO);
+	if (cp_profile_parse_file("profiles/am-shortwave.profile", &profile,
+	    &error) != CP_OK ||
+	    cp_profile_apply_to_configs(&profile, &block_config,
+	    &audio_config) != CP_OK ||
+	    !block_config.am_config.enabled ||
+	    block_config.ssb_config.enabled ||
+	    block_config.multiband2_enabled != 1 ||
+	    block_config.multiband2_preset != CP_MULTIBAND_PRESET_SPEECH ||
+	    block_config.bass_eq_config.enabled != 1 ||
+	    block_config.bass_eq_config.preset != CP_BASS_EQ_PRESET_SPEECH ||
+	    block_config.low_level_boost_config.enabled != 1 ||
+	    audio_config.multiband2_enabled !=
+	    block_config.multiband2_enabled) {
+		printf("test_profile: am-shortwave apply failed\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&audio_config);
+	cp_block_default_config(&block_config, CP_CHANNELS_STEREO);
+	if (cp_profile_parse_file("profiles/ssb-speech.profile", &profile,
+	    &error) != CP_OK ||
+	    cp_profile_apply_to_configs(&profile, &block_config,
+	    &audio_config) != CP_OK ||
+	    block_config.am_config.enabled ||
+	    !block_config.ssb_config.enabled ||
+	    audio_config.am_config.enabled ||
+	    !audio_config.ssb_config.enabled ||
+	    block_config.ssb_config.lowpass_hz != 2800.0f ||
+	    block_config.bass_eq_config.enabled != 1 ||
+	    block_config.bass_eq_config.preset != CP_BASS_EQ_PRESET_SPEECH ||
+	    block_config.hum_harmonic_count != 3) {
+		printf("test_profile: ssb-speech apply failed\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&audio_config);
+	cp_block_default_config(&block_config, CP_CHANNELS_STEREO);
+	if (cp_profile_parse_file("profiles/file-cleanup.profile", &profile,
+	    &error) != CP_OK ||
+	    cp_profile_apply_to_configs(&profile, &block_config,
+	    &audio_config) != CP_OK ||
+	    block_config.am_config.enabled ||
+	    block_config.ssb_config.enabled ||
+	    audio_config.am_config.enabled ||
+	    audio_config.ssb_config.enabled ||
+	    block_config.multiband_enabled != 1 ||
+	    block_config.multiband_preset != CP_MULTIBAND_PRESET_MUSIC ||
+	    block_config.bass_eq_config.enabled != 1 ||
+	    block_config.bass_eq_config.preset != CP_BASS_EQ_PRESET_WARM ||
+	    block_config.restoration_config.enabled != 1 ||
+	    block_config.declipper_config.enabled != 1) {
+		printf("test_profile: file-cleanup apply failed\n");
+		return 0;
+	}
+
+	return 1;
 }
 
 static int

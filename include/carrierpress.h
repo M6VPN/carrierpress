@@ -23,6 +23,7 @@
 #include "cp_monitor.h"
 #include "cp_multiband.h"
 #include "cp_natural_dynamics.h"
+#include "cp_profile.h"
 #include "cp_restoration.h"
 #include "cp_resampler.h"
 #include "cp_sndio.h"

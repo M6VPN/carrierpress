@@ -11,12 +11,16 @@ Run examples from the repository root after building `./carrierpress`.
 ```sh
 make
 ./examples/self-test.sh
+./examples/profile-self-test.sh
 ./examples/cat-mock-status.sh
 ./examples/release-check-local.sh
 ```
 
 `self-test.sh` runs the built-in tone through the default chain plus AM, SSB,
 and dehummer/multiband examples.
+
+`profile-self-test.sh` runs each bundled profile through self-test and then
+checks AM and SSB command-line profile overrides.
 
 ## WAV Processing
 
@@ -25,10 +29,12 @@ WAV processing requires a `WITH_SNDFILE=1` build:
 ```sh
 make WITH_SNDFILE=1
 ./examples/wav-process.sh input.wav output.wav
+./examples/profile-wav-process.sh profiles/file-cleanup.profile input.wav output.wav
 ```
 
 The wrapper processes a WAV file through the current chain with dehummer and a
 three-band multiband stage. It does not overwrite the input file.
+The profile wrapper loads one safe audio profile before processing.
 
 ## Playout
 

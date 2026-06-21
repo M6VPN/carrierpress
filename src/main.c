@@ -16,6 +16,7 @@
 #include "cp_gui.h"
 #include "cp_playout.h"
 #include "cp_portaudio.h"
+#include "cp_profile.h"
 #include "cp_sndio.h"
 #include "cp_wav.h"
 
@@ -29,6 +30,8 @@
 
 static volatile sig_atomic_t stop_requested = 0;
 
+static int	apply_profile_arg(const char *, struct cp_block_config *,
+		    struct cp_audio_config *);
 static void	handle_signal(int);
 static int	parse_am_preset(struct cp_am_config *, const char *);
 static int	parse_bass_eq_preset(struct cp_bass_eq_config *,
@@ -82,6 +85,7 @@ main(int argc, char *argv[])
 	int gui_demo_mode;
 	int live_mode;
 	int list_devices;
+	int profile_seen;
 	int self_test_mode;
 
 	input_path   = NULL;
@@ -94,6 +98,7 @@ main(int argc, char *argv[])
 	gui_demo_mode = 0;
 	live_mode    = 0;
 	list_devices = 0;
+	profile_seen = 0;
 	self_test_mode = 0;
 	cp_audio_default_config(&audio_config);
 	cp_block_default_config(&block_config, CP_CHANNELS_MONO);
@@ -113,6 +118,17 @@ main(int argc, char *argv[])
 		} else if (strcmp(argv[arg], "--output") == 0 &&
 		    arg + 1 < argc) {
 			output_path = argv[++arg];
+		} else if (strcmp(argv[arg], "--profile") == 0 &&
+		    arg + 1 < argc) {
+			if (profile_seen) {
+				fprintf(stderr,
+				    "carrierpress: only one profile may be loaded\n");
+				return 1;
+			}
+			if (!apply_profile_arg(argv[++arg], &block_config,
+			    &audio_config))
+				return 1;
+			profile_seen = 1;
 		} else if (strcmp(argv[arg], "--play") == 0 &&
 		    arg + 1 < argc) {
 			play_path = argv[++arg];
@@ -507,7 +523,9 @@ main(int argc, char *argv[])
 			    (cp_sample_t)parsed_double;
 		} else if (strcmp(argv[arg], "--am") == 0) {
 			block_config.am_config.enabled = 1;
+			block_config.ssb_config.enabled = 0;
 			audio_config.am_config.enabled = 1;
+			audio_config.ssb_config.enabled = 0;
 		} else if (strcmp(argv[arg], "--am-preset") == 0 &&
 		    arg + 1 < argc) {
 			if (!parse_am_preset(&block_config.am_config,
@@ -515,7 +533,10 @@ main(int argc, char *argv[])
 				usage(argv[0]);
 				return 1;
 			}
+			block_config.am_config.enabled = 1;
+			block_config.ssb_config.enabled = 0;
 			audio_config.am_config = block_config.am_config;
+			audio_config.ssb_config = block_config.ssb_config;
 		} else if (strcmp(argv[arg], "--am-lowpass") == 0 &&
 		    arg + 1 < argc) {
 			if (!parse_double_arg(argv[++arg], &parsed_double)) {
@@ -572,7 +593,9 @@ main(int argc, char *argv[])
 			audio_config.am_config.asymmetry_ratio =
 			    (cp_sample_t)parsed_double;
 		} else if (strcmp(argv[arg], "--ssb") == 0) {
+			block_config.am_config.enabled = 0;
 			block_config.ssb_config.enabled = 1;
+			audio_config.am_config.enabled = 0;
 			audio_config.ssb_config.enabled = 1;
 		} else if (strcmp(argv[arg], "--ssb-preset") == 0 &&
 		    arg + 1 < argc) {
@@ -581,6 +604,9 @@ main(int argc, char *argv[])
 				usage(argv[0]);
 				return 1;
 			}
+			block_config.am_config.enabled = 0;
+			block_config.ssb_config.enabled = 1;
+			audio_config.am_config = block_config.am_config;
 			audio_config.ssb_config = block_config.ssb_config;
 		} else if (strcmp(argv[arg], "--ssb-lowpass") == 0 &&
 		    arg + 1 < argc) {
@@ -721,6 +747,38 @@ main(int argc, char *argv[])
 
 	usage(argv[0]);
 	return 1;
+}
+
+static int
+apply_profile_arg(const char *path, struct cp_block_config *block_config,
+	struct cp_audio_config *audio_config)
+{
+	struct cp_profile profile;
+	struct cp_profile_error error;
+	int status;
+
+	if (path == NULL || block_config == NULL || audio_config == NULL)
+		return 0;
+
+	(void)memset(&error, 0, sizeof(error));
+	status = cp_profile_parse_file(path, &profile, &error);
+	if (status == CP_OK)
+		status = cp_profile_apply_to_configs(&profile, block_config,
+		    audio_config);
+	if (status == CP_OK)
+		return 1;
+
+	fprintf(stderr, "carrierpress: profile %s: ", path);
+	if (error.line_number > 0)
+		fprintf(stderr, "line %zu: ", error.line_number);
+	if (error.key[0] != '\0')
+		fprintf(stderr, "%s: ", error.key);
+	if (error.message[0] != '\0')
+		fprintf(stderr, "%s\n", error.message);
+	else
+		fprintf(stderr, "invalid profile\n");
+
+	return 0;
 }
 
 static void
@@ -1498,6 +1556,8 @@ usage(const char *program)
 {
 	printf("usage: %s --version\n", program);
 	printf("usage: %s --self-test\n", program);
+	printf("usage: %s --profile profiles/am-safe.profile --self-test\n",
+	    program);
 	printf("usage: %s --self-test --dehummer --hum-frequency 50 "
 	    "--hum-harmonics 4\n", program);
 	printf("usage: %s --self-test --analyze --declipper\n", program);
