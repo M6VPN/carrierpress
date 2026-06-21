@@ -658,6 +658,10 @@ Play a simple playlist:
 ./carrierpress --playlist playlist.txt --device pulse
 ```
 
+Text playout prints concise cue/status lines when a file starts, a playlist
+item is cued, a file ends, playback stops, or a playlist completes. TUI and GUI
+playout suppress text cue lines so the monitor display stays readable.
+
 Run playout with the ncurses monitor:
 
 ```sh
@@ -737,15 +741,19 @@ WAV playout requires a `WITH_SNDFILE=1 WITH_PORTAUDIO=1` build. Without it, `--p
 Playout support not enabled. Rebuild with WITH_SNDFILE=1 WITH_PORTAUDIO=1.
 ```
 
-MP3, FLAC, and OGG playout are not implemented in this milestone. Convert them
-to WAV with an external tool before using `--play` or `--playlist`.
+MP3, FLAC, OGG, Opus, and M4A playout are not implemented in this milestone.
+Convert them to WAV with an external tool before using `--play` or
+`--playlist`.
 
-Example external decode commands:
+See [docs/external-decode-workflow.md](docs/external-decode-workflow.md) for
+the full workflow. Basic examples:
 
 ```sh
 ffmpeg -i input.mp3 -ar 48000 -ac 2 output.wav
 ffmpeg -i input.flac -ar 48000 -ac 2 output.wav
 ffmpeg -i input.ogg -ar 48000 -ac 2 output.wav
+ffmpeg -i input.opus -ar 48000 -ac 2 output.wav
+ffmpeg -i input.m4a -ar 48000 -ac 2 output.wav
 ```
 
 Then play the converted WAV:

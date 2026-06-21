@@ -193,10 +193,10 @@ implemented until code, docs, and validation are complete.
 
 - [x] Improve playlist diagnostics.
 - [x] Add playlist dry-run validation.
-- [ ] Add cue/status output.
-- [ ] Document external decode workflow.
+- [x] Add cue/status output.
+- [x] Document external decode workflow.
 - [x] Keep unsupported formats clearly reported.
-- [ ] Keep MP3, FLAC, and OGG support separate and optional unless selected.
+- [x] Keep MP3, FLAC, and OGG support separate and optional unless selected.
 
 ## M14 Measurement Report Export
 

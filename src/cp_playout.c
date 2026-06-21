@@ -48,8 +48,112 @@ static int	cp_playout_read_line(FILE *, char *, size_t, int *);
 static int	cp_playout_select_output_device(
 		    const struct cp_audio_config *, size_t, PaDeviceIndex *);
 static int	cp_playout_should_stop(const struct cp_playout_config *);
+static int	cp_playout_status_enabled(const struct cp_audio_config *);
+static void	cp_playout_print_line(const char *);
 static void	cp_playout_print_meters(const struct cp_monitor_snapshot *);
 static char	*cp_playout_trim_line(char *);
+
+int
+cp_playout_format_file_done(char *buffer, size_t buffer_size,
+	const char *path)
+{
+	int written;
+
+	if (buffer == NULL || buffer_size == 0 || path == NULL)
+		return CP_PLAYOUT_ERR_NULL;
+
+	written = snprintf(buffer, buffer_size, "playout: done file=%s",
+	    path);
+	if (written < 0 || (size_t)written >= buffer_size)
+		return CP_PLAYOUT_ERR_FORMAT;
+
+	return CP_PLAYOUT_OK;
+}
+
+int
+cp_playout_format_file_start(char *buffer, size_t buffer_size,
+	const char *path)
+{
+	int written;
+
+	if (buffer == NULL || buffer_size == 0 || path == NULL)
+		return CP_PLAYOUT_ERR_NULL;
+
+	written = snprintf(buffer, buffer_size, "playout: start file=%s",
+	    path);
+	if (written < 0 || (size_t)written >= buffer_size)
+		return CP_PLAYOUT_ERR_FORMAT;
+
+	return CP_PLAYOUT_OK;
+}
+
+int
+cp_playout_format_playlist_cue(char *buffer, size_t buffer_size,
+	size_t index, size_t count, const char *path)
+{
+	int written;
+
+	if (buffer == NULL || buffer_size == 0 || path == NULL)
+		return CP_PLAYOUT_ERR_NULL;
+	if (count == 0 || index >= count)
+		return CP_PLAYOUT_ERR_PLAYLIST;
+
+	written = snprintf(buffer, buffer_size, "cue: %zu/%zu file=%s",
+	    index + 1, count, path);
+	if (written < 0 || (size_t)written >= buffer_size)
+		return CP_PLAYOUT_ERR_FORMAT;
+
+	return CP_PLAYOUT_OK;
+}
+
+int
+cp_playout_format_playlist_done(char *buffer, size_t buffer_size,
+	size_t count)
+{
+	int written;
+
+	if (buffer == NULL || buffer_size == 0)
+		return CP_PLAYOUT_ERR_NULL;
+
+	written = snprintf(buffer, buffer_size, "playlist: done count=%zu",
+	    count);
+	if (written < 0 || (size_t)written >= buffer_size)
+		return CP_PLAYOUT_ERR_FORMAT;
+
+	return CP_PLAYOUT_OK;
+}
+
+int
+cp_playout_format_playlist_start(char *buffer, size_t buffer_size,
+	size_t count)
+{
+	int written;
+
+	if (buffer == NULL || buffer_size == 0)
+		return CP_PLAYOUT_ERR_NULL;
+
+	written = snprintf(buffer, buffer_size, "playlist: start count=%zu",
+	    count);
+	if (written < 0 || (size_t)written >= buffer_size)
+		return CP_PLAYOUT_ERR_FORMAT;
+
+	return CP_PLAYOUT_OK;
+}
+
+int
+cp_playout_format_stop(char *buffer, size_t buffer_size)
+{
+	int written;
+
+	if (buffer == NULL || buffer_size == 0)
+		return CP_PLAYOUT_ERR_NULL;
+
+	written = snprintf(buffer, buffer_size, "%s", "playout: stopped");
+	if (written < 0 || (size_t)written >= buffer_size)
+		return CP_PLAYOUT_ERR_FORMAT;
+
+	return CP_PLAYOUT_OK;
+}
 
 static size_t
 cp_playout_interval_frames(double sample_rate, unsigned int meter_interval_ms)
@@ -274,6 +378,7 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	size_t resampled_frames;
 	double input_rate;
 	double output_rate;
+	char status_line[CP_PLAYOUT_MAX_LINE + CP_PLAYOUT_ERROR_TEXT];
 	int result;
 	int resampling;
 	int status;
@@ -534,6 +639,9 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	}
 
 	if (!audio_config.tui_enabled && !audio_config.gui_enabled) {
+		if (cp_playout_format_file_start(status_line,
+		    sizeof(status_line), path) == CP_PLAYOUT_OK)
+			cp_playout_print_line(status_line);
 		if (resampling) {
 			printf("playing: %s input_rate=%0.0f output_rate=%0.0f "
 			    "channels=%zu output_device=%d resampler=linear\n",
@@ -706,6 +814,19 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	free(scratch);
 	sf_close(input_file);
 
+	if (cp_playout_status_enabled(&audio_config) &&
+	    result == CP_PLAYOUT_OK) {
+		if (cp_playout_should_stop(config)) {
+			if (config->playlist_count == 0 &&
+			    cp_playout_format_stop(status_line,
+			    sizeof(status_line)) == CP_PLAYOUT_OK)
+				cp_playout_print_line(status_line);
+		} else if (cp_playout_format_file_done(status_line,
+		    sizeof(status_line), path) == CP_PLAYOUT_OK) {
+			cp_playout_print_line(status_line);
+		}
+	}
+
 	return result;
 }
 
@@ -717,7 +838,9 @@ cp_playout_run_playlist(const char *path,
 	struct cp_playlist_error error;
 	struct cp_playlist playlist;
 	const char *entry;
+	char status_line[CP_PLAYOUT_MAX_LINE + CP_PLAYOUT_ERROR_TEXT];
 	size_t index;
+	int status_output;
 	int status;
 
 	if (path == NULL || config == NULL)
@@ -741,20 +864,44 @@ cp_playout_run_playlist(const char *path,
 		return CP_PLAYOUT_ERR_PLAYLIST;
 	}
 
+	status_output = cp_playout_status_enabled(&config->audio_config);
+	if (status_output &&
+	    cp_playout_format_playlist_start(status_line,
+	    sizeof(status_line), playlist.count) == CP_PLAYOUT_OK)
+		cp_playout_print_line(status_line);
+
 	for (index = 0; index < playlist.count; index++) {
 		if (cp_playout_should_stop(config))
 			break;
 		entry = cp_playlist_get(&playlist, index);
+		if (status_output &&
+		    cp_playout_format_playlist_cue(status_line,
+		    sizeof(status_line), index, playlist.count, entry) ==
+		    CP_PLAYOUT_OK)
+			cp_playout_print_line(status_line);
 		file_config = *config;
 		file_config.playlist_index = index;
 		file_config.playlist_count = playlist.count;
 		status = cp_playout_run_file(entry, &file_config);
 		if (status == CP_PLAYOUT_NEXT) {
+			if (status_output)
+				cp_playout_print_line("cue: next requested");
 			status = CP_PLAYOUT_OK;
 			continue;
 		}
 		if (status != CP_PLAYOUT_OK)
 			break;
+	}
+
+	if (status_output && status == CP_PLAYOUT_OK) {
+		if (cp_playout_should_stop(config)) {
+			if (cp_playout_format_stop(status_line,
+			    sizeof(status_line)) == CP_PLAYOUT_OK)
+				cp_playout_print_line(status_line);
+		} else if (cp_playout_format_playlist_done(status_line,
+		    sizeof(status_line), playlist.count) == CP_PLAYOUT_OK) {
+			cp_playout_print_line(status_line);
+		}
 	}
 
 	cp_playlist_free(&playlist);
@@ -1322,6 +1469,24 @@ cp_playout_should_stop(const struct cp_playout_config *config)
 		return 0;
 
 	return *config->stop_requested != 0;
+}
+
+static int
+cp_playout_status_enabled(const struct cp_audio_config *config)
+{
+	if (config == NULL)
+		return 0;
+
+	return !config->tui_enabled && !config->gui_enabled;
+}
+
+static void
+cp_playout_print_line(const char *line)
+{
+	if (line == NULL)
+		return;
+
+	printf("%s\n", line);
 }
 
 static char *

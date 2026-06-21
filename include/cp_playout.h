@@ -68,6 +68,13 @@ int		cp_playlist_load(const char *, struct cp_playlist *);
 int		cp_playlist_load_report(const char *, struct cp_playlist *,
 		    struct cp_playlist_error *);
 size_t		cp_playlist_count(const struct cp_playlist *);
+int		cp_playout_format_file_done(char *, size_t, const char *);
+int		cp_playout_format_file_start(char *, size_t, const char *);
+int		cp_playout_format_playlist_cue(char *, size_t, size_t, size_t,
+		    const char *);
+int		cp_playout_format_playlist_done(char *, size_t, size_t);
+int		cp_playout_format_playlist_start(char *, size_t, size_t);
+int		cp_playout_format_stop(char *, size_t);
 int		cp_playout_path_is_wav(const char *);
 int		cp_playout_run_file(const char *,
 		    const struct cp_playout_config *);

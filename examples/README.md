@@ -70,6 +70,7 @@ Check playlist syntax without PortAudio or playback:
 
 ```sh
 ./examples/playlist-check.sh
+./examples/playlist-workflow.sh examples/playout-playlist.txt
 ```
 
 To play the playlist, edit `examples/playout-playlist.txt` so it points at local
@@ -78,6 +79,19 @@ WAV files, then run:
 ```sh
 ./carrierpress --playlist examples/playout-playlist.txt --meter-interval-ms 1000
 ```
+
+Text playout prints concise cue/status lines for file starts, playlist cues,
+stops, and completion. TUI and GUI playout keep cue/status information inside
+the monitor display instead of printing extra text lines.
+
+CarrierPress does not play MP3, FLAC, OGG, Opus, or M4A natively in this
+milestone. Convert those files to WAV first:
+
+```sh
+./examples/external-decode.sh input.mp3 wav-out/input.wav
+```
+
+See `docs/external-decode-workflow.md` for the full external decode workflow.
 
 ## GUI Demo
 

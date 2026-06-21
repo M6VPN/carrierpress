@@ -10,6 +10,7 @@
 
 static int	write_text_file(const char *, const char *);
 static int	test_config_validation(void);
+static int	test_cue_formatting(void);
 static int	test_meter_snapshot(void);
 static int	test_path_filter(void);
 static int	test_playlist_load(void);
@@ -20,6 +21,8 @@ int
 main(void)
 {
 	if (!test_config_validation())
+		return 1;
+	if (!test_cue_formatting())
 		return 1;
 	if (!test_meter_snapshot())
 		return 1;
@@ -48,6 +51,66 @@ write_text_file(const char *path, const char *text)
 		return 0;
 	}
 	fclose(file);
+
+	return 1;
+}
+
+static int
+test_cue_formatting(void)
+{
+	char buffer[128];
+	char small[8];
+	int status;
+
+	status = cp_playout_format_file_start(buffer, sizeof(buffer),
+	    "first.wav");
+	if (status != CP_PLAYOUT_OK ||
+	    strcmp(buffer, "playout: start file=first.wav") != 0) {
+		printf("test_playout: file start format mismatch\n");
+		return 0;
+	}
+	status = cp_playout_format_file_done(buffer, sizeof(buffer),
+	    "first.wav");
+	if (status != CP_PLAYOUT_OK ||
+	    strcmp(buffer, "playout: done file=first.wav") != 0) {
+		printf("test_playout: file done format mismatch\n");
+		return 0;
+	}
+	status = cp_playout_format_playlist_start(buffer, sizeof(buffer), 3);
+	if (status != CP_PLAYOUT_OK ||
+	    strcmp(buffer, "playlist: start count=3") != 0) {
+		printf("test_playout: playlist start format mismatch\n");
+		return 0;
+	}
+	status = cp_playout_format_playlist_cue(buffer, sizeof(buffer), 1, 3,
+	    "second.wav");
+	if (status != CP_PLAYOUT_OK ||
+	    strcmp(buffer, "cue: 2/3 file=second.wav") != 0) {
+		printf("test_playout: playlist cue format mismatch\n");
+		return 0;
+	}
+	status = cp_playout_format_playlist_done(buffer, sizeof(buffer), 3);
+	if (status != CP_PLAYOUT_OK ||
+	    strcmp(buffer, "playlist: done count=3") != 0) {
+		printf("test_playout: playlist done format mismatch\n");
+		return 0;
+	}
+	status = cp_playout_format_stop(buffer, sizeof(buffer));
+	if (status != CP_PLAYOUT_OK ||
+	    strcmp(buffer, "playout: stopped") != 0) {
+		printf("test_playout: stop format mismatch\n");
+		return 0;
+	}
+	if (cp_playout_format_playlist_cue(buffer, sizeof(buffer), 3, 3,
+	    "bad.wav") != CP_PLAYOUT_ERR_PLAYLIST) {
+		printf("test_playout: invalid cue index accepted\n");
+		return 0;
+	}
+	if (cp_playout_format_file_start(small, sizeof(small),
+	    "very-long-file-name.wav") != CP_PLAYOUT_ERR_FORMAT) {
+		printf("test_playout: long cue line accepted\n");
+		return 0;
+	}
 
 	return 1;
 }
