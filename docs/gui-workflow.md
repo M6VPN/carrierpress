@@ -1,9 +1,9 @@
 # GUI Workflow Requests
 
-This document defines the safe boundary for future GUI file cueing and output
-device selection. It is a design and request-model note. CarrierPress does not
-yet implement GUI file dialogs, GUI playlist loading, or GUI output-device
-switching.
+This document defines the safe boundary for GUI file cueing and output device
+selection. CarrierPress supports preconfigured GUI cue requests for WAV and
+playlist paths. It does not implement GUI file dialogs or GUI output-device
+switching yet.
 
 CarrierPress is baseband audio processing software. The GUI workflow path must
 not add RF generation, transmitter compliance claims, licence-compliance
@@ -35,6 +35,15 @@ workflow=cue_playlist_item index=2 path=audio/program.wav
 workflow=select_output_device device=3
 ```
 
+When a request is consumed and validated by the host loop, the status is shown
+in the same bounded format:
+
+```text
+workflow=load_wav status=ok reason=ok path=audio/program.wav
+workflow=load_wav status=error reason=unsupported format: convert to WAV first path=audio/music.mp3
+workflow=load_playlist status=ok reason=ok path=playlists/show.txt
+```
+
 ## Deferred Application
 
 GUI event and render callbacks must not apply workflow changes directly.
@@ -60,8 +69,27 @@ implementation. It must not be handled from an SDL render or key event callback.
 
 ## File and Playlist Rules
 
-Future GUI file and playlist controls should reuse the existing strict
-workflow rules where practical:
+The first GUI cueing implementation uses explicit cue slots:
+
+```sh
+./carrierpress --gui-demo --gui-cue-wav audio/program.wav --gui-cue-playlist playlist.txt
+./carrierpress --play input.wav --gui --gui-cue-wav audio/program.wav
+./carrierpress --playlist playlist.txt --gui --gui-cue-playlist playlist.txt
+```
+
+The GUI keys are:
+
+- `l` requests the configured WAV cue slot.
+- `p` requests the configured playlist cue slot.
+- `c` requests the current playlist item as a cue request when playlist context
+  exists.
+
+These keys record and display deferred workflow requests. They do not open
+audio devices, process audio, or start a replacement stream from the SDL event
+path.
+
+GUI file and playlist controls reuse the existing strict workflow rules where
+practical:
 
 - WAV files are the directly supported file input path.
 - Playlist syntax should use existing playlist-check behavior.
@@ -70,6 +98,8 @@ workflow rules where practical:
 - MP3, FLAC, OGG, Opus, and M4A remain external conversion workflows unless a
   later optional decoder milestone is selected.
 - GUI path requests should be bounded and rejected if empty or too long.
+- Path and playlist validation happens after the host loop consumes the GUI
+  request, outside SDL render and event handling.
 
 ## Output Device Rules
 
@@ -100,8 +130,9 @@ write/control, rig frequency, rig mode, or transmit state.
 
 ## Future Work Slices
 
-M23B should add GUI-safe WAV and playlist cue requests with path validation in
-the outer host loop. It should not process audio inside GUI callbacks.
+M23B adds GUI-safe WAV and playlist cue requests with path validation in the
+outer host loop. It does not process audio inside GUI callbacks, and it does
+not add native file dialogs.
 
 M23C should add output-device selection display and a deferred output-device
 selection request. Stream restart must happen outside callbacks.

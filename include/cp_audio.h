@@ -98,6 +98,8 @@ struct cp_audio_config {
 	struct cp_ssb_config ssb_config;
 	int tui_enabled;
 	int gui_enabled;
+	const char *gui_cue_wav_path;
+	const char *gui_cue_playlist_path;
 };
 
 int		cp_audio_backend_from_string(const char *,

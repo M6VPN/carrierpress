@@ -284,18 +284,18 @@ implemented until code, docs, and validation are complete.
 
 ## M23 Future GUI Workflow Ideas
 
-- [ ] Load/cue WAV files from GUI.
-- [ ] Load/cue playlist entries from GUI.
+- [x] Load/cue WAV files from GUI.
+- [x] Load/cue playlist entries from GUI.
 - [ ] Select output sound interface from GUI.
 - [x] Keep GUI file/device changes outside real-time callbacks.
 - [x] Keep GUI transmit controls deferred to T5.
 
 ## M23B GUI File and Playlist Cueing
 
-- [ ] Add GUI-safe WAV path cue request.
-- [ ] Add GUI-safe playlist cue request.
-- [ ] Validate paths outside GUI callbacks.
-- [ ] Keep compressed formats external.
+- [x] Add GUI-safe WAV path cue request.
+- [x] Add GUI-safe playlist cue request.
+- [x] Validate paths outside GUI callbacks.
+- [x] Keep compressed formats external.
 
 ## M23C GUI Output Device Selection
 

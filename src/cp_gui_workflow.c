@@ -8,9 +8,14 @@
 #include <string.h>
 
 #include "cp_gui_workflow.h"
+#include "cp_playlist_check.h"
 
 static int	cp_gui_workflow_copy_path(char *, size_t, const char *);
+static int	cp_gui_workflow_set_reason(struct cp_gui_workflow_request *,
+		    const char *);
 static int	cp_gui_workflow_snprintf(char *, size_t, const char *, ...);
+static int	cp_gui_workflow_status_format(
+		    const struct cp_gui_workflow_request *, char *, size_t);
 
 void
 cp_gui_workflow_request_clear(struct cp_gui_workflow_request *request)
@@ -21,6 +26,8 @@ cp_gui_workflow_request_clear(struct cp_gui_workflow_request *request)
 	(void)memset(request, 0, sizeof(*request));
 	request->type = CP_GUI_WORKFLOW_REQUEST_NONE;
 	request->device_index = -1;
+	request->validated = 0;
+	request->validation_status = CP_OK;
 	request->playlist_index = 0;
 }
 
@@ -36,6 +43,9 @@ cp_gui_workflow_request_format(
 		return cp_gui_workflow_snprintf(buffer, buffer_size,
 		    "workflow=none");
 	}
+	if (request->validated)
+		return cp_gui_workflow_status_format(request, buffer,
+		    buffer_size);
 
 	switch (request->type) {
 	case CP_GUI_WORKFLOW_REQUEST_LOAD_WAV:
@@ -57,6 +67,43 @@ cp_gui_workflow_request_format(
 	default:
 		return cp_gui_workflow_snprintf(buffer, buffer_size,
 		    "workflow=unknown");
+	}
+}
+
+int
+cp_gui_workflow_request_from_key(int key, const char *cue_wav_path,
+	const char *cue_playlist_path, const char *current_path,
+	size_t playlist_index, size_t playlist_count,
+	struct cp_gui_workflow_request *request)
+{
+	if (request == NULL)
+		return CP_ERR_NULL;
+
+	cp_gui_workflow_request_clear(request);
+	switch (key) {
+	case 'l':
+	case 'L':
+		if (cue_wav_path == NULL || cue_wav_path[0] == '\0')
+			return CP_ERR_RANGE;
+		return cp_gui_workflow_request_set_path(request,
+		    CP_GUI_WORKFLOW_REQUEST_LOAD_WAV, cue_wav_path);
+	case 'p':
+	case 'P':
+		if (cue_playlist_path == NULL ||
+		    cue_playlist_path[0] == '\0')
+			return CP_ERR_RANGE;
+		return cp_gui_workflow_request_set_path(request,
+		    CP_GUI_WORKFLOW_REQUEST_LOAD_PLAYLIST,
+		    cue_playlist_path);
+	case 'c':
+	case 'C':
+		if (current_path == NULL || current_path[0] == '\0' ||
+		    playlist_count == 0 || playlist_index >= playlist_count)
+			return CP_ERR_RANGE;
+		return cp_gui_workflow_request_set_playlist_item(request,
+		    current_path, playlist_index);
+	default:
+		return CP_ERR_RANGE;
 	}
 }
 
@@ -124,6 +171,73 @@ cp_gui_workflow_request_set_playlist_item(
 	return CP_OK;
 }
 
+int
+cp_gui_workflow_request_validate(struct cp_gui_workflow_request *request)
+{
+	struct cp_playlist_check_result playlist_result;
+	int status;
+
+	if (request == NULL)
+		return CP_ERR_NULL;
+
+	request->validated = 1;
+	request->validation_status = CP_OK;
+	request->reason[0] = '\0';
+
+	switch (request->type) {
+	case CP_GUI_WORKFLOW_REQUEST_NONE:
+		return cp_gui_workflow_set_reason(request, "none");
+	case CP_GUI_WORKFLOW_REQUEST_LOAD_WAV:
+	case CP_GUI_WORKFLOW_REQUEST_CUE_PLAYLIST_ITEM:
+		if (request->path[0] == '\0') {
+			request->validation_status = CP_ERR_RANGE;
+			(void)cp_gui_workflow_set_reason(request,
+			    "empty path");
+			return CP_ERR_RANGE;
+		}
+		if (!cp_playlist_check_path_is_wav(request->path)) {
+			request->validation_status = CP_ERR_RANGE;
+			(void)cp_gui_workflow_set_reason(request,
+			    "unsupported format: convert to WAV first");
+			return CP_ERR_RANGE;
+		}
+		return cp_gui_workflow_set_reason(request, "ok");
+	case CP_GUI_WORKFLOW_REQUEST_LOAD_PLAYLIST:
+		if (request->path[0] == '\0') {
+			request->validation_status = CP_ERR_RANGE;
+			(void)cp_gui_workflow_set_reason(request,
+			    "empty path");
+			return CP_ERR_RANGE;
+		}
+		status = cp_playlist_check_file(request->path,
+		    &playlist_result, NULL);
+		if (status != CP_PLAYLIST_CHECK_OK) {
+			request->validation_status = CP_ERR_RANGE;
+			if (status == CP_PLAYLIST_CHECK_ERR_OPEN) {
+				(void)cp_gui_workflow_set_reason(request,
+				    "could not open playlist");
+			} else {
+				(void)cp_gui_workflow_set_reason(request,
+				    playlist_result.errors > 0 ?
+				    "playlist has errors" :
+				    "could not validate playlist");
+			}
+			return CP_ERR_RANGE;
+		}
+		return cp_gui_workflow_set_reason(request, "ok");
+	case CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE:
+		request->validation_status = CP_ERR_RANGE;
+		(void)cp_gui_workflow_set_reason(request,
+		    "output device selection deferred to M23C");
+		return CP_ERR_RANGE;
+	default:
+		request->validation_status = CP_ERR_RANGE;
+		(void)cp_gui_workflow_set_reason(request,
+		    "unknown workflow request");
+		return CP_ERR_RANGE;
+	}
+}
+
 const char *
 cp_gui_workflow_request_type_string(enum cp_gui_workflow_request_type type)
 {
@@ -163,6 +277,23 @@ cp_gui_workflow_copy_path(char *buffer, size_t buffer_size, const char *path)
 }
 
 static int
+cp_gui_workflow_set_reason(struct cp_gui_workflow_request *request,
+	const char *reason)
+{
+	size_t length;
+
+	if (request == NULL || reason == NULL)
+		return CP_ERR_NULL;
+
+	length = strlen(reason);
+	if (length >= sizeof(request->reason))
+		return CP_ERR_RANGE;
+	(void)memcpy(request->reason, reason, length + 1);
+
+	return CP_OK;
+}
+
+static int
 cp_gui_workflow_snprintf(char *buffer, size_t buffer_size,
 	const char *format, ...)
 {
@@ -181,4 +312,37 @@ cp_gui_workflow_snprintf(char *buffer, size_t buffer_size,
 	}
 
 	return CP_OK;
+}
+
+static int
+cp_gui_workflow_status_format(
+	const struct cp_gui_workflow_request *request, char *buffer,
+	size_t buffer_size)
+{
+	const char *status;
+
+	status = request->validation_status == CP_OK ? "ok" : "error";
+	switch (request->type) {
+	case CP_GUI_WORKFLOW_REQUEST_LOAD_WAV:
+	case CP_GUI_WORKFLOW_REQUEST_LOAD_PLAYLIST:
+		return cp_gui_workflow_snprintf(buffer, buffer_size,
+		    "workflow=%s status=%s reason=%s path=%s",
+		    cp_gui_workflow_request_type_string(request->type),
+		    status, request->reason, request->path);
+	case CP_GUI_WORKFLOW_REQUEST_CUE_PLAYLIST_ITEM:
+		return cp_gui_workflow_snprintf(buffer, buffer_size,
+		    "workflow=%s status=%s reason=%s index=%zu path=%s",
+		    cp_gui_workflow_request_type_string(request->type),
+		    status, request->reason, request->playlist_index,
+		    request->path);
+	case CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE:
+		return cp_gui_workflow_snprintf(buffer, buffer_size,
+		    "workflow=%s status=%s reason=%s device=%d",
+		    cp_gui_workflow_request_type_string(request->type),
+		    status, request->reason, request->device_index);
+	default:
+		return cp_gui_workflow_snprintf(buffer, buffer_size,
+		    "workflow=unknown status=%s reason=%s", status,
+		    request->reason);
+	}
 }

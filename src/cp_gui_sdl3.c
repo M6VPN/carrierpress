@@ -84,8 +84,10 @@ cp_gui_init(struct cp_gui *gui)
 	gui->should_stop = 0;
 	gui->control_bank_set = 1;
 	gui->pending_command_set = 0;
+	gui->pending_workflow_set = 0;
 	gui->control_bank = CP_CONTROL_BANK_AM;
 	cp_control_command_clear(&gui->pending_command);
+	cp_gui_workflow_request_clear(&gui->pending_workflow);
 	gui->window = window;
 	gui->renderer = renderer;
 
@@ -115,6 +117,24 @@ cp_gui_take_control_command(struct cp_gui *gui,
 	*command = gui->pending_command;
 	cp_control_command_clear(&gui->pending_command);
 	gui->pending_command_set = 0;
+
+	return CP_OK;
+}
+
+int
+cp_gui_take_workflow_request(struct cp_gui *gui,
+	struct cp_gui_workflow_request *request)
+{
+	if (gui == NULL || request == NULL)
+		return CP_ERR_NULL;
+
+	cp_gui_workflow_request_clear(request);
+	if (!gui->pending_workflow_set)
+		return CP_OK;
+
+	*request = gui->pending_workflow;
+	cp_gui_workflow_request_clear(&gui->pending_workflow);
+	gui->pending_workflow_set = 0;
 
 	return CP_OK;
 }
@@ -463,6 +483,7 @@ static void
 cp_gui_poll_events(struct cp_gui *gui, const struct cp_gui_view *view)
 {
 	struct cp_control_command command;
+	struct cp_gui_workflow_request workflow_request;
 	SDL_Event event;
 	int next_enabled;
 
@@ -473,6 +494,16 @@ cp_gui_poll_events(struct cp_gui *gui, const struct cp_gui_view *view)
 	while (SDL_PollEvent(&event)) {
 		if (event.type == SDL_EVENT_QUIT) {
 			gui->should_stop = 1;
+		} else if (event.type == SDL_EVENT_KEY_DOWN &&
+		    cp_gui_workflow_request_from_key((int)event.key.key,
+		    view != NULL ? view->cue_wav_path : NULL,
+		    view != NULL ? view->cue_playlist_path : NULL,
+		    view != NULL ? view->path : NULL,
+		    view != NULL ? view->playlist_index : 0,
+		    view != NULL ? view->playlist_count : 0,
+		    &workflow_request) == CP_OK) {
+			gui->pending_workflow = workflow_request;
+			gui->pending_workflow_set = 1;
 		} else if (event.type == SDL_EVENT_KEY_DOWN &&
 		    (event.key.key == SDLK_ESCAPE ||
 		    cp_gui_control_command_from_key((int)event.key.key,

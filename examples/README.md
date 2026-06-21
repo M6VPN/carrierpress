@@ -181,15 +181,17 @@ The GUI monitor requires `WITH_GUI=1`. The spectrum panel requires
 make WITH_GUI=1 WITH_FFTW=1
 ./examples/gui-demo.sh
 ./examples/gui-screenshot.sh
+./examples/gui-cue-demo.sh audio/program.wav examples/playout-playlist.txt
 ```
 
 The screenshot example writes `build/gui-demo.bmp` and
 `build/gui-demo.bmp.txt`.
 
-The current GUI is a monitor and safe-control demo. Future GUI file cueing,
-playlist cueing, and output-device selection are documented in
-`docs/gui-workflow.md`, but they are not active file dialogs or device
-switches yet.
+The current GUI is a monitor and safe-control demo. Preconfigured WAV and
+playlist cue slots can be requested from the GUI with `l` and `p`, then
+validated outside SDL callbacks. Future file dialogs and output-device
+selection are documented in `docs/gui-workflow.md`, but they are not active
+file dialogs or device switches yet.
 
 ## Read-only CAT
 

@@ -2,19 +2,28 @@
 /* carrierpress/tests/test_gui_workflow.c */
 
 #include <sys/types.h>
+#include <sys/stat.h>
 
 #include <stdio.h>
 #include <string.h>
 
 #include "cp_gui_workflow.h"
 
+#define TEST_GUI_WORKFLOW_DIR	"build/tests"
+#define TEST_GUI_WORKFLOW_GOOD	"build/tests/gui-workflow-good.txt"
+#define TEST_GUI_WORKFLOW_BAD	"build/tests/gui-workflow-bad.txt"
+
 static int	test_clear_request(void);
 static int	test_device_request(void);
 static int	test_forbidden_text(void);
 static int	test_format_bounds(void);
+static int	test_key_mapping(void);
 static int	test_path_request(void);
 static int	test_playlist_item_request(void);
+static int	test_playlist_validation(void);
 static int	test_type_strings(void);
+static int	test_wav_validation(void);
+static int	write_file(const char *, const char *);
 
 int
 main(void)
@@ -30,6 +39,12 @@ main(void)
 	if (!test_device_request())
 		return 1;
 	if (!test_format_bounds())
+		return 1;
+	if (!test_wav_validation())
+		return 1;
+	if (!test_playlist_validation())
+		return 1;
+	if (!test_key_mapping())
 		return 1;
 	if (!test_forbidden_text())
 		return 1;
@@ -119,6 +134,44 @@ test_forbidden_text(void)
 }
 
 static int
+test_key_mapping(void)
+{
+	struct cp_gui_workflow_request request;
+
+	if (cp_gui_workflow_request_from_key('l', "audio/program.wav",
+	    "playlist.txt", "audio/current.wav", 0, 1, &request) != CP_OK ||
+	    request.type != CP_GUI_WORKFLOW_REQUEST_LOAD_WAV ||
+	    strcmp(request.path, "audio/program.wav") != 0) {
+		printf("test_gui_workflow: WAV key mapping failed\n");
+		return 0;
+	}
+	if (cp_gui_workflow_request_from_key('p', "audio/program.wav",
+	    "playlist.txt", "audio/current.wav", 0, 1, &request) != CP_OK ||
+	    request.type != CP_GUI_WORKFLOW_REQUEST_LOAD_PLAYLIST ||
+	    strcmp(request.path, "playlist.txt") != 0) {
+		printf("test_gui_workflow: playlist key mapping failed\n");
+		return 0;
+	}
+	if (cp_gui_workflow_request_from_key('c', "audio/program.wav",
+	    "playlist.txt", "audio/current.wav", 2, 5, &request) != CP_OK ||
+	    request.type != CP_GUI_WORKFLOW_REQUEST_CUE_PLAYLIST_ITEM ||
+	    request.playlist_index != 2 ||
+	    strcmp(request.path, "audio/current.wav") != 0) {
+		printf("test_gui_workflow: cue key mapping failed\n");
+		return 0;
+	}
+	if (cp_gui_workflow_request_from_key('t', "audio/program.wav",
+	    "playlist.txt", "audio/current.wav", 0, 1, &request) !=
+	    CP_ERR_RANGE ||
+	    request.type != CP_GUI_WORKFLOW_REQUEST_NONE) {
+		printf("test_gui_workflow: forbidden key mapped request\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
 test_format_bounds(void)
 {
 	struct cp_gui_workflow_request request;
@@ -134,6 +187,53 @@ test_format_bounds(void)
 	}
 	if (buffer[sizeof(buffer) - 1] != '\0') {
 		printf("test_gui_workflow: bounded format not terminated\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_playlist_validation(void)
+{
+	struct cp_gui_workflow_request request;
+	char buffer[256];
+
+	(void)mkdir("build", 0777);
+	(void)mkdir(TEST_GUI_WORKFLOW_DIR, 0777);
+	if (!write_file(TEST_GUI_WORKFLOW_GOOD,
+	    "# show\n"
+	    "audio/intro.wav\n"
+	    "\n"
+	    "audio/outro.WAV\n"))
+		return 0;
+	if (!write_file(TEST_GUI_WORKFLOW_BAD, "audio/music.mp3\n"))
+		return 0;
+
+	if (cp_gui_workflow_request_set_path(&request,
+	    CP_GUI_WORKFLOW_REQUEST_LOAD_PLAYLIST,
+	    TEST_GUI_WORKFLOW_GOOD) != CP_OK ||
+	    cp_gui_workflow_request_validate(&request) != CP_OK ||
+	    request.validation_status != CP_OK ||
+	    strcmp(request.reason, "ok") != 0) {
+		printf("test_gui_workflow: good playlist validation failed\n");
+		return 0;
+	}
+	if (cp_gui_workflow_request_set_path(&request,
+	    CP_GUI_WORKFLOW_REQUEST_LOAD_PLAYLIST,
+	    TEST_GUI_WORKFLOW_BAD) != CP_OK ||
+	    cp_gui_workflow_request_validate(&request) != CP_ERR_RANGE ||
+	    request.validation_status != CP_ERR_RANGE ||
+	    strstr(request.reason, "playlist") == NULL) {
+		printf("test_gui_workflow: bad playlist validation failed\n");
+		return 0;
+	}
+	if (cp_gui_workflow_request_format(&request, buffer,
+	    sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "status=error") == NULL ||
+	    strstr(buffer, "workflow=load_playlist") == NULL) {
+		printf("test_gui_workflow: playlist status format failed: %s\n",
+		    buffer);
 		return 0;
 	}
 
@@ -194,6 +294,50 @@ test_path_request(void)
 }
 
 static int
+test_wav_validation(void)
+{
+	static const char *bad_paths[] = {
+		"audio/music.mp3",
+		"audio/music.flac",
+		"audio/music.ogg",
+		"audio/music.opus",
+		"audio/music.m4a"
+	};
+	struct cp_gui_workflow_request request;
+	size_t index;
+
+	if (cp_gui_workflow_request_set_path(&request,
+	    CP_GUI_WORKFLOW_REQUEST_LOAD_WAV, "audio/program.wav") != CP_OK ||
+	    cp_gui_workflow_request_validate(&request) != CP_OK ||
+	    request.validation_status != CP_OK ||
+	    strcmp(request.reason, "ok") != 0) {
+		printf("test_gui_workflow: WAV validation failed\n");
+		return 0;
+	}
+	if (cp_gui_workflow_request_set_path(&request,
+	    CP_GUI_WORKFLOW_REQUEST_LOAD_WAV, "audio/program.WAV") != CP_OK ||
+	    cp_gui_workflow_request_validate(&request) != CP_OK) {
+		printf("test_gui_workflow: uppercase WAV validation failed\n");
+		return 0;
+	}
+	for (index = 0; index < sizeof(bad_paths) / sizeof(bad_paths[0]);
+	    index++) {
+		if (cp_gui_workflow_request_set_path(&request,
+		    CP_GUI_WORKFLOW_REQUEST_LOAD_WAV,
+		    bad_paths[index]) != CP_OK ||
+		    cp_gui_workflow_request_validate(&request) !=
+		    CP_ERR_RANGE ||
+		    strstr(request.reason, "convert to WAV first") == NULL) {
+			printf("test_gui_workflow: bad WAV validation: %s\n",
+			    bad_paths[index]);
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+static int
 test_playlist_item_request(void)
 {
 	struct cp_gui_workflow_request request;
@@ -218,6 +362,29 @@ test_playlist_item_request(void)
 	    0) {
 		printf("test_gui_workflow: cue format mismatch: %s\n",
 		    buffer);
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+write_file(const char *path, const char *text)
+{
+	FILE *file;
+
+	file = fopen(path, "w");
+	if (file == NULL) {
+		printf("test_gui_workflow: could not open %s\n", path);
+		return 0;
+	}
+	if (fputs(text, file) == EOF) {
+		(void)fclose(file);
+		printf("test_gui_workflow: could not write %s\n", path);
+		return 0;
+	}
+	if (fclose(file) != 0) {
+		printf("test_gui_workflow: could not close %s\n", path);
 		return 0;
 	}
 

@@ -511,6 +511,22 @@ main(int argc, char *argv[])
 			printf("GUI support not enabled. Rebuild with WITH_GUI=1.\n");
 			return 1;
 #endif
+		} else if (strcmp(argv[arg], "--gui-cue-wav") == 0 &&
+		    arg + 1 < argc) {
+#ifdef CP_WITH_GUI
+			audio_config.gui_cue_wav_path = argv[++arg];
+#else
+			printf("GUI support not enabled. Rebuild with WITH_GUI=1.\n");
+			return 1;
+#endif
+		} else if (strcmp(argv[arg], "--gui-cue-playlist") == 0 &&
+		    arg + 1 < argc) {
+#ifdef CP_WITH_GUI
+			audio_config.gui_cue_playlist_path = argv[++arg];
+#else
+			printf("GUI support not enabled. Rebuild with WITH_GUI=1.\n");
+			return 1;
+#endif
 		} else if (strcmp(argv[arg], "--input-device") == 0 &&
 		    arg + 1 < argc) {
 			if (!parse_int_arg(argv[++arg], &audio_config.input_device)) {
@@ -803,6 +819,12 @@ main(int argc, char *argv[])
 		return 1;
 	}
 	if (report_tolerance_seen && report_compare_base == NULL) {
+		usage(argv[0]);
+		return 1;
+	}
+	if ((audio_config.gui_cue_wav_path != NULL ||
+	    audio_config.gui_cue_playlist_path != NULL) &&
+	    !audio_config.gui_enabled) {
 		usage(argv[0]);
 		return 1;
 	}
@@ -1475,6 +1497,8 @@ run_gui_demo(const struct cp_audio_config *config,
 	struct cp_evidence_metadata evidence;
 	struct cp_gui gui;
 	struct cp_gui_view view;
+	struct cp_gui_workflow_request workflow_request;
+	struct cp_gui_workflow_request pending_workflow;
 	struct cp_monitor_snapshot snapshot;
 	struct cp_waveform_snapshot waveform;
 #ifdef CP_WITH_FFTW
@@ -1513,6 +1537,7 @@ run_gui_demo(const struct cp_audio_config *config,
 	cp_spectrum_input_clear(&spectrum_input);
 	cp_spectrum_clear(&spectrum);
 #endif
+	cp_gui_workflow_request_clear(&workflow_request);
 
 	tick = 0;
 	while (!stop_requested && !cp_gui_should_stop(&gui)) {
@@ -1564,14 +1589,25 @@ run_gui_demo(const struct cp_audio_config *config,
 		view.snapshot = &snapshot;
 		view.cat_snapshot = &cat_snapshot;
 		view.operator_state = operator_state;
+		view.workflow_request = &workflow_request;
 		view.waveform = &waveform;
 #ifdef CP_WITH_FFTW
 		view.spectrum = &spectrum;
 #endif
+		view.cue_wav_path = config->gui_cue_wav_path;
+		view.cue_playlist_path = config->gui_cue_playlist_path;
 		view.output_device = config->output_device;
 		status = cp_gui_update(&gui, &view);
 		if (status != CP_OK)
 			break;
+		if (cp_gui_take_workflow_request(&gui, &pending_workflow) ==
+		    CP_OK &&
+		    pending_workflow.type !=
+		    CP_GUI_WORKFLOW_REQUEST_NONE) {
+			(void)cp_gui_workflow_request_validate(
+			    &pending_workflow);
+			workflow_request = pending_workflow;
+		}
 		if (screenshot_path != NULL) {
 			status = cp_gui_save_bmp(&gui, screenshot_path);
 			if (status != CP_OK) {
@@ -2285,6 +2321,8 @@ usage(const char *program)
 	printf("usage: %s --gui-demo-screenshot build/gui-demo.bmp "
 	    "--cat-backend mock --cat-frequency-hz 14230000 "
 	    "--cat-mode USB --cat-ptt off\n", program);
+	printf("usage: %s --gui-demo --gui-cue-wav audio/program.wav "
+	    "--gui-cue-playlist playlist.txt\n", program);
 	printf("usage: %s --cat-backend mock --cat-frequency-hz 14230000 "
 	    "--cat-mode USB --cat-ptt off --cat-status\n", program);
 	printf("usage: %s --cat-backend flrig --cat-host 127.0.0.1 "

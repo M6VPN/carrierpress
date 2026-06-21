@@ -115,7 +115,7 @@ cp_gui_format_help(enum cp_control_bank bank, int next_enabled,
 
 	return cp_gui_snprintf(buffer, buffer_size,
 	    "Keys: q/Esc stop | %s | a AM s SSB | d hum | m MB1 b MB2 | "
-	    "%s | %s",
+	    "l WAV p playlist c cue | %s | %s",
 	    next_enabled ? "n next" : "n next locked", bank_label,
 	    preset_label);
 }

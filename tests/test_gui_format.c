@@ -207,6 +207,9 @@ test_help_format(void)
 	    strstr(buffer, "n next") == NULL ||
 	    strstr(buffer, "m MB1") == NULL ||
 	    strstr(buffer, "b MB2") == NULL ||
+	    strstr(buffer, "l WAV") == NULL ||
+	    strstr(buffer, "p playlist") == NULL ||
+	    strstr(buffer, "c cue") == NULL ||
 	    strstr(buffer, "AM bank") == NULL) {
 		printf("test_gui_format: AM help mismatch: %s\n", buffer);
 		return 0;

@@ -17,8 +17,10 @@ struct cp_gui {
 	int should_stop;
 	int control_bank_set;
 	int pending_command_set;
+	int pending_workflow_set;
 	enum cp_control_bank control_bank;
 	struct cp_control_command pending_command;
+	struct cp_gui_workflow_request pending_workflow;
 	void *window;
 	void *renderer;
 };
@@ -34,6 +36,8 @@ struct cp_gui_view {
 #ifdef CP_WITH_FFTW
 	const struct cp_spectrum_snapshot *spectrum;
 #endif
+	const char *cue_wav_path;
+	const char *cue_playlist_path;
 	const char *path;
 	size_t playlist_index;
 	size_t playlist_count;
@@ -47,6 +51,8 @@ int	cp_gui_save_bmp(struct cp_gui *, const char *);
 int	cp_gui_should_stop(const struct cp_gui *);
 int	cp_gui_take_control_command(struct cp_gui *,
 	    struct cp_control_command *);
+int	cp_gui_take_workflow_request(struct cp_gui *,
+	    struct cp_gui_workflow_request *);
 int	cp_gui_update(struct cp_gui *, const struct cp_gui_view *);
 
 #endif

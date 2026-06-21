@@ -212,7 +212,12 @@ With `WITH_FFTW=1`, the GUI spectrum panel shows a monitor-only processed-output
 spectrum preview. These displays do not alter audio samples.
 Future GUI file and output-device workflows are documented in
 [`docs/gui-workflow.md`](docs/gui-workflow.md). They use deferred requests and
-are not active file dialogs or device-switching controls yet.
+are not active file dialogs or device-switching controls yet. The GUI can now
+request preconfigured WAV and playlist cue slots with `l` and `p`:
+
+```sh
+./carrierpress --gui-demo --gui-cue-wav audio/program.wav --gui-cue-playlist playlist.txt
+```
 
 Build with both optional WAV and PortAudio support:
 
@@ -562,6 +567,8 @@ waveform and spectrum previews are monitor-only. GUI text is clipped inside
 the monitor panels, and safe keyboard controls mirror the ncurses TUI:
 `q`/Escape stop, `n` playlist next, `d` dehummer, `m` multiband 1, `b`
 multiband 2, `a` AM bank, `s` SSB bank, `0` off, and `1` to `4` presets.
+Preconfigured GUI cue slots use `l` for WAV, `p` for playlist, and `c` for
+the current playlist item when playlist context exists.
 Live capture uses preallocated storage and does not allocate, print, lock, call
 FFTW planning, call SDL, or do blocking work from the audio callback. FFTW
 planning and execution run outside the callback. For stereo audio, the waveform

@@ -359,6 +359,8 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 #ifdef CP_WITH_GUI
 	struct cp_gui gui;
 	struct cp_gui_view gui_view;
+	struct cp_gui_workflow_request workflow_request;
+	struct cp_gui_workflow_request pending_workflow;
 	struct cp_waveform_snapshot waveform;
 #endif
 #ifdef CP_WITH_FFTW
@@ -584,6 +586,7 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 #endif
 #ifdef CP_WITH_GUI
 	gui.active = 0;
+	cp_gui_workflow_request_clear(&workflow_request);
 	cp_waveform_clear(&waveform);
 #ifdef CP_WITH_FFTW
 	cp_spectrum_input_clear(&spectrum_input);
@@ -768,10 +771,15 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 			gui_view.snapshot       = &snapshot;
 			gui_view.cat_snapshot   = &cat_snapshot;
 			gui_view.operator_state = &operator_state;
+			gui_view.workflow_request = &workflow_request;
 			gui_view.waveform       = &waveform;
 #ifdef CP_WITH_FFTW
 			gui_view.spectrum       = &spectrum;
 #endif
+			gui_view.cue_wav_path =
+			    audio_config.gui_cue_wav_path;
+			gui_view.cue_playlist_path =
+			    audio_config.gui_cue_playlist_path;
 			gui_view.path           = path;
 			gui_view.playlist_index = config->playlist_index;
 			gui_view.playlist_count = config->playlist_count;
@@ -784,6 +792,14 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 				if (config->stop_requested != NULL)
 					*config->stop_requested = 1;
 				break;
+			}
+			if (cp_gui_take_workflow_request(&gui,
+			    &pending_workflow) == CP_OK &&
+			    pending_workflow.type !=
+			    CP_GUI_WORKFLOW_REQUEST_NONE) {
+				(void)cp_gui_workflow_request_validate(
+				    &pending_workflow);
+				workflow_request = pending_workflow;
 			}
 			if (cp_gui_take_control_command(&gui, &command) ==
 			    CP_OK) {
