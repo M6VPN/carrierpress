@@ -40,6 +40,17 @@ These checks must pass before a v0.1 tag. They use deterministic fixtures and
 do not prove broadcast-processor quality, RF compliance, transmitter safety, or
 legal operation.
 
+Optional local engineering evidence may be saved with:
+
+```sh
+mkdir -p build
+make -s quality-json > build/quality-report.json
+```
+
+The JSON quality report is for software regression review only. It does not
+prove RF bandwidth, transmitter compliance, regulatory approval, or legal
+operation.
+
 GitHub Actions CI must also be green before a release tag is created. CI
 coverage is documented in `docs/ci.md`.
 

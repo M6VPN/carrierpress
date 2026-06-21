@@ -122,10 +122,17 @@ Run deterministic DSP validation fixtures and print a compact report:
 make validate
 ```
 
-Run deterministic audio QA fixtures and print machine-readable measurements:
+Run deterministic audio QA fixtures and print a human-readable measurement
+report:
 
 ```sh
 make quality
+```
+
+Run the same quality fixtures as JSON:
+
+```sh
+make quality-json
 ```
 
 Run the stricter professional validation gate:
@@ -1137,6 +1144,12 @@ dynamics, multiband plus bass EQ, second multiband, AM, and SSB profiles. This
 is a repeatable QA report for tuning and regression review, not a listening
 test, spectrum
 measurement, restoration-quality claim, or compliance claim.
+
+`make quality-json` runs the same quality fixtures and emits a single JSON
+document for local evidence or tooling. The JSON report is documented in
+[docs/measurement-reports.md](docs/measurement-reports.md). It is an engineering
+metrics export only and does not prove RF bandwidth, transmitter compliance, or
+legal operation.
 
 `make professional-check` is the stricter M9.5 gate. It runs deterministic
 fixtures through default, dehummer, declipper, natural dynamics plus low-level

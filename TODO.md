@@ -200,10 +200,10 @@ implemented until code, docs, and validation are complete.
 
 ## M14 Measurement Report Export
 
-- [ ] Add machine-readable quality report output.
+- [x] Add machine-readable quality report output.
 - [ ] Add processed-file report sidecar option.
-- [ ] Document report fields as engineering metrics, not compliance proof.
-- [ ] Keep reports free of transmitter-compliance and regulatory claims.
+- [x] Document report fields as engineering metrics, not compliance proof.
+- [x] Keep reports free of transmitter-compliance and regulatory claims.
 
 ## M15 OpenBSD/sndio Validation
 

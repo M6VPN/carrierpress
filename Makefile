@@ -531,6 +531,9 @@ validate: $(VALIDATION_BINS)
 quality: $(QUALITY_BINS)
 	./$(TEST_BIN_DIR)/test_quality_report
 
+quality-json: $(QUALITY_BINS)
+	@./$(TEST_BIN_DIR)/test_quality_report --json
+
 professional-check: $(PROFESSIONAL_BINS)
 	./$(TEST_BIN_DIR)/test_professional_check
 
@@ -660,4 +663,4 @@ clean:
 	rm -f tests/playlist_check.txt tests/playlist_too_long.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean feature-summary install install-smoke professional-check quality release-check test uninstall validate
+.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean feature-summary install install-smoke professional-check quality quality-json release-check test uninstall validate

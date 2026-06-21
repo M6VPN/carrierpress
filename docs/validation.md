@@ -17,6 +17,12 @@ Run the measurement-oriented QA report:
 make quality
 ```
 
+Run the same QA report as JSON:
+
+```sh
+make quality-json
+```
+
 Run the stricter professional validation gate:
 
 ```sh

@@ -5,9 +5,11 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "cp_block.h"
 #include "cp_declipper.h"
+#include "cp_version.h"
 
 #define QR_BLOCK_FRAMES		256
 #define QR_TOTAL_FRAMES		8192
@@ -105,6 +107,13 @@ struct qr_metrics {
 	int finite;
 };
 
+struct qr_case_result {
+	struct qr_metrics metrics;
+	const char *reason;
+	int code;
+	int pass;
+};
+
 static cp_sample_t	qr_abs(cp_sample_t);
 static int		qr_check_case(const struct qr_case *,
 			    const struct qr_metrics *);
@@ -114,16 +123,24 @@ static cp_sample_t	qr_hum_amp(const struct qr_metrics *, int, int);
 static int		qr_generate(enum qr_fixture, cp_sample_t *, size_t,
 			    size_t);
 static const char	*qr_fixture_name(enum qr_fixture);
+static void		qr_init_metrics(struct qr_metrics *);
+static void		qr_json_bool(const char *, int, int);
+static void		qr_json_case(const struct qr_case *,
+			    const struct qr_case_result *, int);
+static void		qr_json_double(const char *, double, int);
+static void		qr_json_string(const char *);
+static void		qr_print_json(const struct qr_case *,
+			    const struct qr_case_result *, size_t);
+static void		qr_print_text_case(const struct qr_case *,
+			    const struct qr_case_result *);
 static cp_sample_t	qr_noise(size_t, size_t);
 static const char	*qr_profile_name(enum qr_profile);
-static int		qr_run_case(const struct qr_case *);
+static int		qr_run_case(const struct qr_case *,
+			    struct qr_case_result *);
 static void		qr_update(struct qr_metrics *, const cp_sample_t *,
 			    const cp_sample_t *, size_t, size_t);
 
-int
-main(void)
-{
-	static const struct qr_case cases[] = {
+static const struct qr_case qr_cases[] = {
 		{ QR_PROFILE_DEFAULT, QR_FIXTURE_SILENCE, "silence" },
 		{ QR_PROFILE_DEFAULT, QR_FIXTURE_SPEECH_STEPS, "speech" },
 		{ QR_PROFILE_DEFAULT, QR_FIXTURE_MUSIC_MIX, "music" },
@@ -158,17 +175,46 @@ main(void)
 		{ QR_PROFILE_SSB_NARROW, QR_FIXTURE_HIGH_TONE, "ssb-lpf" },
 		{ QR_PROFILE_SSB_NARROW, QR_FIXTURE_SPEECH_STEPS,
 		    "ssb-speech" }
-	};
-	size_t i;
+};
 
-	for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
-		if (!qr_run_case(&cases[i]))
+int
+main(int argc, char *argv[])
+{
+	struct qr_case_result results[sizeof(qr_cases) / sizeof(qr_cases[0])];
+	size_t i;
+	int json;
+	int pass;
+
+	json = 0;
+	if (argc > 2)
+		return 1;
+	if (argc == 2) {
+		if (strcmp(argv[1], "--json") == 0)
+			json = 1;
+		else if (strcmp(argv[1], "--text") == 0)
+			json = 0;
+		else
 			return 1;
 	}
 
-	printf("quality cases=%zu status=pass\n",
-	    sizeof(cases) / sizeof(cases[0]));
-	return 0;
+	pass = 1;
+	for (i = 0; i < sizeof(qr_cases) / sizeof(qr_cases[0]); i++) {
+		if (!qr_run_case(&qr_cases[i], &results[i]))
+			pass = 0;
+		if (!json)
+			qr_print_text_case(&qr_cases[i], &results[i]);
+	}
+
+	if (json) {
+		qr_print_json(qr_cases, results,
+		    sizeof(qr_cases) / sizeof(qr_cases[0]));
+	} else {
+		printf("quality cases=%zu status=%s\n",
+		    sizeof(qr_cases) / sizeof(qr_cases[0]),
+		    pass ? "pass" : "fail");
+	}
+
+	return pass ? 0 : 1;
 }
 
 static cp_sample_t
@@ -594,6 +640,312 @@ qr_fixture_name(enum qr_fixture fixture)
 	}
 }
 
+static void
+qr_init_metrics(struct qr_metrics *metrics)
+{
+	if (metrics == NULL)
+		return;
+
+	memset(metrics, 0, sizeof(*metrics));
+	metrics->auto_eq_source_hint = CP_AUTO_EQ_SOURCE_UNKNOWN;
+	metrics->analysis_source_profile = CP_RESTORATION_SOURCE_UNKNOWN;
+	metrics->declipper_bypass_reason = CP_DECLIPPER_BYPASS_DISABLED;
+	metrics->bass_eq_recommend_preset = CP_BASS_EQ_PRESET_FLAT;
+	metrics->finite = 1;
+}
+
+static void
+qr_json_bool(const char *name, int value, int comma)
+{
+	printf("        ");
+	qr_json_string(name);
+	printf(": %s%s\n", value ? "true" : "false", comma ? "," : "");
+}
+
+static void
+qr_json_case(const struct qr_case *test,
+	const struct qr_case_result *result, int comma)
+{
+	const struct qr_metrics *metrics;
+
+	metrics = &result->metrics;
+	printf("    {\n");
+	printf("      \"profile\": ");
+	qr_json_string(qr_profile_name(test->profile));
+	printf(",\n");
+	printf("      \"fixture\": ");
+	qr_json_string(qr_fixture_name(test->fixture));
+	printf(",\n");
+	printf("      \"check\": ");
+	qr_json_string(test->check);
+	printf(",\n");
+	printf("      \"status\": ");
+	qr_json_string(result->pass ? "pass" : "fail");
+	printf(",\n");
+	printf("      \"reason\": ");
+	qr_json_string(result->reason);
+	printf(",\n");
+	printf("      \"code\": %d,\n", result->code);
+	printf("      \"metrics\": {\n");
+	qr_json_double("input_rms", metrics->input_square, 1);
+	qr_json_double("output_rms", metrics->output_square, 1);
+	qr_json_double("input_peak", metrics->input_peak, 1);
+	qr_json_double("output_peak", metrics->output_peak, 1);
+	qr_json_double("output_min", metrics->output_min, 1);
+	qr_json_double("output_max", metrics->output_max, 1);
+	qr_json_double("input_crest", qr_crest(metrics, 1), 1);
+	qr_json_double("output_crest", qr_crest(metrics, 0), 1);
+	qr_json_double("input_dc", qr_abs((cp_sample_t)metrics->input_sum), 1);
+	qr_json_double("output_dc", qr_abs((cp_sample_t)metrics->output_sum), 1);
+	qr_json_double("input_hum50", qr_hum_amp(metrics, 50, 1), 1);
+	qr_json_double("output_hum50", qr_hum_amp(metrics, 50, 0), 1);
+	qr_json_double("input_hum60", qr_hum_amp(metrics, 60, 1), 1);
+	qr_json_double("output_hum60", qr_hum_amp(metrics, 60, 0), 1);
+	qr_json_double("output_left_rms", metrics->output_left_square, 1);
+	qr_json_double("output_right_rms", metrics->output_right_square, 1);
+	qr_json_double("analysis_clip_ratio",
+	    metrics->analysis_clip_ratio, 1);
+	qr_json_double("analysis_hf_ratio", metrics->analysis_hf_ratio, 1);
+	qr_json_double("analysis_clip_confidence",
+	    metrics->analysis_clip_confidence, 1);
+	qr_json_double("analysis_low_ceiling_confidence",
+	    metrics->analysis_low_ceiling_confidence, 1);
+	qr_json_double("analysis_transient_confidence",
+	    metrics->analysis_transient_confidence, 1);
+	qr_json_double("analysis_lossy_confidence",
+	    metrics->analysis_lossy_confidence, 1);
+	qr_json_double("analysis_flat_ratio",
+	    metrics->analysis_flat_run_ratio, 1);
+	qr_json_double("analysis_peak_repeat_ratio",
+	    metrics->analysis_peak_repeat_ratio, 1);
+	qr_json_double("analysis_peak", metrics->analysis_observed_peak, 1);
+	qr_json_double("analysis_crest", metrics->analysis_crest_factor, 1);
+	printf("        \"analysis_profile\": ");
+	qr_json_string(cp_restoration_source_profile_string(
+	    metrics->analysis_source_profile));
+	printf(",\n");
+	printf("        \"analysis_reason_flags\": %u,\n",
+	    metrics->analysis_reason_flags);
+	printf("        \"declipper_samples\": %zu,\n",
+	    metrics->declipper_repaired_samples);
+	printf("        \"declipper_runs\": %zu,\n",
+	    metrics->declipper_repaired_runs);
+	qr_json_double("declipper_delta", metrics->declipper_max_delta, 1);
+	printf("        \"declipper_bypass\": ");
+	qr_json_string(cp_declipper_bypass_reason_string(
+	    (enum cp_declipper_bypass_reason)
+	    metrics->declipper_bypass_reason));
+	printf(",\n");
+	qr_json_double("natural_gr_db",
+	    metrics->natural_dynamics_gr_db, 1);
+	qr_json_double("low_boost_gain_db",
+	    metrics->low_level_boost_gain_db, 1);
+	printf("        \"auto_eq_source\": ");
+	qr_json_string(cp_auto_eq_source_hint_string(
+	    metrics->auto_eq_source_hint));
+	printf(",\n");
+	qr_json_double("auto_eq_rms", metrics->auto_eq_total_rms, 1);
+	qr_json_double("auto_eq_tilt_db",
+	    metrics->auto_eq_spectral_tilt_db, 1);
+	qr_json_double("auto_eq_low", metrics->auto_eq_low_weight, 1);
+	qr_json_double("auto_eq_presence",
+	    metrics->auto_eq_presence_weight, 1);
+	qr_json_double("auto_eq_high", metrics->auto_eq_high_weight, 1);
+	printf("        \"bass_eq_recommend\": ");
+	qr_json_string(metrics->bass_eq_recommend_valid ? "valid" : "invalid");
+	printf(",\n");
+	qr_json_bool("bass_eq_recommend_valid",
+	    metrics->bass_eq_recommend_valid, 1);
+	printf("        \"bass_eq_recommend_preset\": ");
+	qr_json_string(cp_bass_eq_preset_string(
+	    (enum cp_bass_eq_preset)metrics->bass_eq_recommend_preset));
+	printf(",\n");
+	qr_json_double("bass_eq_recommend_low_db",
+	    metrics->bass_eq_recommend_low_gain_db, 1);
+	qr_json_double("bass_eq_recommend_high_db",
+	    metrics->bass_eq_recommend_high_gain_db, 1);
+	qr_json_double("bass_eq_recommend_output_db",
+	    metrics->bass_eq_recommend_output_gain_db, 1);
+	qr_json_double("bass_eq_recommend_confidence",
+	    metrics->bass_eq_recommend_confidence, 0);
+	printf("      }\n");
+	printf("    }%s\n", comma ? "," : "");
+}
+
+static void
+qr_json_double(const char *name, double value, int comma)
+{
+	printf("        ");
+	qr_json_string(name);
+	if (isfinite(value))
+		printf(": %.9g%s\n", value, comma ? "," : "");
+	else
+		printf(": null%s\n", comma ? "," : "");
+}
+
+static void
+qr_json_string(const char *text)
+{
+	const unsigned char *cursor;
+
+	if (text == NULL)
+		text = "";
+
+	putchar('"');
+	for (cursor = (const unsigned char *)text; *cursor != '\0'; cursor++) {
+		switch (*cursor) {
+		case '"':
+			printf("\\\"");
+			break;
+		case '\\':
+			printf("\\\\");
+			break;
+		case '\b':
+			printf("\\b");
+			break;
+		case '\f':
+			printf("\\f");
+			break;
+		case '\n':
+			printf("\\n");
+			break;
+		case '\r':
+			printf("\\r");
+			break;
+		case '\t':
+			printf("\\t");
+			break;
+		default:
+			if (*cursor < 0x20u)
+				printf("\\u%04x", (unsigned int)*cursor);
+			else
+				putchar((int)*cursor);
+			break;
+		}
+	}
+	putchar('"');
+}
+
+static void
+qr_print_json(const struct qr_case *cases,
+	const struct qr_case_result *results, size_t count)
+{
+	size_t i;
+	int pass;
+
+	pass = 1;
+	for (i = 0; i < count; i++) {
+		if (!results[i].pass)
+			pass = 0;
+	}
+
+	printf("{\n");
+	printf("  \"carrierpress_report\": \"quality\",\n");
+	printf("  \"version\": ");
+	qr_json_string(CP_VERSION_STRING);
+	printf(",\n");
+	printf("  \"sample_rate_hz\": %d,\n", (int)QR_RATE);
+	printf("  \"frames\": %d,\n", QR_TOTAL_FRAMES);
+	printf("  \"channels\": %d,\n", CP_CHANNELS_STEREO);
+	printf("  \"status\": ");
+	qr_json_string(pass ? "pass" : "fail");
+	printf(",\n");
+	printf("  \"cases\": [\n");
+	for (i = 0; i < count; i++)
+		qr_json_case(&cases[i], &results[i], i + 1 < count);
+	printf("  ]\n");
+	printf("}\n");
+}
+
+static void
+qr_print_text_case(const struct qr_case *test,
+	const struct qr_case_result *result)
+{
+	const struct qr_metrics *metrics;
+
+	metrics = &result->metrics;
+	if (result->reason != NULL &&
+	    (strcmp(result->reason, "init") == 0 ||
+	    strcmp(result->reason, "process") == 0 ||
+	    strcmp(result->reason, "generate") == 0)) {
+		printf("quality profile=%s fixture=%s check=%s "
+		    "status=fail reason=%s code=%d\n",
+		    qr_profile_name(test->profile),
+		    qr_fixture_name(test->fixture), test->check,
+		    result->reason, result->code);
+		return;
+	}
+
+	printf("quality profile=%s fixture=%s check=%s input_rms=%0.6f "
+	    "output_rms=%0.6f input_peak=%0.6f output_peak=%0.6f "
+	    "output_min=%0.6f output_max=%0.6f input_crest=%0.6f "
+	    "output_crest=%0.6f input_dc=%0.6f output_dc=%0.6f "
+	    "input_hum50=%0.6f output_hum50=%0.6f input_hum60=%0.6f "
+	    "output_hum60=%0.6f output_left_rms=%0.6f "
+	    "output_right_rms=%0.6f analysis_clip_ratio=%0.6f "
+	    "analysis_hf_ratio=%0.6f analysis_clip_confidence=%0.6f "
+	    "analysis_low_ceiling_confidence=%0.6f "
+	    "analysis_transient_confidence=%0.6f "
+	    "analysis_lossy_confidence=%0.6f analysis_flat_ratio=%0.6f "
+	    "analysis_peak_repeat_ratio=%0.6f analysis_peak=%0.6f "
+	    "analysis_crest=%0.6f analysis_profile=%s "
+	    "analysis_reason_flags=0x%08x declipper_samples=%zu "
+	    "declipper_runs=%zu declipper_delta=%0.6f "
+	    "declipper_bypass=%s natural_gr_db=%0.6f "
+	    "low_boost_gain_db=%0.6f auto_eq_source=%s "
+	    "auto_eq_rms=%0.6f auto_eq_tilt_db=%0.6f "
+	    "auto_eq_low=%0.6f auto_eq_presence=%0.6f "
+	    "auto_eq_high=%0.6f bass_eq_recommend=%s "
+	    "bass_eq_recommend_preset=%s "
+	    "bass_eq_recommend_low_db=%0.6f "
+	    "bass_eq_recommend_high_db=%0.6f "
+	    "bass_eq_recommend_output_db=%0.6f "
+	    "bass_eq_recommend_confidence=%0.6f status=%s\n",
+	    qr_profile_name(test->profile), qr_fixture_name(test->fixture),
+	    test->check, metrics->input_square, metrics->output_square,
+	    metrics->input_peak, metrics->output_peak, metrics->output_min,
+	    metrics->output_max, qr_crest(metrics, 1), qr_crest(metrics, 0),
+	    qr_abs((cp_sample_t)metrics->input_sum),
+	    qr_abs((cp_sample_t)metrics->output_sum),
+	    qr_hum_amp(metrics, 50, 1), qr_hum_amp(metrics, 50, 0),
+	    qr_hum_amp(metrics, 60, 1), qr_hum_amp(metrics, 60, 0),
+	    metrics->output_left_square, metrics->output_right_square,
+	    metrics->analysis_clip_ratio, metrics->analysis_hf_ratio,
+	    metrics->analysis_clip_confidence,
+	    metrics->analysis_low_ceiling_confidence,
+	    metrics->analysis_transient_confidence,
+	    metrics->analysis_lossy_confidence,
+	    metrics->analysis_flat_run_ratio,
+	    metrics->analysis_peak_repeat_ratio,
+	    metrics->analysis_observed_peak,
+	    metrics->analysis_crest_factor,
+	    cp_restoration_source_profile_string(
+	    metrics->analysis_source_profile),
+	    metrics->analysis_reason_flags,
+	    metrics->declipper_repaired_samples,
+	    metrics->declipper_repaired_runs,
+	    metrics->declipper_max_delta,
+	    cp_declipper_bypass_reason_string(
+	    (enum cp_declipper_bypass_reason)
+	    metrics->declipper_bypass_reason),
+	    metrics->natural_dynamics_gr_db,
+	    metrics->low_level_boost_gain_db,
+	    cp_auto_eq_source_hint_string(metrics->auto_eq_source_hint),
+	    metrics->auto_eq_total_rms,
+	    metrics->auto_eq_spectral_tilt_db,
+	    metrics->auto_eq_low_weight,
+	    metrics->auto_eq_presence_weight,
+	    metrics->auto_eq_high_weight,
+	    metrics->bass_eq_recommend_valid ? "valid" : "invalid",
+	    cp_bass_eq_preset_string(
+	    (enum cp_bass_eq_preset)metrics->bass_eq_recommend_preset),
+	    metrics->bass_eq_recommend_low_gain_db,
+	    metrics->bass_eq_recommend_high_gain_db,
+	    metrics->bass_eq_recommend_output_gain_db,
+	    metrics->bass_eq_recommend_confidence,
+	    result->pass ? "pass" : "fail");
+}
+
 static cp_sample_t
 qr_noise(size_t frame, size_t channel)
 {
@@ -639,7 +991,7 @@ qr_profile_name(enum qr_profile profile)
 }
 
 static int
-qr_run_case(const struct qr_case *test)
+qr_run_case(const struct qr_case *test, struct qr_case_result *result)
 {
 	cp_sample_t input[QR_BLOCK_FRAMES * CP_CHANNELS_STEREO];
 	cp_sample_t output[QR_BLOCK_FRAMES * CP_CHANNELS_STEREO];
@@ -647,244 +999,126 @@ qr_run_case(const struct qr_case *test)
 	struct cp_block_config config;
 	struct cp_block_processor processor;
 	struct cp_bass_eq_recommendation recommendation;
-	struct qr_metrics metrics;
+	struct qr_metrics *metrics;
 	size_t frames;
 	size_t offset;
-	int pass;
 	int status;
 
-	if (test == NULL)
+	if (test == NULL || result == NULL)
 		return 0;
+
+	memset(result, 0, sizeof(*result));
+	result->reason = "ok";
+	result->code = 0;
+	qr_init_metrics(&result->metrics);
+	metrics = &result->metrics;
 
 	qr_config(&config, test->profile);
 	status = cp_block_init(&processor, &config);
 	if (status != CP_OK) {
-		printf("quality profile=%s fixture=%s check=%s "
-		    "status=fail reason=init code=%d\n",
-		    qr_profile_name(test->profile),
-		    qr_fixture_name(test->fixture), test->check, status);
+		result->reason = "init";
+		result->code = status;
 		return 0;
 	}
-
-	metrics.input_square = 0.0;
-	metrics.output_square = 0.0;
-	metrics.input_sum = 0.0;
-	metrics.output_sum = 0.0;
-	metrics.input_left_square = 0.0;
-	metrics.input_right_square = 0.0;
-	metrics.output_left_square = 0.0;
-	metrics.output_right_square = 0.0;
-	metrics.input_hum50_sin = 0.0;
-	metrics.input_hum50_cos = 0.0;
-	metrics.input_hum60_sin = 0.0;
-	metrics.input_hum60_cos = 0.0;
-	metrics.output_hum50_sin = 0.0;
-	metrics.output_hum50_cos = 0.0;
-	metrics.output_hum60_sin = 0.0;
-	metrics.output_hum60_cos = 0.0;
-	metrics.input_peak = 0.0f;
-	metrics.output_peak = 0.0f;
-	metrics.output_min = 0.0f;
-	metrics.output_max = 0.0f;
-	metrics.analysis_clip_ratio = 0.0f;
-	metrics.analysis_hf_ratio = 0.0f;
-	metrics.analysis_clip_confidence = 0.0f;
-	metrics.analysis_lossy_confidence = 0.0f;
-	metrics.analysis_low_ceiling_confidence = 0.0f;
-	metrics.analysis_transient_confidence = 0.0f;
-	metrics.analysis_flat_run_ratio = 0.0f;
-	metrics.analysis_peak_repeat_ratio = 0.0f;
-	metrics.analysis_observed_peak = 0.0f;
-	metrics.analysis_crest_factor = 0.0f;
-	metrics.declipper_max_delta = 0.0f;
-	metrics.natural_dynamics_gr_db = 0.0f;
-	metrics.low_level_boost_gain_db = 0.0f;
-	metrics.auto_eq_total_rms = 0.0f;
-	metrics.auto_eq_low_weight = 0.0f;
-	metrics.auto_eq_presence_weight = 0.0f;
-	metrics.auto_eq_high_weight = 0.0f;
-	metrics.auto_eq_spectral_tilt_db = 0.0f;
-	metrics.bass_eq_recommend_low_gain_db = 0.0f;
-	metrics.bass_eq_recommend_high_gain_db = 0.0f;
-	metrics.bass_eq_recommend_output_gain_db = 0.0f;
-	metrics.bass_eq_recommend_confidence = 0.0f;
-	metrics.auto_eq_source_hint = CP_AUTO_EQ_SOURCE_UNKNOWN;
-	metrics.analysis_source_profile = CP_RESTORATION_SOURCE_UNKNOWN;
-	metrics.analysis_reason_flags = 0u;
-	metrics.declipper_repaired_samples = 0;
-	metrics.declipper_repaired_runs = 0;
-	metrics.declipper_bypass_reason = CP_DECLIPPER_BYPASS_DISABLED;
-	metrics.bass_eq_recommend_valid = 0;
-	metrics.bass_eq_recommend_preset = CP_BASS_EQ_PRESET_FLAT;
-	metrics.finite = 1;
 
 	for (offset = 0; offset < QR_TOTAL_FRAMES; offset += QR_BLOCK_FRAMES) {
 		frames = QR_BLOCK_FRAMES;
 		if (offset + frames > QR_TOTAL_FRAMES)
 			frames = QR_TOTAL_FRAMES - offset;
-		if (!qr_generate(test->fixture, input, offset, frames))
+		if (!qr_generate(test->fixture, input, offset, frames)) {
+			result->reason = "generate";
 			return 0;
+		}
 		status = cp_block_process(&processor, input, output, scratch,
 		    frames * CP_CHANNELS_STEREO, frames);
 		if (status != CP_OK) {
-			printf("quality profile=%s fixture=%s check=%s "
-			    "status=fail reason=process code=%d\n",
-			    qr_profile_name(test->profile),
-			    qr_fixture_name(test->fixture), test->check,
-			    status);
+			result->reason = "process";
+			result->code = status;
 			return 0;
 		}
-		qr_update(&metrics, input, output, offset, frames);
+		qr_update(metrics, input, output, offset, frames);
 	}
 
-	metrics.input_square = sqrt(metrics.input_square /
+	metrics->input_square = sqrt(metrics->input_square /
 	    (double)(QR_TOTAL_FRAMES * CP_CHANNELS_STEREO));
-	metrics.output_square = sqrt(metrics.output_square /
+	metrics->output_square = sqrt(metrics->output_square /
 	    (double)(QR_TOTAL_FRAMES * CP_CHANNELS_STEREO));
-	metrics.input_sum = metrics.input_sum /
+	metrics->input_sum = metrics->input_sum /
 	    (double)(QR_TOTAL_FRAMES * CP_CHANNELS_STEREO);
-	metrics.output_sum = metrics.output_sum /
+	metrics->output_sum = metrics->output_sum /
 	    (double)(QR_TOTAL_FRAMES * CP_CHANNELS_STEREO);
-	metrics.input_left_square = sqrt(metrics.input_left_square /
+	metrics->input_left_square = sqrt(metrics->input_left_square /
 	    (double)QR_TOTAL_FRAMES);
-	metrics.input_right_square = sqrt(metrics.input_right_square /
+	metrics->input_right_square = sqrt(metrics->input_right_square /
 	    (double)QR_TOTAL_FRAMES);
-	metrics.output_left_square = sqrt(metrics.output_left_square /
+	metrics->output_left_square = sqrt(metrics->output_left_square /
 	    (double)QR_TOTAL_FRAMES);
-	metrics.output_right_square = sqrt(metrics.output_right_square /
+	metrics->output_right_square = sqrt(metrics->output_right_square /
 	    (double)QR_TOTAL_FRAMES);
-	metrics.analysis_clip_ratio =
+	metrics->analysis_clip_ratio =
 	    processor.restoration.metrics.clipped_sample_ratio;
-	metrics.analysis_hf_ratio =
+	metrics->analysis_hf_ratio =
 	    processor.restoration.metrics.high_frequency_ratio;
-	metrics.analysis_clip_confidence =
+	metrics->analysis_clip_confidence =
 	    processor.restoration.metrics.clipping_confidence;
-	metrics.analysis_lossy_confidence =
+	metrics->analysis_lossy_confidence =
 	    processor.restoration.metrics.lossy_confidence;
-	metrics.analysis_low_ceiling_confidence =
+	metrics->analysis_low_ceiling_confidence =
 	    processor.restoration.metrics.low_ceiling_clipping_confidence;
-	metrics.analysis_transient_confidence =
+	metrics->analysis_transient_confidence =
 	    processor.restoration.metrics.transient_confidence;
-	metrics.analysis_flat_run_ratio =
+	metrics->analysis_flat_run_ratio =
 	    processor.restoration.metrics.flat_run_ratio;
-	metrics.analysis_peak_repeat_ratio =
+	metrics->analysis_peak_repeat_ratio =
 	    processor.restoration.metrics.peak_repeat_ratio;
-	metrics.analysis_observed_peak =
+	metrics->analysis_observed_peak =
 	    processor.restoration.metrics.observed_peak;
-	metrics.analysis_crest_factor =
+	metrics->analysis_crest_factor =
 	    processor.restoration.metrics.crest_factor;
-	metrics.analysis_source_profile =
+	metrics->analysis_source_profile =
 	    processor.restoration.metrics.source_profile;
-	metrics.analysis_reason_flags =
+	metrics->analysis_reason_flags =
 	    processor.restoration.metrics.reason_flags;
-	metrics.declipper_repaired_samples =
+	metrics->declipper_repaired_samples =
 	    processor.declipper.metrics.repaired_sample_count;
-	metrics.declipper_repaired_runs =
+	metrics->declipper_repaired_runs =
 	    processor.declipper.metrics.repaired_run_count;
-	metrics.declipper_max_delta =
+	metrics->declipper_max_delta =
 	    processor.declipper.metrics.max_repair_delta;
-	metrics.declipper_bypass_reason =
+	metrics->declipper_bypass_reason =
 	    processor.declipper.metrics.bypass_reason;
-	metrics.natural_dynamics_gr_db =
+	metrics->natural_dynamics_gr_db =
 	    processor.natural_dynamics.gain_reduction_db;
-	metrics.low_level_boost_gain_db =
+	metrics->low_level_boost_gain_db =
 	    processor.low_level_boost.gain_db;
-	metrics.auto_eq_total_rms = processor.auto_eq.metrics.total_rms;
-	metrics.auto_eq_low_weight =
+	metrics->auto_eq_total_rms = processor.auto_eq.metrics.total_rms;
+	metrics->auto_eq_low_weight =
 	    processor.auto_eq.metrics.low_frequency_weight;
-	metrics.auto_eq_presence_weight =
+	metrics->auto_eq_presence_weight =
 	    processor.auto_eq.metrics.presence_weight;
-	metrics.auto_eq_high_weight =
+	metrics->auto_eq_high_weight =
 	    processor.auto_eq.metrics.high_frequency_weight;
-	metrics.auto_eq_spectral_tilt_db =
+	metrics->auto_eq_spectral_tilt_db =
 	    processor.auto_eq.metrics.spectral_tilt_db;
-	metrics.auto_eq_source_hint =
+	metrics->auto_eq_source_hint =
 	    processor.auto_eq.metrics.source_hint;
 	if (cp_bass_eq_recommend(&processor.auto_eq.metrics,
 	    &recommendation) == CP_OK) {
-		metrics.bass_eq_recommend_valid = recommendation.valid;
-		metrics.bass_eq_recommend_preset = recommendation.preset;
-		metrics.bass_eq_recommend_low_gain_db =
+		metrics->bass_eq_recommend_valid = recommendation.valid;
+		metrics->bass_eq_recommend_preset = recommendation.preset;
+		metrics->bass_eq_recommend_low_gain_db =
 		    recommendation.low_gain_db;
-		metrics.bass_eq_recommend_high_gain_db =
+		metrics->bass_eq_recommend_high_gain_db =
 		    recommendation.high_gain_db;
-		metrics.bass_eq_recommend_output_gain_db =
+		metrics->bass_eq_recommend_output_gain_db =
 		    recommendation.output_gain_db;
-		metrics.bass_eq_recommend_confidence =
+		metrics->bass_eq_recommend_confidence =
 		    recommendation.confidence;
 	}
-	pass = qr_check_case(test, &metrics);
+	result->pass = qr_check_case(test, metrics);
+	result->reason = result->pass ? "ok" : "check";
 
-	printf("quality profile=%s fixture=%s check=%s input_rms=%0.6f "
-	    "output_rms=%0.6f input_peak=%0.6f output_peak=%0.6f "
-	    "output_min=%0.6f output_max=%0.6f input_crest=%0.6f "
-	    "output_crest=%0.6f input_dc=%0.6f output_dc=%0.6f "
-	    "input_hum50=%0.6f output_hum50=%0.6f input_hum60=%0.6f "
-	    "output_hum60=%0.6f output_left_rms=%0.6f "
-	    "output_right_rms=%0.6f analysis_clip_ratio=%0.6f "
-	    "analysis_hf_ratio=%0.6f analysis_clip_confidence=%0.6f "
-	    "analysis_low_ceiling_confidence=%0.6f "
-	    "analysis_transient_confidence=%0.6f "
-	    "analysis_lossy_confidence=%0.6f analysis_flat_ratio=%0.6f "
-	    "analysis_peak_repeat_ratio=%0.6f analysis_peak=%0.6f "
-	    "analysis_crest=%0.6f analysis_profile=%s "
-	    "analysis_reason_flags=0x%08x declipper_samples=%zu "
-	    "declipper_runs=%zu declipper_delta=%0.6f "
-	    "declipper_bypass=%s natural_gr_db=%0.6f "
-	    "low_boost_gain_db=%0.6f auto_eq_source=%s "
-	    "auto_eq_rms=%0.6f auto_eq_tilt_db=%0.6f "
-	    "auto_eq_low=%0.6f auto_eq_presence=%0.6f "
-	    "auto_eq_high=%0.6f bass_eq_recommend=%s "
-	    "bass_eq_recommend_preset=%s "
-	    "bass_eq_recommend_low_db=%0.6f "
-	    "bass_eq_recommend_high_db=%0.6f "
-	    "bass_eq_recommend_output_db=%0.6f "
-	    "bass_eq_recommend_confidence=%0.6f status=%s\n",
-	    qr_profile_name(test->profile), qr_fixture_name(test->fixture),
-	    test->check, metrics.input_square, metrics.output_square,
-	    metrics.input_peak, metrics.output_peak, metrics.output_min,
-	    metrics.output_max, qr_crest(&metrics, 1), qr_crest(&metrics, 0),
-	    qr_abs((cp_sample_t)metrics.input_sum),
-	    qr_abs((cp_sample_t)metrics.output_sum),
-	    qr_hum_amp(&metrics, 50, 1), qr_hum_amp(&metrics, 50, 0),
-	    qr_hum_amp(&metrics, 60, 1), qr_hum_amp(&metrics, 60, 0),
-	    metrics.output_left_square, metrics.output_right_square,
-	    metrics.analysis_clip_ratio, metrics.analysis_hf_ratio,
-	    metrics.analysis_clip_confidence,
-	    metrics.analysis_low_ceiling_confidence,
-	    metrics.analysis_transient_confidence,
-	    metrics.analysis_lossy_confidence,
-	    metrics.analysis_flat_run_ratio,
-	    metrics.analysis_peak_repeat_ratio,
-	    metrics.analysis_observed_peak,
-	    metrics.analysis_crest_factor,
-	    cp_restoration_source_profile_string(
-	    metrics.analysis_source_profile),
-	    metrics.analysis_reason_flags,
-	    metrics.declipper_repaired_samples,
-	    metrics.declipper_repaired_runs,
-	    metrics.declipper_max_delta,
-	    cp_declipper_bypass_reason_string(
-	    (enum cp_declipper_bypass_reason)
-	    metrics.declipper_bypass_reason),
-	    metrics.natural_dynamics_gr_db,
-	    metrics.low_level_boost_gain_db,
-	    cp_auto_eq_source_hint_string(metrics.auto_eq_source_hint),
-	    metrics.auto_eq_total_rms,
-	    metrics.auto_eq_spectral_tilt_db,
-	    metrics.auto_eq_low_weight,
-	    metrics.auto_eq_presence_weight,
-	    metrics.auto_eq_high_weight,
-	    metrics.bass_eq_recommend_valid ? "valid" : "invalid",
-	    cp_bass_eq_preset_string(
-	    (enum cp_bass_eq_preset)metrics.bass_eq_recommend_preset),
-	    metrics.bass_eq_recommend_low_gain_db,
-	    metrics.bass_eq_recommend_high_gain_db,
-	    metrics.bass_eq_recommend_output_gain_db,
-	    metrics.bass_eq_recommend_confidence,
-	    pass ? "pass" : "fail");
-
-	return pass;
+	return result->pass;
 }
 
 static void
