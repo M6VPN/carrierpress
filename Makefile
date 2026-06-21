@@ -29,7 +29,7 @@ BUILD_DIR = build
 FEATURE_DIR = base
 APP_OBJ_DIR = $(BUILD_DIR)/obj/$(FEATURE_DIR)/app
 TEST_OBJ_DIR = $(BUILD_DIR)/obj/$(FEATURE_DIR)/test
-TEST_BIN_DIR = $(BUILD_DIR)/tests
+TEST_BIN_DIR = $(BUILD_DIR)/tests/$(FEATURE_DIR)
 
 CORE_SRCS = \
 	src/cp_agc.c \
@@ -54,6 +54,7 @@ CORE_SRCS = \
 	src/cp_monitor.c \
 	src/cp_multiband.c \
 	src/cp_natural_dynamics.c \
+	src/cp_playlist_check.c \
 	src/cp_profile.c \
 	src/cp_restoration.c \
 	src/cp_resampler.c \
@@ -85,6 +86,7 @@ TEST_SRCS = \
 	tests/test_monitor.c \
 	tests/test_multiband.c \
 	tests/test_natural_dynamics.c \
+	tests/test_playlist_check.c \
 	tests/test_profile.c \
 	tests/test_quality_report.c \
 	tests/test_restoration.c \
@@ -219,6 +221,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_monitor \
 	$(TEST_BIN_DIR)/test_multiband \
 	$(TEST_BIN_DIR)/test_natural_dynamics \
+	$(TEST_BIN_DIR)/test_playlist_check \
 	$(TEST_BIN_DIR)/test_profile \
 	$(TEST_BIN_DIR)/test_restoration \
 	$(TEST_BIN_DIR)/test_resampler \
@@ -417,6 +420,10 @@ $(TEST_BIN_DIR)/test_natural_dynamics: $(TEST_OBJ_DIR)/tests/test_natural_dynami
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_natural_dynamics.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_playlist_check: $(TEST_OBJ_DIR)/tests/test_playlist_check.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_playlist_check.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_resampler: $(TEST_OBJ_DIR)/tests/test_resampler.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_resampler.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -491,6 +498,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_monitor
 	./$(TEST_BIN_DIR)/test_multiband
 	./$(TEST_BIN_DIR)/test_natural_dynamics
+	./$(TEST_BIN_DIR)/test_playlist_check
 	./$(TEST_BIN_DIR)/test_profile
 	./$(TEST_BIN_DIR)/test_restoration
 	./$(TEST_BIN_DIR)/test_resampler
@@ -641,6 +649,7 @@ clean:
 	rm -f tests/test_limiter tests/test_low_level_boost tests/test_meter
 	rm -f tests/test_monitor tests/test_multiband
 	rm -f tests/test_natural_dynamics
+	rm -f tests/test_playlist_check
 	rm -f tests/test_professional_check
 	rm -f tests/test_quality_report
 	rm -f tests/test_resampler tests/test_restoration tests/test_spectrum tests/test_ssb
@@ -648,6 +657,7 @@ clean:
 	rm -f tests/test_playout tests/test_tui tests/test_validation tests/test_wav
 	rm -f tests/playout_bad.txt tests/playout_good.txt
 	rm -f tests/playout_report.txt
+	rm -f tests/playlist_check.txt tests/playlist_too_long.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
 .PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean feature-summary install install-smoke professional-check quality release-check test uninstall validate

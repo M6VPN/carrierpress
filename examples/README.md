@@ -66,8 +66,14 @@ make WITH_SNDFILE=1 WITH_PORTAUDIO=1
 ./examples/playout.sh input.wav
 ```
 
-To test playlist syntax, edit `examples/playout-playlist.txt` so it points at
-local WAV files, then run:
+Check playlist syntax without PortAudio or playback:
+
+```sh
+./examples/playlist-check.sh
+```
+
+To play the playlist, edit `examples/playout-playlist.txt` so it points at local
+WAV files, then run:
 
 ```sh
 ./carrierpress --playlist examples/playout-playlist.txt --meter-interval-ms 1000

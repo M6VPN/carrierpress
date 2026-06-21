@@ -191,11 +191,11 @@ implemented until code, docs, and validation are complete.
 
 ## M13 Playout Workflow Polish
 
-- [ ] Improve playlist diagnostics.
-- [ ] Add playlist dry-run validation.
+- [x] Improve playlist diagnostics.
+- [x] Add playlist dry-run validation.
 - [ ] Add cue/status output.
 - [ ] Document external decode workflow.
-- [ ] Keep unsupported formats clearly reported.
+- [x] Keep unsupported formats clearly reported.
 - [ ] Keep MP3, FLAC, and OGG support separate and optional unless selected.
 
 ## M14 Measurement Report Export

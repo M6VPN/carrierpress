@@ -14,6 +14,7 @@
 #include "carrierpress.h"
 #include "cp_cat.h"
 #include "cp_gui.h"
+#include "cp_playlist_check.h"
 #include "cp_playout.h"
 #include "cp_portaudio.h"
 #include "cp_profile.h"
@@ -52,6 +53,7 @@ static int	run_gui_demo(const struct cp_audio_config *,
 static int	run_list_devices(void);
 static int	run_live_audio(const struct cp_audio_config *,
 		    const struct cp_cat_config *);
+static int	run_playlist_check(const char *);
 static int	run_playout_file(const char *, const struct cp_audio_config *,
 		    const struct cp_block_config *, const struct cp_cat_config *,
 		    volatile sig_atomic_t *);
@@ -73,6 +75,7 @@ main(int argc, char *argv[])
 	const char *input_path;
 	const char *output_path;
 	const char *play_path;
+	const char *playlist_check_path;
 	const char *playlist_path;
 	const char *gui_screenshot_path;
 	struct cp_audio_config audio_config;
@@ -95,6 +98,7 @@ main(int argc, char *argv[])
 	input_path   = NULL;
 	output_path  = NULL;
 	play_path    = NULL;
+	playlist_check_path = NULL;
 	playlist_path = NULL;
 	gui_screenshot_path = NULL;
 	cat_status_mode = 0;
@@ -154,6 +158,9 @@ main(int argc, char *argv[])
 		} else if (strcmp(argv[arg], "--playlist") == 0 &&
 		    arg + 1 < argc) {
 			playlist_path = argv[++arg];
+		} else if (strcmp(argv[arg], "--playlist-check") == 0 &&
+		    arg + 1 < argc) {
+			playlist_check_path = argv[++arg];
 		} else if (strcmp(argv[arg], "--list-devices") == 0) {
 			list_devices = 1;
 		} else if (strcmp(argv[arg], "--live") == 0) {
@@ -691,7 +698,8 @@ main(int argc, char *argv[])
 	if (gui_demo_mode) {
 		if (input_path != NULL || output_path != NULL ||
 		    play_path != NULL || playlist_path != NULL || live_mode ||
-		    list_devices || self_test_mode || cat_status_mode) {
+		    playlist_check_path != NULL || list_devices ||
+		    self_test_mode || cat_status_mode) {
 			usage(argv[0]);
 			return 1;
 		}
@@ -703,8 +711,8 @@ main(int argc, char *argv[])
 	if (cat_status_mode) {
 		if (input_path != NULL || output_path != NULL ||
 		    play_path != NULL || playlist_path != NULL ||
-		    live_mode || list_devices || self_test_mode ||
-		    audio_config.gui_enabled) {
+		    playlist_check_path != NULL || live_mode || list_devices ||
+		    self_test_mode || audio_config.gui_enabled) {
 			usage(argv[0]);
 			return 1;
 		}
@@ -714,13 +722,26 @@ main(int argc, char *argv[])
 
 	if (self_test_mode) {
 		if (input_path != NULL || output_path != NULL ||
-		    play_path != NULL || playlist_path != NULL || live_mode ||
-		    list_devices || audio_config.gui_enabled) {
+		    play_path != NULL || playlist_path != NULL ||
+		    playlist_check_path != NULL || live_mode || list_devices ||
+		    audio_config.gui_enabled) {
 			usage(argv[0]);
 			return 1;
 		}
 
 		return run_self_test(&block_config);
+	}
+
+	if (playlist_check_path != NULL) {
+		if (input_path != NULL || output_path != NULL ||
+		    play_path != NULL || playlist_path != NULL || live_mode ||
+		    list_devices || audio_config.tui_enabled ||
+		    audio_config.gui_enabled) {
+			usage(argv[0]);
+			return 1;
+		}
+
+		return run_playlist_check(playlist_check_path);
 	}
 
 	if (play_path != NULL || playlist_path != NULL) {
@@ -1256,6 +1277,19 @@ run_live_audio(const struct cp_audio_config *config,
 }
 
 static int
+run_playlist_check(const char *path)
+{
+	struct cp_playlist_check_result result;
+	int status;
+
+	status = cp_playlist_check_file(path, &result, stdout);
+	if (status != CP_PLAYLIST_CHECK_OK)
+		return 1;
+
+	return 0;
+}
+
+static int
 run_playout_file(const char *path, const struct cp_audio_config *audio_config,
 	const struct cp_block_config *block_config,
 	const struct cp_cat_config *cat_config,
@@ -1640,6 +1674,7 @@ usage(const char *program)
 	    program);
 	printf("usage: %s --input input.wav --output output.wav\n", program);
 	printf("usage: %s --play input.wav [--output-device N]\n", program);
+	printf("usage: %s --playlist-check playlist.txt\n", program);
 	printf("usage: %s --playlist playlist.txt [--output-device N]\n",
 	    program);
 	printf("usage: %s --gui-demo --cat-backend mock --cat-frequency-hz "

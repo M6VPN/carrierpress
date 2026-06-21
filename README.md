@@ -719,6 +719,18 @@ first.wav
 second.wav
 ```
 
+Check playlist syntax without opening PortAudio or playing audio:
+
+```sh
+./carrierpress --playlist-check playlist.txt
+```
+
+`--playlist-check` is available in the base build. It reports file and line
+diagnostics, accepts `.wav` entries case-insensitively, skips blank/comment
+lines, and reports unsupported entries such as MP3, FLAC, OGG, Opus, and M4A as
+formats to convert to WAV first. It checks playlist syntax and supported
+extensions only; it does not require the listed files to exist.
+
 WAV playout requires a `WITH_SNDFILE=1 WITH_PORTAUDIO=1` build. Without it, `--play` and `--playlist` exit with:
 
 ```text
