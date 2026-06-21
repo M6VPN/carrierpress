@@ -9,6 +9,7 @@
 
 #include "cp_block.h"
 #include "cp_declipper.h"
+#include "cp_report.h"
 #include "cp_version.h"
 
 #define QR_BLOCK_FRAMES		256
@@ -841,6 +842,7 @@ qr_print_json(const struct qr_case *cases,
 
 	printf("{\n");
 	printf("  \"carrierpress_report\": \"quality\",\n");
+	printf("  \"schema_version\": %d,\n", CP_REPORT_SCHEMA_VERSION);
 	printf("  \"version\": ");
 	qr_json_string(CP_VERSION_STRING);
 	printf(",\n");

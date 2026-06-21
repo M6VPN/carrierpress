@@ -73,6 +73,8 @@ check_report(const char *path)
 	if (strstr(buffer,
 	    "\"carrierpress_report\": \"processed_file\"") == NULL)
 		return 0;
+	if (strstr(buffer, "\"schema_version\": 1") == NULL)
+		return 0;
 	if (strstr(buffer, "\"status\": \"ok\"") == NULL)
 		return 0;
 	if (strstr(buffer, "\"input_rms\"") == NULL ||

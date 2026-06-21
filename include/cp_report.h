@@ -12,6 +12,9 @@
 #include "cp_restoration.h"
 #include "cp_types.h"
 
+#define CP_REPORT_SCHEMA_VERSION		1
+#define CP_REPORT_SCHEMA_VERSION_STRING		"1"
+
 enum cp_report_status {
 	CP_REPORT_OK        = 0,
 	CP_REPORT_ERR_NULL  = -300,

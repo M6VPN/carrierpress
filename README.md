@@ -1217,7 +1217,8 @@ measurement, restoration-quality claim, or compliance claim.
 
 `make quality-json` runs the same quality fixtures and emits a single JSON
 document for local evidence or tooling. The JSON report is documented in
-[docs/measurement-reports.md](docs/measurement-reports.md). It is an engineering
+[docs/measurement-reports.md](docs/measurement-reports.md), including the
+stable schema-version-1 fields intended for scripts. It is an engineering
 metrics export only and does not prove RF bandwidth, transmitter compliance, or
 legal operation.
 

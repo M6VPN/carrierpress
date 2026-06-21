@@ -255,11 +255,11 @@ implemented until code, docs, and validation are complete.
 
 ## M19 Report Schema and Compare Tools
 
-- [ ] Add report schema version field.
-- [ ] Document stable report fields.
+- [x] Add report schema version field.
+- [x] Document stable report fields.
 - [ ] Add report summary mode.
 - [ ] Add report compare helper.
-- [ ] Keep reports free of transmitter-compliance and regulatory claims.
+- [x] Keep reports free of transmitter-compliance and regulatory claims.
 
 ## M20 TUI/GUI Operator Polish
 

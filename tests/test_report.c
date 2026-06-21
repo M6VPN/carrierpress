@@ -174,6 +174,7 @@ test_write_json(void)
 	}
 	if (strstr(buffer, "\"carrierpress_report\": \"processed_file\"") ==
 	    NULL || strstr(buffer, "\"status\": \"ok\"") == NULL ||
+	    strstr(buffer, "\"schema_version\": 1") == NULL ||
 	    strstr(buffer, "\"input_rms\"") == NULL ||
 	    strstr(buffer, "\"output_rms\"") == NULL ||
 	    strstr(buffer, "\"dehummer\": true") == NULL ||

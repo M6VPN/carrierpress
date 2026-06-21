@@ -80,6 +80,7 @@ main(void)
 	}
 	if (strstr(report_buffer,
 	    "\"carrierpress_report\": \"processed_file\"") == NULL ||
+	    strstr(report_buffer, "\"schema_version\": 1") == NULL ||
 	    strstr(report_buffer, "\"status\": \"ok\"") == NULL ||
 	    strstr(report_buffer, "\"input_rms\"") == NULL ||
 	    strstr(report_buffer, "\"output_rms\"") == NULL ||

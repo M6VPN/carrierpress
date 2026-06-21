@@ -124,6 +124,7 @@ cp_report_write_processed_file_json(const char *path,
 
 	fprintf(file, "{\n");
 	fprintf(file, "  \"carrierpress_report\": \"processed_file\",\n");
+	fprintf(file, "  \"schema_version\": %d,\n", CP_REPORT_SCHEMA_VERSION);
 	fprintf(file, "  \"version\": ");
 	cp_report_json_string(file, CP_VERSION_STRING);
 	fprintf(file, ",\n");
