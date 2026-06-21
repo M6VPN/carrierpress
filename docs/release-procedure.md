@@ -39,6 +39,60 @@ LD_LIBRARY_PATH="$HAMLIB_LOCAL/src/.libs:${LD_LIBRARY_PATH:-}" \
 	make WITH_HAMLIB=1 test
 ```
 
+## v0.3.0 Release
+
+`v0.3.0` is the release for the v0.3 operator-polish milestones M17 through
+M23. Do not rewrite or retag `v0.1.0`, `v0.1.1`, or `v0.2.0`.
+
+Before tagging:
+
+```sh
+make clean
+make
+make test
+make -j test
+make validate
+make quality
+make quality-json
+make professional-check
+make public-header-smoke
+make example-libcarrierpress
+./build/examples/libcarrierpress-minimal
+make install-smoke
+make install-manifest
+make dist-check
+make release-check
+./carrierpress --version
+git status --short
+```
+
+Confirm GitHub Actions CI is green for the same commit. Confirm
+`./carrierpress --version` prints `CarrierPress 0.3.0`.
+
+`make dist-check` creates an archive from committed `HEAD`. Commit the intended
+R8 release-prep changes before treating the archive as the release source.
+
+Create and publish the tag only by explicit local operator action:
+
+```sh
+git tag -a v0.3.0 -m "CarrierPress v0.3.0"
+git push origin v0.3.0
+```
+
+Create the GitHub release manually:
+
+```sh
+gh release create v0.3.0 \
+	--title "CarrierPress v0.3.0" \
+	--notes-file docs/release-notes-v0.3.0.md \
+	build/dist/carrierpress-0.3.0.tar.gz \
+	build/dist/carrierpress-0.3.0.tar.gz.sha256
+gh release view v0.3.0
+```
+
+No project script creates tags, pushes tags, uploads artifacts, or publishes
+GitHub releases.
+
 ## v0.2.0 Release
 
 `v0.2.0` is the release for the v0.2 audio-workflow milestones M11 through M16.

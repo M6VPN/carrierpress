@@ -77,7 +77,7 @@ test_write_metadata(void)
 	struct cp_evidence_metadata metadata;
 
 	(void)memset(&metadata, 0, sizeof(metadata));
-	metadata.version = "0.2.0";
+	metadata.version = "0.3.0";
 	metadata.mode = "demo";
 	metadata.config_path = "configs/default.conf";
 	metadata.profile_path = "profiles/am-safe.profile";
@@ -94,7 +94,7 @@ test_write_metadata(void)
 		return 0;
 	}
 	if (strstr(buffer, "carrierpress_evidence=screenshot") == NULL ||
-	    strstr(buffer, "version=0.2.0") == NULL ||
+	    strstr(buffer, "version=0.3.0") == NULL ||
 	    strstr(buffer, "config_path=configs/default.conf") == NULL ||
 	    strstr(buffer,
 	    "profile_path=profiles/am-safe.profile") == NULL ||

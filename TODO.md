@@ -311,7 +311,17 @@ implemented until code, docs, and validation are complete.
 - [x] Preserve safe fallback on device-open failure.
 - [x] Keep CLI-only output-device selection working.
 
-## M23C3 GUI Output Device Follow-up
+## Deferred GUI Output Device Follow-up
 
 - [ ] Add GUI playout output-device restart if selected.
 - [ ] Add sndio GUI output-device restart if selected.
+
+## R8 v0.3.0 Release Prep
+
+- [x] Bump project version to 0.3.0.
+- [x] Add v0.3.0 release notes.
+- [x] Update manual v0.3.0 release procedure.
+- [x] Update release checklist for v0.3.0.
+- [x] Preserve v0.1.0, v0.1.1, and v0.2.0 historical notes.
+- [x] Keep PTT control deferred.
+- [x] Keep release publication manual and local.

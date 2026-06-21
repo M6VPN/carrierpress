@@ -54,6 +54,53 @@ operation.
 GitHub Actions CI must also be green before a release tag is created. CI
 coverage is documented in `docs/ci.md`.
 
+## v0.3.0 Release Checks
+
+Use this section when preparing `v0.3.0`, the release for v0.3 operator-polish
+milestones M17 through M23.
+
+- Confirm `./carrierpress --version` prints `CarrierPress 0.3.0`.
+- Confirm staged install pkg-config metadata reports `Version: 0.3.0`.
+- Confirm `docs/release-notes-v0.3.0.md` is the release body.
+- Confirm `docs/release-notes-v0.1.md`, `docs/release-notes-v0.1.1.md`, and
+  `docs/release-notes-v0.2.0.md` remain historical and unchanged except for
+  index-style links elsewhere.
+- Confirm profile validation works through `./examples/validate-profile.sh`.
+- Confirm config validation works through `./examples/validate-config.sh`.
+- Confirm effective config inspection works through
+  `./examples/print-effective-config.sh`.
+- Confirm effective config output does not include PTT, transmit, CAT
+  write/control, rig-control, or station-control fields.
+- Confirm batch dry-run validation works through `./examples/batch-check.sh`.
+- Confirm batch processing and per-file sidecar reports are documented in
+  `docs/batch-workflow.md`.
+- Confirm report schema versioning, summary, and comparison are documented in
+  `docs/measurement-reports.md`.
+- Confirm `--report-summary` and `--report-compare` work on
+  `build/quality-report.json`.
+- Confirm TUI and GUI operator-state notes are present in
+  `docs/gui-workflow.md`.
+- Confirm live PortAudio GUI output-device restart and fallback are documented
+  in `docs/gui-workflow.md`.
+- Confirm GUI playout and sndio output-device restart follow-ups remain
+  deferred unless explicitly selected.
+- Confirm `make public-header-smoke` passes.
+- Confirm `make example-libcarrierpress` builds and
+  `./build/examples/libcarrierpress-minimal` runs.
+- Confirm API notes are present in `docs/api.md`.
+- Confirm package maintainer notes are present in
+  `docs/package-maintainer-checklist.md`.
+- Confirm `make install-manifest` prints the expected staged files.
+- Confirm `make dist-check` creates and verifies the source tarball checksum.
+- Confirm GitHub Actions CI is green before tagging.
+- Confirm no release docs or package metadata claim RF generation, transmitter
+  compliance, licence compliance, regulatory approval, legal bandwidth, or
+  broadcast quality.
+- Confirm CAT remains read-only and no CAT write/control commands were added.
+- Confirm T5 PTT control remains deferred and unchecked in `TODO.md`.
+- Confirm release publication remains manual and local per
+  `docs/release-procedure.md`.
+
 ## v0.2.0 Release Checks
 
 Use this section when preparing `v0.2.0`, the release for v0.2 audio-workflow

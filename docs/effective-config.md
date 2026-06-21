@@ -49,7 +49,7 @@ The output is stable plain text using `key=value` lines:
 
 ```text
 carrierpress_effective_config=1
-version=0.2.0
+version=0.3.0
 config_path=configs/default.conf
 profile_path=profiles/am-safe.profile
 profile_name=AM Safe

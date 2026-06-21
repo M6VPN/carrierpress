@@ -30,6 +30,13 @@ else
 	printf 'not present; run: make -s quality-json > build/quality-report.json\n'
 fi
 
+printf '\npublic API evidence:\n'
+if [ -x build/examples/libcarrierpress-minimal ]; then
+	printf 'build/examples/libcarrierpress-minimal\n'
+else
+	printf 'not present; run: make public-header-smoke && make example-libcarrierpress\n'
+fi
+
 printf '\nsource archive evidence:\n'
 if [ -d build/dist ]; then
 	find build/dist -type f -print | sort

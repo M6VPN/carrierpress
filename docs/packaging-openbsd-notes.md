@@ -56,7 +56,7 @@ make dist-check
 On OpenBSD, `sha256` can be used manually if `sha256sum` is not available:
 
 ```sh
-sha256 build/dist/carrierpress-0.2.0.tar.gz
+sha256 build/dist/carrierpress-0.3.0.tar.gz
 ```
 
 The source archive workflow is local and manual. It does not create tags, push
