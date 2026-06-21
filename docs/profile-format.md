@@ -94,6 +94,12 @@ Load a profile with `--profile PATH`:
 ./carrierpress --profile profiles/file-cleanup.profile --input in.wav --output out.wav
 ```
 
+Validate a profile without running DSP or opening audio devices:
+
+```sh
+./carrierpress --validate-profile profiles/am-safe.profile
+```
+
 Profiles are applied when `--profile` appears in the command line. Defaults are
 created first, the profile is applied next, and later command-line options
 override profile values.
@@ -111,6 +117,16 @@ profile may be loaded in this M11 slice.
 An explicit later `--am` or `--am-preset` selects AM and disables SSB. An
 explicit later `--ssb` or `--ssb-preset` selects SSB and disables AM. CarrierPress
 still rejects any final configuration that has both AM and SSB enabled.
+
+Use `--print-effective-config` to inspect the final settings after defaults,
+config files, profiles, and later command-line overrides:
+
+```sh
+./carrierpress --profile profiles/am-safe.profile --print-effective-config
+```
+
+Effective config inspection is documented in
+[`docs/effective-config.md`](effective-config.md).
 
 ## Example
 

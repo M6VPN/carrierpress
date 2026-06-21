@@ -237,12 +237,12 @@ implemented until code, docs, and validation are complete.
 
 ## M17 Effective Config/Profile Inspection
 
-- [ ] Add `--print-effective-config`.
-- [ ] Add `--validate-profile PATH`.
-- [ ] Add `--validate-config PATH`.
-- [ ] Show profile/config source paths.
-- [ ] Document final override precedence in inspection output.
-- [ ] Keep PTT and station-control settings out of ordinary inspection output.
+- [x] Add `--print-effective-config`.
+- [x] Add `--validate-profile PATH`.
+- [x] Add `--validate-config PATH`.
+- [x] Show profile/config source paths.
+- [x] Document final override precedence in inspection output.
+- [x] Keep PTT and station-control settings out of ordinary inspection output.
 
 ## M18 Batch Offline WAV Workflow
 

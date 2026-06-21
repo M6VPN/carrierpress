@@ -11,6 +11,9 @@ Run examples from the repository root after building `./carrierpress`.
 ```sh
 make
 ./examples/self-test.sh
+./examples/validate-profile.sh
+./examples/validate-config.sh
+./examples/print-effective-config.sh
 ./examples/profile-self-test.sh
 ./examples/cat-mock-status.sh
 ./examples/release-check-local.sh
@@ -21,6 +24,10 @@ and dehummer/multiband examples.
 
 `profile-self-test.sh` runs each bundled profile through self-test and then
 checks AM and SSB command-line profile overrides.
+
+`validate-profile.sh`, `validate-config.sh`, and
+`print-effective-config.sh` inspect profile/config files without opening audio
+devices.
 
 ## Config Files
 
@@ -33,6 +40,8 @@ presets, CAT, PTT, rig frequency, rig mode, transmit state, or station control.
 
 ```sh
 ./examples/config-self-test.sh
+./examples/validate-config.sh
+./examples/print-effective-config.sh
 ```
 
 GUI config testing requires `WITH_GUI=1`:

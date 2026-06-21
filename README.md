@@ -320,6 +320,9 @@ Start with:
 ```sh
 make
 ./examples/self-test.sh
+./examples/validate-profile.sh
+./examples/validate-config.sh
+./examples/print-effective-config.sh
 ./examples/cat-mock-status.sh
 ```
 
@@ -352,6 +355,12 @@ and later command-line options override profile values. For example:
 Options before `--profile` may be overwritten by the loaded profile. Only one
 profile may be loaded in this M11 slice.
 
+Validate a profile without running DSP:
+
+```sh
+./carrierpress --validate-profile profiles/am-safe.profile
+```
+
 ## Config Files
 
 Config files are documented in
@@ -375,6 +384,17 @@ Config loading is order-sensitive. CarrierPress starts with built-in defaults,
 applies `--config PATH` where it appears, loads any `profile = PATH` named by
 that config, and then lets later command-line options override those values.
 Options before `--config` may be overwritten by the config.
+
+Validate a config and inspect final resolved settings without opening audio
+devices:
+
+```sh
+./carrierpress --validate-config configs/default.conf
+./carrierpress --config configs/default.conf --profile profiles/ssb-speech.profile --print-effective-config
+```
+
+Effective config inspection is documented in
+[`docs/effective-config.md`](docs/effective-config.md).
 
 ## Usage
 

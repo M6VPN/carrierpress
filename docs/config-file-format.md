@@ -95,6 +95,12 @@ Use `--config PATH` to load a config file at that point in the command line:
 ./carrierpress --config configs/playout.conf --play input.wav
 ```
 
+Validate a config file without running DSP or opening audio devices:
+
+```sh
+./carrierpress --validate-config configs/default.conf
+```
+
 If the config contains `profile = PATH`, CarrierPress loads and validates that
 profile immediately after applying the config. The profile still uses the
 normal profile safety rules and cannot control CAT, PTT, rig frequency, rig
@@ -131,6 +137,17 @@ rate.
 If a config enables one monitor UI, a later explicit `--gui` or `--tui`
 selects the later UI and disables the other one. If both TUI and GUI are
 enabled inside one config file, validation fails.
+
+Use `--print-effective-config` to inspect the final settings after defaults,
+config files, profiles, and later command-line overrides:
+
+```sh
+./carrierpress --config configs/default.conf --print-effective-config
+./carrierpress --config configs/default.conf --profile profiles/ssb-speech.profile --print-effective-config
+```
+
+Effective config inspection is documented in
+[`docs/effective-config.md`](effective-config.md).
 
 ## Examples
 

@@ -29,12 +29,22 @@
 #define CP_TWO_PI		6.28318530717958647692f
 #define CP_WAV_BLOCK_FRAMES	512
 
+struct cp_inspection_state {
+	char config_path[CP_CONFIG_FILE_PATH_SIZE];
+	char profile_path[CP_CONFIG_FILE_PATH_SIZE];
+	char profile_name[CP_PROFILE_NAME_SIZE];
+	enum cp_profile_mode profile_mode;
+};
+
 static volatile sig_atomic_t stop_requested = 0;
 
 static int	apply_config_arg(const char *, struct cp_config_file *,
-		    struct cp_block_config *, struct cp_audio_config *);
+		    struct cp_block_config *, struct cp_audio_config *,
+		    struct cp_inspection_state *);
 static int	apply_profile_arg(const char *, const char *,
-		    struct cp_block_config *, struct cp_audio_config *);
+		    struct cp_block_config *, struct cp_audio_config *,
+		    struct cp_inspection_state *);
+static int	copy_inspection_string(char *, size_t, const char *);
 static void	handle_signal(int);
 static int	parse_am_preset(struct cp_am_config *, const char *);
 static int	parse_bass_eq_preset(struct cp_bass_eq_config *,
@@ -60,12 +70,22 @@ static int	run_playout_file(const char *, const struct cp_audio_config *,
 static int	run_playout_playlist(const char *, const struct cp_audio_config *,
 		    const struct cp_block_config *, const struct cp_cat_config *,
 		    volatile sig_atomic_t *);
+static int	run_print_effective_config(const struct cp_audio_config *,
+		    const struct cp_block_config *,
+		    const struct cp_inspection_state *, const char *);
 static int	run_wav_process(const char *, const char *, const char *,
 		    const struct cp_block_config *);
 static int	run_self_test(const struct cp_block_config *);
+static int	run_validate_config(const char *);
+static int	run_validate_profile(const char *);
+static const char *switch_string(int);
 static void	print_auto_eq_metrics(const struct cp_auto_eq_metrics *);
 static void	print_bass_eq_recommendation(
 		    const struct cp_auto_eq_metrics *);
+static void	print_config_error(const char *,
+		    const struct cp_config_file_error *);
+static void	print_profile_error(const char *, const char *,
+		    const struct cp_profile_error *);
 static void	print_restoration_metrics(const struct cp_restoration_metrics *);
 static void	usage(const char *);
 
@@ -79,10 +99,13 @@ main(int argc, char *argv[])
 	const char *playlist_path;
 	const char *report_path;
 	const char *gui_screenshot_path;
+	const char *validate_config_path;
+	const char *validate_profile_path;
 	struct cp_audio_config audio_config;
 	struct cp_block_config block_config;
 	struct cp_cat_config cat_config;
 	struct cp_config_file config_file;
+	struct cp_inspection_state inspection_state;
 	double parsed_double;
 	uint64_t parsed_uint64;
 	size_t parsed_size;
@@ -91,8 +114,10 @@ main(int argc, char *argv[])
 	int channels_explicit;
 	int config_seen;
 	int gui_demo_mode;
+	int inspection_modes;
 	int live_mode;
 	int list_devices;
+	int print_effective_config;
 	int profile_seen;
 	int self_test_mode;
 
@@ -103,14 +128,19 @@ main(int argc, char *argv[])
 	playlist_path = NULL;
 	report_path = NULL;
 	gui_screenshot_path = NULL;
+	validate_config_path = NULL;
+	validate_profile_path = NULL;
 	cat_status_mode = 0;
 	channels_explicit = 0;
 	config_seen = 0;
 	gui_demo_mode = 0;
+	inspection_modes = 0;
 	live_mode    = 0;
 	list_devices = 0;
+	print_effective_config = 0;
 	profile_seen = 0;
 	self_test_mode = 0;
+	memset(&inspection_state, 0, sizeof(inspection_state));
 	cp_audio_default_config(&audio_config);
 	cp_block_default_config(&block_config, CP_CHANNELS_MONO);
 	cp_cat_default_config(&cat_config);
@@ -143,7 +173,7 @@ main(int argc, char *argv[])
 				return 1;
 			}
 			if (!apply_config_arg(argv[++arg], &config_file,
-			    &block_config, &audio_config))
+			    &block_config, &audio_config, &inspection_state))
 				return 1;
 			config_seen = 1;
 		} else if (strcmp(argv[arg], "--profile") == 0 &&
@@ -154,9 +184,17 @@ main(int argc, char *argv[])
 				return 1;
 			}
 			if (!apply_profile_arg(argv[++arg], NULL, &block_config,
-			    &audio_config))
+			    &audio_config, &inspection_state))
 				return 1;
 			profile_seen = 1;
+		} else if (strcmp(argv[arg], "--validate-profile") == 0 &&
+		    arg + 1 < argc) {
+			validate_profile_path = argv[++arg];
+		} else if (strcmp(argv[arg], "--validate-config") == 0 &&
+		    arg + 1 < argc) {
+			validate_config_path = argv[++arg];
+		} else if (strcmp(argv[arg], "--print-effective-config") == 0) {
+			print_effective_config = 1;
 		} else if (strcmp(argv[arg], "--play") == 0 &&
 		    arg + 1 < argc) {
 			play_path = argv[++arg];
@@ -682,6 +720,21 @@ main(int argc, char *argv[])
 		}
 	}
 
+	if (validate_profile_path != NULL)
+		inspection_modes++;
+	if (validate_config_path != NULL)
+		inspection_modes++;
+	if (print_effective_config)
+		inspection_modes++;
+	if (inspection_modes > 1) {
+		usage(argv[0]);
+		return 1;
+	}
+	if (validate_profile_path != NULL)
+		return run_validate_profile(validate_profile_path);
+	if (validate_config_path != NULL)
+		return run_validate_config(validate_config_path);
+
 	if (cp_audio_config_set_format(&audio_config, audio_config.channels,
 	    audio_config.sample_rate) != CP_AUDIO_OK) {
 		usage(argv[0]);
@@ -699,6 +752,10 @@ main(int argc, char *argv[])
 		usage(argv[0]);
 		return 1;
 	}
+
+	if (print_effective_config)
+		return run_print_effective_config(&audio_config, &block_config,
+		    &inspection_state, report_path);
 
 	if (gui_demo_mode) {
 		if (input_path != NULL || output_path != NULL ||
@@ -806,7 +863,8 @@ main(int argc, char *argv[])
 static int
 apply_config_arg(const char *path, struct cp_config_file *config,
 	struct cp_block_config *block_config,
-	struct cp_audio_config *audio_config)
+	struct cp_audio_config *audio_config,
+	struct cp_inspection_state *inspection_state)
 {
 	struct cp_config_file_error error;
 	const char *profile_path;
@@ -819,15 +877,7 @@ apply_config_arg(const char *path, struct cp_config_file *config,
 	(void)memset(&error, 0, sizeof(error));
 	status = cp_config_file_parse_file(path, config, &error);
 	if (status != CP_OK) {
-		fprintf(stderr, "carrierpress: config %s: ", path);
-		if (error.line_number > 0)
-			fprintf(stderr, "line %zu: ", error.line_number);
-		if (error.key[0] != '\0')
-			fprintf(stderr, "%s: ", error.key);
-		if (error.message[0] != '\0')
-			fprintf(stderr, "%s\n", error.message);
-		else
-			fprintf(stderr, "invalid config\n");
+		print_config_error(path, &error);
 		return 0;
 	}
 	if (cp_config_file_apply_to_audio_config(config, audio_config) !=
@@ -836,9 +886,16 @@ apply_config_arg(const char *path, struct cp_config_file *config,
 		    "settings\n", path);
 		return 0;
 	}
+	if (inspection_state != NULL &&
+	    !copy_inspection_string(inspection_state->config_path,
+	    sizeof(inspection_state->config_path), path)) {
+		fprintf(stderr, "carrierpress: config path is too long\n");
+		return 0;
+	}
 	profile_path = cp_config_file_profile_path(config);
 	if (profile_path != NULL &&
-	    !apply_profile_arg(profile_path, path, block_config, audio_config))
+	    !apply_profile_arg(profile_path, path, block_config, audio_config,
+	    inspection_state))
 		return 0;
 
 	return 1;
@@ -847,7 +904,8 @@ apply_config_arg(const char *path, struct cp_config_file *config,
 static int
 apply_profile_arg(const char *path, const char *config_path,
 	struct cp_block_config *block_config,
-	struct cp_audio_config *audio_config)
+	struct cp_audio_config *audio_config,
+	struct cp_inspection_state *inspection_state)
 {
 	struct cp_profile profile;
 	struct cp_profile_error error;
@@ -861,24 +919,46 @@ apply_profile_arg(const char *path, const char *config_path,
 	if (status == CP_OK)
 		status = cp_profile_apply_to_configs(&profile, block_config,
 		    audio_config);
-	if (status == CP_OK)
+	if (status == CP_OK) {
+		if (inspection_state != NULL) {
+			if (!copy_inspection_string(
+			    inspection_state->profile_path,
+			    sizeof(inspection_state->profile_path), path)) {
+				fprintf(stderr,
+				    "carrierpress: profile path is too long\n");
+				return 0;
+			}
+			if (!copy_inspection_string(
+			    inspection_state->profile_name,
+			    sizeof(inspection_state->profile_name),
+			    profile.name)) {
+				fprintf(stderr,
+				    "carrierpress: profile name is too long\n");
+				return 0;
+			}
+			inspection_state->profile_mode = profile.mode;
+		}
 		return 1;
+	}
 
-	if (config_path != NULL)
-		fprintf(stderr, "carrierpress: config %s profile %s: ",
-		    config_path, path);
-	else
-		fprintf(stderr, "carrierpress: profile %s: ", path);
-	if (error.line_number > 0)
-		fprintf(stderr, "line %zu: ", error.line_number);
-	if (error.key[0] != '\0')
-		fprintf(stderr, "%s: ", error.key);
-	if (error.message[0] != '\0')
-		fprintf(stderr, "%s\n", error.message);
-	else
-		fprintf(stderr, "invalid profile\n");
+	print_profile_error(path, config_path, &error);
 
 	return 0;
+}
+
+static int
+copy_inspection_string(char *dst, size_t dstlen, const char *src)
+{
+	int written;
+
+	if (dst == NULL || dstlen == 0 || src == NULL)
+		return 0;
+
+	written = snprintf(dst, dstlen, "%s", src);
+	if (written < 0 || (size_t)written >= dstlen)
+		return 0;
+
+	return 1;
 }
 
 static void
@@ -1037,6 +1117,133 @@ parse_uint64_arg(const char *text, uint64_t *value)
 		return 0;
 	*value = (uint64_t)parsed;
 	return 1;
+}
+
+static int
+run_print_effective_config(const struct cp_audio_config *audio_config,
+	const struct cp_block_config *block_config,
+	const struct cp_inspection_state *inspection_state,
+	const char *report_path)
+{
+	if (audio_config == NULL || block_config == NULL ||
+	    inspection_state == NULL)
+		return 1;
+
+	printf("carrierpress_effective_config=1\n");
+	printf("version=%s\n", CP_VERSION_STRING);
+	printf("config_path=%s\n", inspection_state->config_path);
+	printf("profile_path=%s\n", inspection_state->profile_path);
+	printf("profile_name=%s\n", inspection_state->profile_name);
+	printf("profile_mode=%s\n",
+	    cp_profile_mode_string(inspection_state->profile_mode));
+	printf("audio_backend=%s\n",
+	    cp_audio_backend_string(audio_config->backend));
+	printf("device=%s\n",
+	    audio_config->device_name == NULL ? "" : audio_config->device_name);
+	printf("input_device=%d\n", audio_config->input_device);
+	printf("output_device=%d\n", audio_config->output_device);
+	printf("sample_rate=%0.0f\n", audio_config->sample_rate);
+	printf("channels=%zu\n", audio_config->channels);
+	printf("block_size=%zu\n", audio_config->block_size);
+	printf("meter_interval_ms=%u\n", audio_config->meter_interval_ms);
+	printf("tui=%s\n", switch_string(audio_config->tui_enabled));
+	printf("gui=%s\n", switch_string(audio_config->gui_enabled));
+	printf("dehummer=%s\n", switch_string(block_config->dehummer_enabled));
+	printf("hum_frequency=%0.0f\n", block_config->hum_base_frequency);
+	printf("hum_harmonics=%zu\n", block_config->hum_harmonic_count);
+	printf("multiband=%s\n",
+	    switch_string(block_config->multiband_enabled));
+	printf("multiband_bands=%zu\n", block_config->multiband_band_count);
+	printf("multiband_preset=%s\n",
+	    cp_multiband_preset_string(block_config->multiband_preset));
+	printf("multiband2=%s\n",
+	    switch_string(block_config->multiband2_enabled));
+	printf("multiband2_bands=%zu\n", block_config->multiband2_band_count);
+	printf("multiband2_preset=%s\n",
+	    cp_multiband_preset_string(block_config->multiband2_preset));
+	printf("bass_eq=%s\n",
+	    switch_string(block_config->bass_eq_config.enabled));
+	printf("bass_eq_preset=%s\n",
+	    cp_bass_eq_preset_string(block_config->bass_eq_config.preset));
+	printf("natural_dynamics=%s\n",
+	    switch_string(block_config->natural_dynamics_config.enabled));
+	printf("low_level_boost=%s\n",
+	    switch_string(block_config->low_level_boost_config.enabled));
+	printf("restoration_analysis=%s\n",
+	    switch_string(block_config->restoration_config.enabled));
+	printf("declipper=%s\n",
+	    switch_string(block_config->declipper_config.enabled));
+	printf("am=%s\n", switch_string(block_config->am_config.enabled));
+	printf("am_preset=%s\n", block_config->am_config.preset_name);
+	printf("ssb=%s\n", switch_string(block_config->ssb_config.enabled));
+	printf("ssb_preset=%s\n", block_config->ssb_config.preset_name);
+	printf("report_path=%s\n", report_path == NULL ? "" : report_path);
+
+	return 0;
+}
+
+static int
+run_validate_config(const char *path)
+{
+	struct cp_config_file config;
+	struct cp_config_file_error config_error;
+	struct cp_profile profile;
+	struct cp_profile_error profile_error;
+	const char *profile_path;
+	int status;
+
+	if (path == NULL)
+		return 1;
+
+	cp_config_file_init(&config);
+	memset(&config_error, 0, sizeof(config_error));
+	status = cp_config_file_parse_file(path, &config, &config_error);
+	if (status != CP_OK) {
+		print_config_error(path, &config_error);
+		return 1;
+	}
+
+	printf("config: %s\n", path);
+	printf("status: valid\n");
+	profile_path = cp_config_file_profile_path(&config);
+	if (profile_path != NULL) {
+		memset(&profile_error, 0, sizeof(profile_error));
+		status = cp_profile_parse_file(profile_path, &profile,
+		    &profile_error);
+		if (status != CP_OK) {
+			print_profile_error(profile_path, path, &profile_error);
+			return 1;
+		}
+		printf("profile: %s\n", profile_path);
+		printf("profile_status: valid\n");
+	}
+
+	return 0;
+}
+
+static int
+run_validate_profile(const char *path)
+{
+	struct cp_profile profile;
+	struct cp_profile_error error;
+	int status;
+
+	if (path == NULL)
+		return 1;
+
+	memset(&error, 0, sizeof(error));
+	status = cp_profile_parse_file(path, &profile, &error);
+	if (status != CP_OK) {
+		print_profile_error(path, NULL, &error);
+		return 1;
+	}
+
+	printf("profile: %s\n", path);
+	printf("status: valid\n");
+	printf("name: %s\n", profile.name);
+	printf("mode: %s\n", cp_profile_mode_string(profile.mode));
+
+	return 0;
 }
 
 static int
@@ -1635,6 +1842,39 @@ print_bass_eq_recommendation(const struct cp_auto_eq_metrics *metrics)
 }
 
 static void
+print_config_error(const char *path, const struct cp_config_file_error *error)
+{
+	fprintf(stderr, "carrierpress: config %s: ", path);
+	if (error != NULL && error->line_number > 0)
+		fprintf(stderr, "line %zu: ", error->line_number);
+	if (error != NULL && error->key[0] != '\0')
+		fprintf(stderr, "%s: ", error->key);
+	if (error != NULL && error->message[0] != '\0')
+		fprintf(stderr, "%s\n", error->message);
+	else
+		fprintf(stderr, "invalid config\n");
+}
+
+static void
+print_profile_error(const char *path, const char *config_path,
+	const struct cp_profile_error *error)
+{
+	if (config_path != NULL)
+		fprintf(stderr, "carrierpress: config %s profile %s: ",
+		    config_path, path);
+	else
+		fprintf(stderr, "carrierpress: profile %s: ", path);
+	if (error != NULL && error->line_number > 0)
+		fprintf(stderr, "line %zu: ", error->line_number);
+	if (error != NULL && error->key[0] != '\0')
+		fprintf(stderr, "%s: ", error->key);
+	if (error != NULL && error->message[0] != '\0')
+		fprintf(stderr, "%s\n", error->message);
+	else
+		fprintf(stderr, "invalid profile\n");
+}
+
+static void
 print_restoration_metrics(const struct cp_restoration_metrics *metrics)
 {
 	if (metrics == NULL)
@@ -1665,10 +1905,22 @@ print_restoration_metrics(const struct cp_restoration_metrics *metrics)
 	    metrics->finite ? "yes" : "no");
 }
 
+static const char *
+switch_string(int enabled)
+{
+	return enabled ? "on" : "off";
+}
+
 static void
 usage(const char *program)
 {
 	printf("usage: %s --version\n", program);
+	printf("usage: %s --validate-profile profiles/am-safe.profile\n",
+	    program);
+	printf("usage: %s --validate-config configs/default.conf\n",
+	    program);
+	printf("usage: %s --config configs/default.conf "
+	    "--print-effective-config\n", program);
 	printf("usage: %s --self-test\n", program);
 	printf("usage: %s --config configs/default.conf --self-test\n",
 	    program);
