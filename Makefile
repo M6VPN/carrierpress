@@ -339,11 +339,23 @@ example-libcarrierpress: libcarrierpress.a
 	@mkdir -p $(EXAMPLE_BIN_DIR)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $(EXAMPLE_BIN_DIR)/libcarrierpress-minimal examples/libcarrierpress-minimal.c libcarrierpress.a $(LDLIBS)
 
-public-header-smoke: libcarrierpress.a
+public-core-header-smoke: libcarrierpress.a
 	@mkdir -p $(BUILD_DIR)
-	@printf '#include "carrierpress.h"\nint main(void) { struct cp_block_config c; cp_block_default_config(&c, CP_CHANNELS_MONO); return c.channels == CP_CHANNELS_MONO ? 0 : 1; }\n' > $(BUILD_DIR)/public-header-smoke.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $(BUILD_DIR)/public-header-smoke.o $(BUILD_DIR)/public-header-smoke.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BUILD_DIR)/public-header-smoke $(BUILD_DIR)/public-header-smoke.o libcarrierpress.a $(LDLIBS)
+	@printf '#include "carrierpress_core.h"\nint main(void) { struct cp_block_config c; cp_block_default_config(&c, CP_CHANNELS_MONO); return c.channels == CP_CHANNELS_MONO ? 0 : 1; }\n' > $(BUILD_DIR)/public-core-header-smoke.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $(BUILD_DIR)/public-core-header-smoke.o $(BUILD_DIR)/public-core-header-smoke.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BUILD_DIR)/public-core-header-smoke $(BUILD_DIR)/public-core-header-smoke.o libcarrierpress.a $(LDLIBS)
+
+public-tooling-header-smoke: libcarrierpress.a
+	@mkdir -p $(BUILD_DIR)
+	@printf '#include "carrierpress_tooling.h"\nint main(void) { struct cp_profile p; cp_profile_init(&p); return p.name[0] == 0 ? 0 : 1; }\n' > $(BUILD_DIR)/public-tooling-header-smoke.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $(BUILD_DIR)/public-tooling-header-smoke.o $(BUILD_DIR)/public-tooling-header-smoke.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BUILD_DIR)/public-tooling-header-smoke $(BUILD_DIR)/public-tooling-header-smoke.o libcarrierpress.a $(LDLIBS)
+
+public-header-smoke: public-core-header-smoke public-tooling-header-smoke
+	@mkdir -p $(BUILD_DIR)
+	@printf '#include "carrierpress.h"\nint main(void) { struct cp_block_config c; cp_block_default_config(&c, CP_CHANNELS_MONO); return c.channels == CP_CHANNELS_MONO ? 0 : 1; }\n' > $(BUILD_DIR)/public-compat-header-smoke.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $(BUILD_DIR)/public-compat-header-smoke.o $(BUILD_DIR)/public-compat-header-smoke.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BUILD_DIR)/public-compat-header-smoke $(BUILD_DIR)/public-compat-header-smoke.o libcarrierpress.a $(LDLIBS)
 
 $(BUILD_DIR)/carrierpress.pc: carrierpress.pc.in
 	@mkdir -p $(BUILD_DIR)
@@ -627,6 +639,8 @@ install-smoke:
 	test -f $(BUILD_DIR)/stage/usr/lib/pkgconfig/carrierpress.pc
 	test -f $(BUILD_DIR)/stage/usr/share/man/man1/carrierpress.1
 	test -f $(BUILD_DIR)/stage/usr/include/carrierpress/carrierpress.h
+	test -f $(BUILD_DIR)/stage/usr/include/carrierpress/carrierpress_core.h
+	test -f $(BUILD_DIR)/stage/usr/include/carrierpress/carrierpress_tooling.h
 
 install-manifest: install-smoke
 	find $(BUILD_DIR)/stage -type f | sort
@@ -737,4 +751,4 @@ clean:
 	rm -f tests/playlist_check.txt tests/playlist_too_long.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check example-libcarrierpress feature-summary install install-manifest install-smoke professional-check public-header-smoke quality quality-json release-check test uninstall validate
+.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check example-libcarrierpress feature-summary install install-manifest install-smoke professional-check public-core-header-smoke public-header-smoke public-tooling-header-smoke quality quality-json release-check test uninstall validate

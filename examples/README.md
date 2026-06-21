@@ -32,7 +32,7 @@ devices.
 ## Library Example
 
 The minimal library example links against the in-tree static library and uses
-only the dependency-light block-processing API:
+only `carrierpress_core.h` and the dependency-light block-processing API:
 
 ```sh
 make example-libcarrierpress

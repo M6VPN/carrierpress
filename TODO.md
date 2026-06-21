@@ -274,7 +274,7 @@ implemented until code, docs, and validation are complete.
 - [x] Add minimal library usage example.
 - [x] Review public headers.
 - [x] Document stable and experimental API areas.
-- [ ] Keep internal implementation details private where practical.
+- [x] Keep internal implementation details private where practical.
 
 ## M22 Packaging Maintainer Notes
 

@@ -289,7 +289,8 @@ ls -lh build/dist/
 ## Library API
 
 CarrierPress installs public headers and `libcarrierpress.a` for dependency-light
-C programs that use the core baseband audio processor. The API status and
+C programs that use the core baseband audio processor. New library users should
+include `carrierpress_core.h` for stable in-memory DSP use. The API status and
 stable/experimental header areas are documented in [docs/api.md](docs/api.md).
 
 Build the minimal in-tree example with:

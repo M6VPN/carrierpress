@@ -5,7 +5,7 @@
 
 #include <stdio.h>
 
-#include "carrierpress.h"
+#include "carrierpress_core.h"
 
 int
 main(void)

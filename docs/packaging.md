@@ -21,6 +21,11 @@ A staged install with `DESTDIR="$PWD/build/stage" PREFIX=/usr` installs:
 /usr/share/man/man1/carrierpress.1
 ```
 
+`carrierpress_core.h` is the recommended installed header for new in-memory DSP
+library users. `carrierpress_tooling.h` is the recommended installed header for
+profile, config, batch, and report tooling. `carrierpress.h` remains installed
+as the broad compatibility umbrella.
+
 Review the exact staged file list with:
 
 ```sh

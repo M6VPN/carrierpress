@@ -4,6 +4,14 @@
 #ifndef CARRIERPRESS_H
 #define CARRIERPRESS_H
 
+/*
+ * Broad compatibility umbrella. New in-memory DSP applications should prefer
+ * carrierpress_core.h. Tooling applications should prefer
+ * carrierpress_tooling.h when they only need parsers, reports, or batch plans.
+ */
+#include "carrierpress_core.h"
+#include "carrierpress_tooling.h"
+
 #include "cp_agc.h"
 #include "cp_am.h"
 #include "cp_audio.h"

@@ -9,10 +9,23 @@ CarrierPress does not generate RF, certify a transmitter, prove legal
 bandwidth, or provide regulatory approval. The library API does not implement
 PTT control or CAT write/control commands.
 
+## Recommended Includes
+
+New applications should include the narrowest umbrella that matches their use:
+
+- `carrierpress_core.h` for stable in-memory DSP processing.
+- `carrierpress_tooling.h` for profile, config, batch, and report tools.
+- `carrierpress.h` only when older code expects the broad compatibility
+  umbrella.
+
+The broad umbrella remains installed and compatible, but it includes more
+headers than ordinary library users normally need.
+
 ## Stable Core Areas
 
 The most stable public area is the dependency-light DSP block interface:
 
+- `carrierpress_core.h`
 - `cp_types.h`
 - `cp_block.h`
 - `cp_monitor.h`
@@ -34,6 +47,7 @@ source interfaces, not as a stable binary ABI.
 The profile, config-file, batch, report, and report-tool headers are public for
 local tooling:
 
+- `carrierpress_tooling.h`
 - `cp_profile.h`
 - `cp_config_file.h`
 - `cp_batch.h`
@@ -43,6 +57,12 @@ local tooling:
 These APIs are intended for command-line helpers, validation tools, and batch
 workflows. They are stable enough for scripts and examples, but field additions
 or stricter validation may appear in v0.x releases.
+
+## Compatibility Umbrella
+
+`carrierpress.h` is the broad compatibility umbrella. It remains available for
+existing source code, but new applications should prefer `carrierpress_core.h`
+or `carrierpress_tooling.h` so they do not depend on unrelated header tiers.
 
 ## Experimental and Internal-Facing Areas
 
