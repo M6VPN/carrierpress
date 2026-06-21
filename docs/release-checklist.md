@@ -61,7 +61,10 @@ install, packaging, CI, and examples work.
 
 - Confirm `./carrierpress --version` prints `CarrierPress 0.1.1`.
 - Confirm `make install-smoke` passes.
+- Confirm `make install-manifest` prints only the expected staged files.
+- Confirm `make dist-check` creates and verifies the source tarball checksum.
 - Confirm staged install pkg-config metadata reports `Version: 0.1.1`.
+- Confirm `docs/packaging.md` matches the staged install layout.
 - Confirm `docs/release-notes-v0.1.1.md` is the release body.
 - Confirm `docs/release-notes-v0.1.md` remains historical and unchanged.
 - Confirm `examples/README.md` and the example scripts are present.
@@ -209,3 +212,17 @@ Use `docs/openbsd-sndio.md` for the manual checklist.
 - Run `./examples/sndio-smoke.sh`.
 - Run live sndio only on a safe local device or loopback.
 - Confirm Linux PortAudio commands and validation remain unchanged.
+
+## Packaging Checks
+
+- Confirm `build/stage/usr/bin/carrierpress` is installed by `make install-smoke`.
+- Confirm `build/stage/usr/include/carrierpress/` contains the public headers.
+- Confirm `build/stage/usr/lib/libcarrierpress.a` is installed.
+- Confirm `build/stage/usr/lib/pkgconfig/carrierpress.pc` reports the release
+  version.
+- Confirm `build/stage/usr/share/man/man1/carrierpress.1` is installed.
+- Confirm `build/dist/carrierpress-0.1.1.tar.gz` exists after `make dist-check`.
+- Confirm `build/dist/carrierpress-0.1.1.tar.gz.sha256` verifies.
+- Confirm no package metadata claims RF generation, transmitter compliance,
+  licence compliance, regulatory approval, legal bandwidth, or broadcast
+  quality.

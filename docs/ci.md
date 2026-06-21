@@ -82,8 +82,11 @@ The packaging job checks a staged install and uninstall:
 ```sh
 make clean
 make
+make install-smoke
+make install-manifest
 make DESTDIR=build/stage PREFIX=/usr install
 make DESTDIR=build/stage PREFIX=/usr uninstall
+make dist-check
 ```
 
 It verifies the staged binary, static library, pkg-config file, man page, and

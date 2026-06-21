@@ -26,6 +26,9 @@ WITH_HAMLIB ?= 0
 WITH_FLRIG ?= 0
 
 BUILD_DIR = build
+DIST_DIR = $(BUILD_DIR)/dist
+DIST_NAME = carrierpress-$(VERSION)
+DIST_TARBALL = $(DIST_DIR)/$(DIST_NAME).tar.gz
 FEATURE_DIR = base
 APP_OBJ_DIR = $(BUILD_DIR)/obj/$(FEATURE_DIR)/app
 TEST_OBJ_DIR = $(BUILD_DIR)/obj/$(FEATURE_DIR)/test
@@ -577,6 +580,20 @@ install-smoke:
 	test -f $(BUILD_DIR)/stage/usr/share/man/man1/carrierpress.1
 	test -f $(BUILD_DIR)/stage/usr/include/carrierpress/carrierpress.h
 
+install-manifest: install-smoke
+	find $(BUILD_DIR)/stage -type f | sort
+
+dist:
+	mkdir -p $(DIST_DIR)
+	git archive --format=tar.gz --prefix=$(DIST_NAME)/ HEAD > $(DIST_TARBALL)
+	sha256sum $(DIST_TARBALL) > $(DIST_TARBALL).sha256
+
+dist-check: dist
+	test -s $(DIST_TARBALL)
+	test -s $(DIST_TARBALL).sha256
+	tar -tzf $(DIST_TARBALL) >/dev/null
+	sha256sum -c $(DIST_TARBALL).sha256
+
 feature-summary:
 	@printf 'CarrierPress feature summary:\n'
 	@printf '  libsndfile: %s\n' "$$([ "$(WITH_SNDFILE)" = 1 ] && printf enabled || printf disabled)"
@@ -671,4 +688,4 @@ clean:
 	rm -f tests/playlist_check.txt tests/playlist_too_long.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean feature-summary install install-smoke professional-check quality quality-json release-check test uninstall validate
+.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check feature-summary install install-manifest install-smoke professional-check quality quality-json release-check test uninstall validate

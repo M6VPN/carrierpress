@@ -214,7 +214,7 @@ implemented until code, docs, and validation are complete.
 
 ## M16 Packaging and Release Polish
 
-- [ ] Add distro packaging notes.
-- [ ] Review install paths and staged install output.
-- [ ] Document source tarball checksum workflow.
-- [ ] Keep release publication manual and local.
+- [x] Add distro packaging notes.
+- [x] Review install paths and staged install output.
+- [x] Document source tarball checksum workflow.
+- [x] Keep release publication manual and local.

@@ -142,6 +142,8 @@ jobs:
         run: |
           make clean
           make
+          make install-smoke
+          make install-manifest
           make DESTDIR=build/stage PREFIX=/usr install
 
       - name: Verify staged files
@@ -160,3 +162,6 @@ jobs:
           test ! -e build/stage/usr/lib/pkgconfig/carrierpress.pc
           test ! -e build/stage/usr/share/man/man1/carrierpress.1
           test ! -e build/stage/usr/include/carrierpress
+
+      - name: Source archive checksum
+        run: make dist-check

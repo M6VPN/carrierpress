@@ -47,6 +47,10 @@ Before tagging:
 
 ```sh
 make release-check
+make install-smoke
+make install-manifest
+make dist-check
+ls -lh build/dist/
 git status --short
 ```
 
@@ -70,6 +74,13 @@ gh release view v0.1.1
 ```
 
 No project script creates tags, pushes tags, or publishes GitHub releases.
+
+`make dist-check` creates and verifies a local source archive and checksum
+under `build/dist/`. It does not create tags, push tags, call GitHub tools, or
+publish a release.
+
+The archive is created from committed `HEAD`. Commit the intended release
+changes before treating the archive as the release source.
 
 ## Local Release Assets
 

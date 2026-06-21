@@ -258,6 +258,7 @@ Stage an install for packaging review:
 ```sh
 make DESTDIR=build/stage PREFIX=/usr install
 make install-smoke
+make install-manifest
 ```
 
 Uninstall from the same prefix:
@@ -274,6 +275,14 @@ your chosen prefix:
 ```sh
 pkg-config --cflags --libs carrierpress
 man carrierpress
+```
+
+Packaging notes, staged install review, and the local source archive workflow
+are documented in [docs/packaging.md](docs/packaging.md):
+
+```sh
+make dist-check
+ls -lh build/dist/
 ```
 
 The active Linux-host validation path is:
