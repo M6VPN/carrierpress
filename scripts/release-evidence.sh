@@ -23,6 +23,20 @@ git status --short
 printf '\nlatest tag:\n'
 git describe --tags --abbrev=0 2>/dev/null || printf 'none\n'
 
+printf '\nquality JSON evidence:\n'
+if [ -f build/quality-report.json ]; then
+	printf 'build/quality-report.json\n'
+else
+	printf 'not present; run: make -s quality-json > build/quality-report.json\n'
+fi
+
+printf '\nsource archive evidence:\n'
+if [ -d build/dist ]; then
+	find build/dist -type f -print | sort
+else
+	printf 'build/dist not present; run make dist-check\n'
+fi
+
 printf '\nstaged install files:\n'
 if [ -d build/stage ]; then
 	find build/stage -type f -print | sort

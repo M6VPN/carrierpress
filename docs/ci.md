@@ -101,6 +101,10 @@ The pushed `v0.1.0` tag was created before the R3 packaging polish. R3, R4,
 and R5 are post-v0.1.0 hardening and are prepared for the `v0.1.1` patch
 release.
 
+The `v0.2.0` release uses the same CI boundary plus the v0.2 workflow checks
+documented in `docs/release-checklist.md`. CI does not publish v0.2.0 or any
+other release.
+
 ## CAT and PTT Boundary
 
 CAT validation in CI is read-only. flrig and hamlib profiles validate status

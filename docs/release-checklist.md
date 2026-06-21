@@ -1,9 +1,9 @@
-# v0.1 Release Checklist
+# CarrierPress Release Checklist
 
-This checklist is for preparing a CarrierPress v0.1 tag. v0.1 is a portable
-audio-processing foundation for legal transmitter audio chains and test loads.
-It is not an RF generator, transmitter controller, certified compliance tool, or
-licence-compliance tool.
+This checklist is for preparing CarrierPress release tags. CarrierPress is a
+portable audio-processing foundation for legal transmitter audio chains and
+test loads. It is not an RF generator, transmitter controller, certified
+compliance tool, or licence-compliance tool.
 
 ## Pre-release Assumptions
 
@@ -36,7 +36,7 @@ make professional-check
 make autodetect
 ```
 
-These checks must pass before a v0.1 tag. They use deterministic fixtures and
+These checks must pass before a release tag. They use deterministic fixtures and
 do not prove broadcast-processor quality, RF compliance, transmitter safety, or
 legal operation.
 
@@ -53,6 +53,35 @@ operation.
 
 GitHub Actions CI must also be green before a release tag is created. CI
 coverage is documented in `docs/ci.md`.
+
+## v0.2.0 Release Checks
+
+Use this section when preparing `v0.2.0`, the release for v0.2 audio-workflow
+milestones M11 through M16.
+
+- Confirm `./carrierpress --version` prints `CarrierPress 0.2.0`.
+- Confirm staged install pkg-config metadata reports `Version: 0.2.0`.
+- Confirm `docs/release-notes-v0.2.0.md` is the release body.
+- Confirm `docs/release-notes-v0.1.md` and `docs/release-notes-v0.1.1.md`
+  remain historical and unchanged except for index-style links elsewhere.
+- Confirm profile examples validate through `./examples/profile-self-test.sh`.
+- Confirm config examples validate through `./examples/config-self-test.sh`.
+- Confirm playlist checking works through `./examples/playlist-check.sh`.
+- Confirm `make quality-json` produces valid JSON.
+- Confirm processed-file sidecar reporting is documented in
+  `docs/measurement-reports.md`.
+- Confirm OpenBSD and sndio notes are present in `docs/openbsd-sndio.md`.
+- Confirm packaging notes are present in `docs/packaging.md`.
+- Confirm `make install-manifest` prints the expected staged files.
+- Confirm `make dist-check` creates and verifies the source tarball checksum.
+- Confirm GitHub Actions CI is green before tagging.
+- Confirm no release docs or package metadata claim RF generation, transmitter
+  compliance, licence compliance, regulatory approval, legal bandwidth, or
+  broadcast quality.
+- Confirm CAT remains read-only and no CAT write/control commands were added.
+- Confirm T5 PTT control remains deferred and unchecked in `TODO.md`.
+- Confirm release publication remains manual and local per
+  `docs/release-procedure.md`.
 
 ## v0.1.1 Patch Release Checks
 
@@ -221,8 +250,9 @@ Use `docs/openbsd-sndio.md` for the manual checklist.
 - Confirm `build/stage/usr/lib/pkgconfig/carrierpress.pc` reports the release
   version.
 - Confirm `build/stage/usr/share/man/man1/carrierpress.1` is installed.
-- Confirm `build/dist/carrierpress-0.1.1.tar.gz` exists after `make dist-check`.
-- Confirm `build/dist/carrierpress-0.1.1.tar.gz.sha256` verifies.
+- Confirm the current `build/dist/carrierpress-VERSION.tar.gz` exists after
+  `make dist-check`.
+- Confirm the current `build/dist/carrierpress-VERSION.tar.gz.sha256` verifies.
 - Confirm no package metadata claims RF generation, transmitter compliance,
   licence compliance, regulatory approval, legal bandwidth, or broadcast
   quality.

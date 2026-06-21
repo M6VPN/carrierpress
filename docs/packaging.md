@@ -98,7 +98,7 @@ ls -lh build/dist/
 ```
 
 `make dist` uses `git archive` from `HEAD`, writes
-`build/dist/carrierpress-0.1.1.tar.gz`, and writes a `.sha256` file. It does
+`build/dist/carrierpress-0.2.0.tar.gz`, and writes a `.sha256` file. It does
 not create tags, push tags, call GitHub tools, or publish a release.
 
 Commit intended release changes before using the archive as a release source,

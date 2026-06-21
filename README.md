@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/M6VPN/carrierpress/actions/workflows/ci.yml/badge.svg)](https://github.com/M6VPN/carrierpress/actions/workflows/ci.yml)
 
-CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.1 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, optional dehummer, optional natural dynamics and low-level boost stages, optional multiband compressor foundations, optional static bass EQ, optional restoration and auto EQ analysis taps, an optional conservative declipper research stage, and a safe peak limiter.
+CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.2 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, optional dehummer, optional natural dynamics and low-level boost stages, optional multiband compressor foundations, optional static bass EQ, optional restoration and auto EQ analysis taps, an optional conservative declipper research stage, a safe peak limiter, strict profile/config workflows, playlist diagnostics, and engineering report output.
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
@@ -141,7 +141,7 @@ Run the stricter professional validation gate:
 make professional-check
 ```
 
-Run the v0.1 release validation profile:
+Run the release validation profile:
 
 ```sh
 make release-check
@@ -154,10 +154,11 @@ Release notes, the manual GitHub release procedure, and optional local release
 asset guidance are documented in
 [`docs/release-notes-v0.1.md`](docs/release-notes-v0.1.md),
 [`docs/release-notes-v0.1.1.md`](docs/release-notes-v0.1.1.md),
+[`docs/release-notes-v0.2.0.md`](docs/release-notes-v0.2.0.md),
 [`docs/release-procedure.md`](docs/release-procedure.md), and
 [`docs/release-assets-v0.1.md`](docs/release-assets-v0.1.md).
-The latest patch release notes are in
-[`docs/release-notes-v0.1.1.md`](docs/release-notes-v0.1.1.md). Safe example
+The current release notes are in
+[`docs/release-notes-v0.2.0.md`](docs/release-notes-v0.2.0.md). Safe example
 wrappers are documented in [`examples/README.md`](examples/README.md). Manual
 release commands remain documented in
 [`docs/release-procedure.md`](docs/release-procedure.md).
@@ -1398,12 +1399,12 @@ SSB presets:
 
 SSB mode does not add carrier generation, sideband modulation, VOX, CAT control, or transmitter keying. It shapes baseband audio only.
 
-| Area       | v0.1 status                          |
-| ---------- | ------------------------------------ |
-| Core DSP   | Portable C17 float32 block API       |
-| Offline IO | Optional WAV foundation in progress  |
-| Live audio | Optional PortAudio foundation        |
-| OpenBSD IO | Optional sndio foundation, deferred  |
+| Area       | v0.2 status                           |
+| ---------- | ------------------------------------- |
+| Core DSP   | Portable C17 float32 block API        |
+| Offline IO | Optional WAV processing and reporting |
+| Live audio | Optional PortAudio foundation         |
+| OpenBSD IO | Optional sndio foundation, manual validation |
 | MCU port   | Planned STM32H753/CMSIS-DSP, deferred |
 
 ## Roadmap
@@ -1414,6 +1415,9 @@ audio workflow improvements such as profile files, config-file support,
 playout polish, measurement reports, GUI/TUI polish, sndio validation notes,
 and packaging notes. PTT control remains deferred to the separate T5 safety
 gate.
+
+The v0.2.0 release notes are in
+[`docs/release-notes-v0.2.0.md`](docs/release-notes-v0.2.0.md).
 
 ## License
 

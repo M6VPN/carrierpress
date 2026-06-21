@@ -1,8 +1,9 @@
-# CarrierPress v0.1 Release Procedure
+# CarrierPress Release Procedure
 
-This is a manual local procedure for creating a `v0.1.0` GitHub release. It
-uses local `git` and `gh` commands only when the operator runs them. CarrierPress
-project scripts must not create tags, push tags, or publish GitHub releases.
+This is a manual local procedure for creating CarrierPress GitHub releases. It
+uses local `git` and `gh` commands only when the operator runs them.
+CarrierPress project scripts must not create tags, push tags, or publish GitHub
+releases.
 
 ## Required Validation
 
@@ -37,6 +38,59 @@ LDFLAGS="-L$HAMLIB_LOCAL/src/.libs" \
 LD_LIBRARY_PATH="$HAMLIB_LOCAL/src/.libs:${LD_LIBRARY_PATH:-}" \
 	make WITH_HAMLIB=1 test
 ```
+
+## v0.2.0 Release
+
+`v0.2.0` is the release for the v0.2 audio-workflow milestones M11 through M16.
+Do not rewrite or retag `v0.1.0` or `v0.1.1`.
+
+Before tagging:
+
+```sh
+make clean
+make
+make test
+make -j test
+make validate
+make quality
+make quality-json
+make professional-check
+make install-smoke
+make install-manifest
+make dist-check
+make release-check
+./carrierpress --version
+git status --short
+```
+
+Confirm GitHub Actions CI is green for the same commit. Confirm
+`./carrierpress --version` prints `CarrierPress 0.2.0`.
+
+Create and publish the tag only by explicit local operator action:
+
+```sh
+git tag -a v0.2.0 -m "CarrierPress v0.2.0"
+git push origin v0.2.0
+```
+
+Create the GitHub release manually:
+
+```sh
+gh release create v0.2.0 \
+	--title "CarrierPress v0.2.0" \
+	--notes-file docs/release-notes-v0.2.0.md
+gh release view v0.2.0
+```
+
+No project script creates tags, pushes tags, uploads artifacts, or publishes
+GitHub releases.
+
+`make dist-check` creates and verifies a local source archive and checksum
+under `build/dist/`. It does not create tags, push tags, call GitHub tools, or
+publish a release.
+
+The archive is created from committed `HEAD`. Commit the intended release
+changes before treating the archive as the release source.
 
 ## v0.1.1 Patch Release
 

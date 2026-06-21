@@ -218,3 +218,13 @@ implemented until code, docs, and validation are complete.
 - [x] Review install paths and staged install output.
 - [x] Document source tarball checksum workflow.
 - [x] Keep release publication manual and local.
+
+## R7 v0.2.0 Release Prep
+
+- [x] Bump project version to 0.2.0.
+- [x] Add v0.2.0 release notes.
+- [x] Update manual v0.2.0 release procedure.
+- [x] Update release checklist for v0.2.0.
+- [x] Preserve v0.1.0 and v0.1.1 historical notes.
+- [x] Keep PTT control deferred.
+- [x] Keep release publication manual and local.
