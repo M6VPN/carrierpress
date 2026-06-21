@@ -85,6 +85,14 @@ Check playlist syntax without PortAudio or playback:
 ./examples/playlist-workflow.sh examples/playout-playlist.txt
 ```
 
+Check a future batch WAV plan without processing audio or writing outputs:
+
+```sh
+./examples/batch-check.sh
+```
+
+Batch dry-run validation is documented in `docs/batch-workflow.md`.
+
 To play the playlist, edit `examples/playout-playlist.txt` so it points at local
 WAV files, then run:
 

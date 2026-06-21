@@ -1,0 +1,8 @@
+# CarrierPress - Developed by M6VPN (M6VPN@tuta.com)
+# carrierpress/examples/batch-list.txt
+#
+# CarrierPress batch dry-run example.
+# Paths are not opened by --batch-check.
+audio/intro.wav
+audio/program.wav
+audio/outro.wav

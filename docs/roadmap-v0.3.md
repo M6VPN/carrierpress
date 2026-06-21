@@ -49,7 +49,8 @@ decoders unless a later optional decoder milestone is selected.
 
 Planned work:
 
-- Define a simple batch input-list format.
+- Define a simple batch input-list format. The current dry-run format is
+  documented in [`batch-workflow.md`](batch-workflow.md).
 - Add batch dry-run validation.
 - Add safe output-directory planning.
 - Avoid overwriting existing files unless explicitly requested.

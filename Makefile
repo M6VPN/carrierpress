@@ -39,6 +39,7 @@ CORE_SRCS = \
 	src/cp_am.c \
 	src/cp_audio.c \
 	src/cp_auto_eq.c \
+	src/cp_batch.c \
 	src/cp_bass_eq.c \
 	src/cp_biquad.c \
 	src/cp_block.c \
@@ -72,6 +73,7 @@ TEST_SRCS = \
 	tests/test_am.c \
 	tests/test_audio.c \
 	tests/test_auto_eq.c \
+	tests/test_batch.c \
 	tests/test_bass_eq.c \
 	tests/test_biquad.c \
 	tests/test_cat.c \
@@ -209,6 +211,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_am \
 	$(TEST_BIN_DIR)/test_audio \
 	$(TEST_BIN_DIR)/test_auto_eq \
+	$(TEST_BIN_DIR)/test_batch \
 	$(TEST_BIN_DIR)/test_bass_eq \
 	$(TEST_BIN_DIR)/test_biquad \
 	$(TEST_BIN_DIR)/test_cat \
@@ -345,6 +348,10 @@ $(TEST_BIN_DIR)/test_audio: $(TEST_OBJ_DIR)/tests/test_audio.o $(TEST_CORE_OBJS)
 $(TEST_BIN_DIR)/test_auto_eq: $(TEST_OBJ_DIR)/tests/test_auto_eq.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_auto_eq.o $(TEST_CORE_OBJS) $(LDLIBS)
+
+$(TEST_BIN_DIR)/test_batch: $(TEST_OBJ_DIR)/tests/test_batch.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_batch.o $(TEST_CORE_OBJS) $(LDLIBS)
 
 $(TEST_BIN_DIR)/test_bass_eq: $(TEST_OBJ_DIR)/tests/test_bass_eq.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
@@ -492,6 +499,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_am
 	./$(TEST_BIN_DIR)/test_audio
 	./$(TEST_BIN_DIR)/test_auto_eq
+	./$(TEST_BIN_DIR)/test_batch
 	./$(TEST_BIN_DIR)/test_bass_eq
 	./$(TEST_BIN_DIR)/test_biquad
 	./$(TEST_BIN_DIR)/test_cat

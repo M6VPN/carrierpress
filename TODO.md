@@ -246,12 +246,12 @@ implemented until code, docs, and validation are complete.
 
 ## M18 Batch Offline WAV Workflow
 
-- [ ] Define batch input-list format.
-- [ ] Add batch dry-run validation.
-- [ ] Add safe output-directory handling.
-- [ ] Avoid overwriting files unless explicitly requested.
+- [x] Define batch input-list format.
+- [x] Add batch dry-run validation.
+- [x] Add safe output-directory handling.
+- [x] Avoid overwriting files unless explicitly requested.
 - [ ] Generate sidecar reports per processed file.
-- [ ] Keep compressed formats external unless selected later.
+- [x] Keep compressed formats external unless selected later.
 
 ## M19 Report Schema and Compare Tools
 

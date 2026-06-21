@@ -784,6 +784,20 @@ lines, and reports unsupported entries such as MP3, FLAC, OGG, Opus, and M4A as
 formats to convert to WAV first. It checks playlist syntax and supported
 extensions only; it does not require the listed files to exist.
 
+Batch dry-run validation plans future offline WAV batch outputs without
+processing audio or writing output files:
+
+```sh
+./carrierpress --batch-check examples/batch-list.txt --batch-output-dir processed
+```
+
+`--batch-check` validates one WAV input path per non-comment line, plans output
+and `.report.json` sidecar paths from the input basename, detects duplicate
+planned paths, reports existing output/report files, and rejects compressed
+formats with a convert-to-WAV-first message. `--allow-overwrite` only changes
+dry-run overwrite diagnostics; this slice still writes no batch outputs. See
+[docs/batch-workflow.md](docs/batch-workflow.md).
+
 WAV playout requires a `WITH_SNDFILE=1 WITH_PORTAUDIO=1` build. Without it, `--play` and `--playlist` exit with:
 
 ```text

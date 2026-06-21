@@ -58,6 +58,7 @@ static int	parse_size_arg(const char *, size_t *);
 static int	parse_uint_arg(const char *, unsigned int *);
 static int	parse_uint64_arg(const char *, uint64_t *);
 static int	run_cat_status(const struct cp_cat_config *);
+static int	run_batch_check(const char *, const char *, int);
 static int	run_gui_demo(const struct cp_audio_config *,
 		    const struct cp_cat_config *, const char *);
 static int	run_list_devices(void);
@@ -98,6 +99,8 @@ main(int argc, char *argv[])
 	const char *playlist_check_path;
 	const char *playlist_path;
 	const char *report_path;
+	const char *batch_check_path;
+	const char *batch_output_dir;
 	const char *gui_screenshot_path;
 	const char *validate_config_path;
 	const char *validate_profile_path;
@@ -110,6 +113,7 @@ main(int argc, char *argv[])
 	uint64_t parsed_uint64;
 	size_t parsed_size;
 	int arg;
+	int batch_allow_overwrite;
 	int cat_status_mode;
 	int channels_explicit;
 	int config_seen;
@@ -127,9 +131,12 @@ main(int argc, char *argv[])
 	playlist_check_path = NULL;
 	playlist_path = NULL;
 	report_path = NULL;
+	batch_check_path = NULL;
+	batch_output_dir = NULL;
 	gui_screenshot_path = NULL;
 	validate_config_path = NULL;
 	validate_profile_path = NULL;
+	batch_allow_overwrite = 0;
 	cat_status_mode = 0;
 	channels_explicit = 0;
 	config_seen = 0;
@@ -204,6 +211,14 @@ main(int argc, char *argv[])
 		} else if (strcmp(argv[arg], "--playlist-check") == 0 &&
 		    arg + 1 < argc) {
 			playlist_check_path = argv[++arg];
+		} else if (strcmp(argv[arg], "--batch-check") == 0 &&
+		    arg + 1 < argc) {
+			batch_check_path = argv[++arg];
+		} else if (strcmp(argv[arg], "--batch-output-dir") == 0 &&
+		    arg + 1 < argc) {
+			batch_output_dir = argv[++arg];
+		} else if (strcmp(argv[arg], "--allow-overwrite") == 0) {
+			batch_allow_overwrite = 1;
 		} else if (strcmp(argv[arg], "--list-devices") == 0) {
 			list_devices = 1;
 		} else if (strcmp(argv[arg], "--live") == 0) {
@@ -761,8 +776,9 @@ main(int argc, char *argv[])
 		if (input_path != NULL || output_path != NULL ||
 		    report_path != NULL || play_path != NULL ||
 		    playlist_path != NULL || live_mode ||
-		    playlist_check_path != NULL || list_devices ||
-		    self_test_mode || cat_status_mode) {
+		    playlist_check_path != NULL || batch_check_path != NULL ||
+		    batch_output_dir != NULL || batch_allow_overwrite ||
+		    list_devices || self_test_mode || cat_status_mode) {
 			usage(argv[0]);
 			return 1;
 		}
@@ -775,8 +791,10 @@ main(int argc, char *argv[])
 		if (input_path != NULL || output_path != NULL ||
 		    report_path != NULL || play_path != NULL ||
 		    playlist_path != NULL ||
-		    playlist_check_path != NULL || live_mode || list_devices ||
-		    self_test_mode || audio_config.gui_enabled) {
+		    playlist_check_path != NULL || batch_check_path != NULL ||
+		    batch_output_dir != NULL || batch_allow_overwrite ||
+		    live_mode || list_devices || self_test_mode ||
+		    audio_config.gui_enabled) {
 			usage(argv[0]);
 			return 1;
 		}
@@ -788,8 +806,9 @@ main(int argc, char *argv[])
 		if (input_path != NULL || output_path != NULL ||
 		    report_path != NULL || play_path != NULL ||
 		    playlist_path != NULL ||
-		    playlist_check_path != NULL || live_mode || list_devices ||
-		    audio_config.gui_enabled) {
+		    playlist_check_path != NULL || batch_check_path != NULL ||
+		    batch_output_dir != NULL || batch_allow_overwrite ||
+		    live_mode || list_devices || audio_config.gui_enabled) {
 			usage(argv[0]);
 			return 1;
 		}
@@ -800,14 +819,31 @@ main(int argc, char *argv[])
 	if (playlist_check_path != NULL) {
 		if (input_path != NULL || output_path != NULL ||
 		    report_path != NULL || play_path != NULL ||
-		    playlist_path != NULL || live_mode || list_devices ||
-		    audio_config.tui_enabled ||
+		    playlist_path != NULL || batch_check_path != NULL ||
+		    batch_output_dir != NULL || batch_allow_overwrite ||
+		    live_mode || list_devices || audio_config.tui_enabled ||
 		    audio_config.gui_enabled) {
 			usage(argv[0]);
 			return 1;
 		}
 
 		return run_playlist_check(playlist_check_path);
+	}
+
+	if (batch_check_path != NULL || batch_output_dir != NULL ||
+	    batch_allow_overwrite) {
+		if (input_path != NULL || output_path != NULL ||
+		    report_path != NULL || play_path != NULL ||
+		    playlist_path != NULL || playlist_check_path != NULL ||
+		    live_mode || list_devices || audio_config.tui_enabled ||
+		    audio_config.gui_enabled || batch_check_path == NULL ||
+		    batch_output_dir == NULL) {
+			usage(argv[0]);
+			return 1;
+		}
+
+		return run_batch_check(batch_check_path, batch_output_dir,
+		    batch_allow_overwrite);
 	}
 
 	if (play_path != NULL || playlist_path != NULL) {
@@ -1494,6 +1530,33 @@ run_live_audio(const struct cp_audio_config *config,
 }
 
 static int
+run_batch_check(const char *list_path, const char *output_dir,
+	int allow_overwrite)
+{
+	struct cp_batch_plan plan;
+	struct cp_batch_error error;
+	int status;
+
+	memset(&error, 0, sizeof(error));
+	status = cp_batch_plan_load(list_path, output_dir, &plan, &error);
+	if (status == CP_BATCH_OK)
+		status = cp_batch_plan_check_overwrites(&plan,
+		    allow_overwrite);
+	cp_batch_plan_print(&plan, stdout);
+	if (status != CP_BATCH_OK && error.reason[0] != '\0') {
+		fprintf(stderr, "carrierpress: batch %s: ", list_path);
+		if (error.line_number > 0)
+			fprintf(stderr, "line %zu: ", error.line_number);
+		if (error.path[0] != '\0')
+			fprintf(stderr, "%s: ", error.path);
+		fprintf(stderr, "%s\n", error.reason);
+	}
+	cp_batch_plan_free(&plan);
+
+	return status == CP_BATCH_OK ? 0 : 1;
+}
+
+static int
 run_playlist_check(const char *path)
 {
 	struct cp_playlist_check_result result;
@@ -1939,6 +2002,8 @@ usage(const char *program)
 	    "[--report report.json]\n", program);
 	printf("usage: %s --play input.wav [--output-device N]\n", program);
 	printf("usage: %s --playlist-check playlist.txt\n", program);
+	printf("usage: %s --batch-check batch.txt --batch-output-dir "
+	    "processed [--allow-overwrite]\n", program);
 	printf("usage: %s --playlist playlist.txt [--output-device N]\n",
 	    program);
 	printf("usage: %s --gui-demo --cat-backend mock --cat-frequency-hz "
