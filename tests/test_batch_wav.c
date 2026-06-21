@@ -35,7 +35,8 @@ static int	write_text(const char *, const char *);
 int
 main(void)
 {
-	if (!ensure_dir(TEST_BATCH_WAV_OUTDIR) ||
+	if (!ensure_dir(TEST_BATCH_WAV_DIR) ||
+	    !ensure_dir(TEST_BATCH_WAV_OUTDIR) ||
 	    !ensure_dir(TEST_BATCH_WAV_CLIOUT)) {
 		printf("test_batch_wav: could not create scratch dirs\n");
 		return 1;

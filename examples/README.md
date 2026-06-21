@@ -192,8 +192,10 @@ playlist cue slots can be requested from the GUI with `l` and `p`, then
 validated outside SDL callbacks. Deferred output-device selection requests can
 be created with `o` and `O`. In live PortAudio GUI mode, those requests are
 consumed by the host loop and applied by restarting the stream outside SDL and
-audio callbacks. Future file dialogs, playout switching, and sndio switching
-are documented in `docs/gui-workflow.md`.
+audio callbacks. If the requested device cannot open or start, CarrierPress
+tries once to fall back to the previous live output device. Future file dialogs,
+playout switching, and sndio switching are documented in
+`docs/gui-workflow.md`.
 
 ## Read-only CAT
 

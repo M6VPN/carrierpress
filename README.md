@@ -215,7 +215,9 @@ Future GUI file and output-device workflows are documented in
 are not active file dialogs. The GUI can request preconfigured WAV and playlist
 cue slots with `l` and `p`. In live PortAudio GUI mode, `o` and `O` create a
 deferred output-device request that is consumed by the host loop and applied by
-restarting the stream outside SDL and audio callbacks:
+restarting the stream outside SDL and audio callbacks. If the requested device
+cannot open or start, CarrierPress tries once to fall back to the previous live
+output device:
 
 ```sh
 ./carrierpress --gui-demo --gui-cue-wav audio/program.wav --gui-cue-playlist playlist.txt

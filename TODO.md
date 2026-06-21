@@ -308,11 +308,10 @@ implemented until code, docs, and validation are complete.
 
 - [x] Apply deferred output-device requests in the outer host loop.
 - [x] Stop and reopen audio streams outside GUI callbacks.
-- [ ] Preserve safe fallback on device-open failure.
+- [x] Preserve safe fallback on device-open failure.
 - [x] Keep CLI-only output-device selection working.
 
 ## M23C3 GUI Output Device Follow-up
 
-- [ ] Add safe fallback to the previous output device on restart-open failure.
 - [ ] Add GUI playout output-device restart if selected.
 - [ ] Add sndio GUI output-device restart if selected.

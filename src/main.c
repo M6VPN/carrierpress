@@ -78,6 +78,12 @@ static int	run_gui_demo(const struct cp_audio_config *,
 		    const struct cp_cat_config *,
 		    const struct cp_operator_state *, const char *);
 static int	run_list_devices(void);
+#ifdef CP_WITH_PORTAUDIO
+static int	run_live_audio_portaudio(const struct cp_audio_config *,
+		    const struct cp_cat_config *,
+		    const struct cp_operator_state *);
+static int	live_portaudio_status_can_fallback(int);
+#endif
 static int	run_live_audio(const struct cp_audio_config *,
 		    const struct cp_cat_config *,
 		    const struct cp_operator_state *);
@@ -1678,6 +1684,82 @@ run_list_devices(void)
 #endif
 }
 
+#ifdef CP_WITH_PORTAUDIO
+static int
+run_live_audio_portaudio(const struct cp_audio_config *config,
+	const struct cp_cat_config *cat_config,
+	const struct cp_operator_state *operator_state)
+{
+	struct cp_audio_config current_config;
+	struct cp_portaudio_run_result result;
+	int fallback_available;
+	int fallback_output_device;
+	int requested_output_device;
+	int restart_count;
+	int status;
+	int trying_fallback;
+
+	current_config = *config;
+	fallback_available = 0;
+	fallback_output_device = current_config.output_device;
+	requested_output_device = current_config.output_device;
+	restart_count = 0;
+	trying_fallback = 0;
+	for (;;) {
+		status = cp_portaudio_run_with_result(&current_config,
+		    cat_config, operator_state, &stop_requested, &result);
+		if (status != CP_PORTAUDIO_OK) {
+			if (fallback_available && !trying_fallback &&
+			    live_portaudio_status_can_fallback(status)) {
+				printf("carrierpress: requested output device "
+				    "%d failed: %s\n", requested_output_device,
+				    cp_portaudio_status_string(status));
+				printf("carrierpress: falling back to previous "
+				    "output device %d\n",
+				    fallback_output_device);
+				current_config.output_device =
+				    fallback_output_device;
+				fallback_available = 0;
+				trying_fallback = 1;
+				stop_requested = 0;
+				continue;
+			}
+			printf("carrierpress: PortAudio failed: %s\n",
+			    cp_portaudio_status_string(status));
+			return 1;
+		}
+		trying_fallback = 0;
+		fallback_available = 0;
+		if (!result.restart_requested)
+			break;
+		if (restart_count >= CP_LIVE_RESTART_LIMIT) {
+			printf("carrierpress: PortAudio output-device "
+			    "restart limit reached\n");
+			return 1;
+		}
+		restart_count++;
+		fallback_output_device = current_config.output_device;
+		requested_output_device = result.requested_output_device;
+		current_config.output_device = result.requested_output_device;
+		fallback_available = 1;
+		stop_requested = 0;
+		if (!current_config.gui_enabled)
+			break;
+	}
+
+	return 0;
+}
+
+static int
+live_portaudio_status_can_fallback(int status)
+{
+	return status == CP_PORTAUDIO_ERR_CONFIG ||
+	    status == CP_PORTAUDIO_ERR_DEVICE ||
+	    status == CP_PORTAUDIO_ERR_STREAM ||
+	    status == CP_PORTAUDIO_ERR_START;
+}
+#endif
+
 static int
 run_live_audio(const struct cp_audio_config *config,
 	const struct cp_cat_config *cat_config,
@@ -1727,39 +1809,7 @@ run_live_audio(const struct cp_audio_config *config,
 #endif
 
 #ifdef CP_WITH_PORTAUDIO
-	{
-		struct cp_audio_config current_config;
-		struct cp_portaudio_run_result result;
-		int restart_count;
-
-		current_config = *config;
-		restart_count = 0;
-		for (;;) {
-			status = cp_portaudio_run_with_result(&current_config,
-			    cat_config, operator_state, &stop_requested,
-			    &result);
-			if (status != CP_PORTAUDIO_OK) {
-				printf("carrierpress: PortAudio failed: %s\n",
-				    cp_portaudio_status_string(status));
-				return 1;
-			}
-			if (!result.restart_requested)
-				break;
-			if (restart_count >= CP_LIVE_RESTART_LIMIT) {
-				printf("carrierpress: PortAudio output-device "
-				    "restart limit reached\n");
-				return 1;
-			}
-			restart_count++;
-			current_config.output_device =
-			    result.requested_output_device;
-			stop_requested = 0;
-			if (!current_config.gui_enabled)
-				break;
-		}
-	}
-
-	return 0;
+	return run_live_audio_portaudio(config, cat_config, operator_state);
 #else
 	if (config->gui_enabled) {
 		printf("PortAudio support not enabled. Rebuild with "

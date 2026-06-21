@@ -130,9 +130,10 @@ Output-device request rules:
   stream with the requested output device.
 - Device open, close, stream stop, and stream restart work is not performed
   from SDL event/render callbacks or real-time audio callbacks.
-- If the requested device cannot be opened, the live PortAudio path fails
-  clearly through the normal PortAudio error path. Automatic fallback to the
-  previous device is future work.
+- If the requested device cannot be opened or started, the live PortAudio path
+  reports the requested-device failure and tries once to fall back to the
+  previous output device that was already running. If that fallback also fails,
+  CarrierPress exits with the normal PortAudio error.
 - Playout and sndio output-device switching remain future work unless selected
   in a later slice.
 
@@ -160,9 +161,10 @@ not add native file dialogs.
 
 M23C1 adds output-device selection display and a deferred output-device
 selection request. M23C2 applies that deferred request in the live PortAudio
-GUI path by stopping and reopening audio streams outside callbacks. Automatic
-fallback on device-open failure, playout switching, and sndio switching remain
-future work.
+GUI path by stopping and reopening audio streams outside callbacks. M23C2B adds
+a single fallback attempt to the previous live PortAudio output device when a
+requested device cannot be opened or started. Playout switching and sndio
+switching remain future work.
 
 Any GUI TRANSMIT or CAT control toggle is T5-only work. It must require the T5
 safety gates: compile-time opt-in, runtime arming, mock-only tests first,
