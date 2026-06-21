@@ -26,10 +26,21 @@ checks AM and SSB command-line profile overrides.
 
 Config examples live in `configs/` and are documented in
 `docs/config-file-format.md`. They are parsed and validated by the base test
-suite, but runtime `--config PATH` loading is deferred to M12B.
+suite and can be loaded explicitly with `--config PATH`.
 
 Config files are host workflow defaults only. They do not configure DSP chain
 presets, CAT, PTT, rig frequency, rig mode, transmit state, or station control.
+
+```sh
+./examples/config-self-test.sh
+```
+
+GUI config testing requires `WITH_GUI=1`:
+
+```sh
+make WITH_GUI=1
+./examples/config-gui-demo.sh
+```
 
 ## WAV Processing
 

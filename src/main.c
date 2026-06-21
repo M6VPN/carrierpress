@@ -30,8 +30,10 @@
 
 static volatile sig_atomic_t stop_requested = 0;
 
-static int	apply_profile_arg(const char *, struct cp_block_config *,
-		    struct cp_audio_config *);
+static int	apply_config_arg(const char *, struct cp_config_file *,
+		    struct cp_block_config *, struct cp_audio_config *);
+static int	apply_profile_arg(const char *, const char *,
+		    struct cp_block_config *, struct cp_audio_config *);
 static void	handle_signal(int);
 static int	parse_am_preset(struct cp_am_config *, const char *);
 static int	parse_bass_eq_preset(struct cp_bass_eq_config *,
@@ -76,12 +78,14 @@ main(int argc, char *argv[])
 	struct cp_audio_config audio_config;
 	struct cp_block_config block_config;
 	struct cp_cat_config cat_config;
+	struct cp_config_file config_file;
 	double parsed_double;
 	uint64_t parsed_uint64;
 	size_t parsed_size;
 	int arg;
 	int cat_status_mode;
 	int channels_explicit;
+	int config_seen;
 	int gui_demo_mode;
 	int live_mode;
 	int list_devices;
@@ -95,6 +99,7 @@ main(int argc, char *argv[])
 	gui_screenshot_path = NULL;
 	cat_status_mode = 0;
 	channels_explicit = 0;
+	config_seen = 0;
 	gui_demo_mode = 0;
 	live_mode    = 0;
 	list_devices = 0;
@@ -103,6 +108,7 @@ main(int argc, char *argv[])
 	cp_audio_default_config(&audio_config);
 	cp_block_default_config(&block_config, CP_CHANNELS_MONO);
 	cp_cat_default_config(&cat_config);
+	cp_config_file_init(&config_file);
 	block_config.sample_rate = CP_SELF_TEST_RATE;
 
 	if (argc == 2 && strcmp(argv[1], "--version") == 0) {
@@ -113,11 +119,24 @@ main(int argc, char *argv[])
 	for (arg = 1; arg < argc; arg++) {
 		if (strcmp(argv[arg], "--self-test") == 0) {
 			self_test_mode = 1;
+			audio_config.tui_enabled = 0;
+			audio_config.gui_enabled = 0;
 		} else if (strcmp(argv[arg], "--input") == 0 && arg + 1 < argc) {
 			input_path = argv[++arg];
 		} else if (strcmp(argv[arg], "--output") == 0 &&
 		    arg + 1 < argc) {
 			output_path = argv[++arg];
+		} else if (strcmp(argv[arg], "--config") == 0 &&
+		    arg + 1 < argc) {
+			if (config_seen) {
+				fprintf(stderr,
+				    "carrierpress: only one config may be loaded\n");
+				return 1;
+			}
+			if (!apply_config_arg(argv[++arg], &config_file,
+			    &block_config, &audio_config))
+				return 1;
+			config_seen = 1;
 		} else if (strcmp(argv[arg], "--profile") == 0 &&
 		    arg + 1 < argc) {
 			if (profile_seen) {
@@ -125,7 +144,7 @@ main(int argc, char *argv[])
 				    "carrierpress: only one profile may be loaded\n");
 				return 1;
 			}
-			if (!apply_profile_arg(argv[++arg], &block_config,
+			if (!apply_profile_arg(argv[++arg], NULL, &block_config,
 			    &audio_config))
 				return 1;
 			profile_seen = 1;
@@ -341,6 +360,7 @@ main(int argc, char *argv[])
 		} else if (strcmp(argv[arg], "--tui") == 0) {
 #ifdef CP_WITH_TUI
 			audio_config.tui_enabled = 1;
+			audio_config.gui_enabled = 0;
 #else
 			printf("TUI support not enabled. Rebuild with WITH_TUI=1.\n");
 			return 1;
@@ -348,6 +368,7 @@ main(int argc, char *argv[])
 		} else if (strcmp(argv[arg], "--gui") == 0) {
 #ifdef CP_WITH_GUI
 			audio_config.gui_enabled = 1;
+			audio_config.tui_enabled = 0;
 #else
 			printf("GUI support not enabled. Rebuild with WITH_GUI=1.\n");
 			return 1;
@@ -356,6 +377,7 @@ main(int argc, char *argv[])
 #ifdef CP_WITH_GUI
 			gui_demo_mode = 1;
 			audio_config.gui_enabled = 1;
+			audio_config.tui_enabled = 0;
 #else
 			printf("GUI support not enabled. Rebuild with WITH_GUI=1.\n");
 			return 1;
@@ -365,6 +387,7 @@ main(int argc, char *argv[])
 #ifdef CP_WITH_GUI
 			gui_demo_mode = 1;
 			audio_config.gui_enabled = 1;
+			audio_config.tui_enabled = 0;
 			gui_screenshot_path = argv[++arg];
 #else
 			printf("GUI support not enabled. Rebuild with WITH_GUI=1.\n");
@@ -750,7 +773,49 @@ main(int argc, char *argv[])
 }
 
 static int
-apply_profile_arg(const char *path, struct cp_block_config *block_config,
+apply_config_arg(const char *path, struct cp_config_file *config,
+	struct cp_block_config *block_config,
+	struct cp_audio_config *audio_config)
+{
+	struct cp_config_file_error error;
+	const char *profile_path;
+	int status;
+
+	if (path == NULL || config == NULL || block_config == NULL ||
+	    audio_config == NULL)
+		return 0;
+
+	(void)memset(&error, 0, sizeof(error));
+	status = cp_config_file_parse_file(path, config, &error);
+	if (status != CP_OK) {
+		fprintf(stderr, "carrierpress: config %s: ", path);
+		if (error.line_number > 0)
+			fprintf(stderr, "line %zu: ", error.line_number);
+		if (error.key[0] != '\0')
+			fprintf(stderr, "%s: ", error.key);
+		if (error.message[0] != '\0')
+			fprintf(stderr, "%s\n", error.message);
+		else
+			fprintf(stderr, "invalid config\n");
+		return 0;
+	}
+	if (cp_config_file_apply_to_audio_config(config, audio_config) !=
+	    CP_OK) {
+		fprintf(stderr, "carrierpress: config %s: invalid audio "
+		    "settings\n", path);
+		return 0;
+	}
+	profile_path = cp_config_file_profile_path(config);
+	if (profile_path != NULL &&
+	    !apply_profile_arg(profile_path, path, block_config, audio_config))
+		return 0;
+
+	return 1;
+}
+
+static int
+apply_profile_arg(const char *path, const char *config_path,
+	struct cp_block_config *block_config,
 	struct cp_audio_config *audio_config)
 {
 	struct cp_profile profile;
@@ -768,7 +833,11 @@ apply_profile_arg(const char *path, struct cp_block_config *block_config,
 	if (status == CP_OK)
 		return 1;
 
-	fprintf(stderr, "carrierpress: profile %s: ", path);
+	if (config_path != NULL)
+		fprintf(stderr, "carrierpress: config %s profile %s: ",
+		    config_path, path);
+	else
+		fprintf(stderr, "carrierpress: profile %s: ", path);
 	if (error.line_number > 0)
 		fprintf(stderr, "line %zu: ", error.line_number);
 	if (error.key[0] != '\0')
@@ -1556,6 +1625,8 @@ usage(const char *program)
 {
 	printf("usage: %s --version\n", program);
 	printf("usage: %s --self-test\n", program);
+	printf("usage: %s --config configs/default.conf --self-test\n",
+	    program);
 	printf("usage: %s --profile profiles/am-safe.profile --self-test\n",
 	    program);
 	printf("usage: %s --self-test --dehummer --hum-frequency 50 "

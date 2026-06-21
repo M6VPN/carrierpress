@@ -346,9 +346,18 @@ Config files are host and workflow defaults only. Audio-chain settings belong
 in profiles. Config files do not control CAT, PTT, rig frequency, rig mode,
 transmit state, flrig, hamlib, or station-control state.
 
-M12A defines and tests the config format. Runtime `--config PATH` loading is
-planned for M12B, so current command-line defaults are unchanged unless a later
-slice explicitly loads a config file.
+Use `--config PATH` to load a config file explicitly:
+
+```sh
+./carrierpress --config configs/default.conf --self-test
+./carrierpress --config configs/live-pulse.conf --live
+./carrierpress --config configs/gui-demo.conf --gui-demo
+```
+
+Config loading is order-sensitive. CarrierPress starts with built-in defaults,
+applies `--config PATH` where it appears, loads any `profile = PATH` named by
+that config, and then lets later command-line options override those values.
+Options before `--config` may be overwritten by the config.
 
 ## Usage
 

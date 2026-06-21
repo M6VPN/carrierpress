@@ -10,6 +10,7 @@
 #include "cp_config_file.h"
 
 static int	test_comments_and_blank_lines(void);
+static int	test_apply_config_updates_audio(void);
 static int	test_duplicate_key_rejected(void);
 static int	test_forbidden_keys_rejected(void);
 static int	test_invalid_backend_rejected(void);
@@ -22,6 +23,8 @@ int
 main(void)
 {
 	if (!test_valid_examples())
+		return 1;
+	if (!test_apply_config_updates_audio())
 		return 1;
 	if (!test_unknown_key_rejected())
 		return 1;
@@ -39,6 +42,76 @@ main(void)
 		return 1;
 
 	return 0;
+}
+
+static int
+test_apply_config_updates_audio(void)
+{
+	struct cp_audio_config audio_config;
+	struct cp_config_file config;
+	struct cp_config_file_error error;
+
+	cp_audio_default_config(&audio_config);
+	if (cp_config_file_parse_file("configs/default.conf", &config,
+	    &error) != CP_OK ||
+	    !cp_config_file_has_profile(&config) ||
+	    strcmp(cp_config_file_profile_path(&config),
+	    "profiles/am-safe.profile") != 0 ||
+	    cp_config_file_apply_to_audio_config(&config,
+	    &audio_config) != CP_OK ||
+	    audio_config.backend != CP_AUDIO_BACKEND_AUTO ||
+	    audio_config.channels != CP_CHANNELS_STEREO ||
+	    audio_config.block_size != 256 ||
+	    audio_config.meter_interval_ms != 1000 ||
+	    audio_config.sample_rate != 48000.0 ||
+	    audio_config.sample_rate_explicit != 1 ||
+	    audio_config.tui_enabled != 0 ||
+	    audio_config.gui_enabled != 0) {
+		printf("test_config_file: default config apply failed\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&audio_config);
+	audio_config.block_size = 1024;
+	cp_config_file_init(&config);
+	if (cp_config_file_parse_line("channels = 1\n", 40, &config,
+	    &error) != CP_OK ||
+	    cp_config_file_apply_to_audio_config(&config,
+	    &audio_config) != CP_OK ||
+	    audio_config.channels != CP_CHANNELS_MONO ||
+	    audio_config.block_size != 1024 ||
+	    audio_config.sample_rate == 0.0) {
+		printf("test_config_file: unset fields were not preserved\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&audio_config);
+	audio_config.gui_enabled = 1;
+	cp_config_file_init(&config);
+	if (cp_config_file_parse_line("tui = on\n", 41, &config,
+	    &error) != CP_OK ||
+	    cp_config_file_apply_to_audio_config(&config,
+	    &audio_config) != CP_OK ||
+	    audio_config.tui_enabled != 1 ||
+	    audio_config.gui_enabled != 0) {
+		printf("test_config_file: tui did not override gui\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&audio_config);
+	audio_config.tui_enabled = 1;
+	cp_config_file_init(&config);
+	if (cp_config_file_parse_line("gui = on\n", 42, &config,
+	    &error) != CP_OK ||
+	    cp_config_file_apply_to_audio_config(&config,
+	    &audio_config) != CP_OK ||
+	    audio_config.gui_enabled != 1 ||
+	    audio_config.tui_enabled != 0) {
+		printf("test_config_file: gui did not override tui\n");
+		return 0;
+	}
+
+	return 1;
 }
 
 static int
@@ -215,6 +288,16 @@ test_invalid_ranges_rejected(void)
 	    cp_config_file_validate(&config, &error) == CP_OK ||
 	    strcmp(error.key, "device") != 0) {
 		printf("test_config_file: device conflict accepted\n");
+		return 0;
+	}
+	cp_config_file_init(&config);
+	if (cp_config_file_parse_line("tui = on\n", 37, &config,
+	    &error) != CP_OK ||
+	    cp_config_file_parse_line("gui = on\n", 38, &config,
+	    &error) != CP_OK ||
+	    cp_config_file_validate(&config, &error) == CP_OK ||
+	    strcmp(error.key, "gui") != 0) {
+		printf("test_config_file: tui gui conflict accepted\n");
 		return 0;
 	}
 

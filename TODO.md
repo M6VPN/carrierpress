@@ -178,16 +178,16 @@ implemented until code, docs, and validation are complete.
 - [x] Add config parser.
 - [x] Add config validation tests.
 - [x] Document default config search paths.
-- [ ] Keep command-line options overriding config values.
+- [x] Keep command-line options overriding config values.
 - [x] Keep PTT/control settings out of ordinary audio config.
 
 ## M12B Runtime Config Loading
 
-- [ ] Add `--config PATH`.
-- [ ] Apply config files before later command-line overrides.
-- [ ] Load profile paths named by config files.
-- [ ] Document runtime config precedence.
-- [ ] Keep config parsing outside real-time audio callbacks.
+- [x] Add `--config PATH`.
+- [x] Apply config files before later command-line overrides.
+- [x] Load profile paths named by config files.
+- [x] Document runtime config precedence.
+- [x] Keep config parsing outside real-time audio callbacks.
 
 ## M13 Playout Workflow Polish
 

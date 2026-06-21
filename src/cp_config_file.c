@@ -42,6 +42,72 @@ cp_config_file_init(struct cp_config_file *config)
 }
 
 int
+cp_config_file_apply_to_audio_config(const struct cp_config_file *config,
+	struct cp_audio_config *audio_config)
+{
+	size_t channels;
+	double sample_rate;
+
+	if (config == NULL || audio_config == NULL)
+		return CP_ERR_NULL;
+	if (cp_config_file_validate(config, NULL) != CP_OK)
+		return CP_ERR_RANGE;
+
+	channels = audio_config->channels;
+	sample_rate = audio_config->sample_rate;
+	if (config->seen_audio_backend)
+		audio_config->backend = config->audio_backend;
+	if (config->seen_device) {
+		audio_config->device_name = config->device_name;
+		audio_config->input_device = CP_AUDIO_DEFAULT_DEVICE;
+		audio_config->output_device = CP_AUDIO_DEFAULT_DEVICE;
+	}
+	if (config->seen_input_device || config->seen_output_device)
+		audio_config->device_name = NULL;
+	if (config->seen_input_device)
+		audio_config->input_device = config->input_device;
+	if (config->seen_output_device)
+		audio_config->output_device = config->output_device;
+	if (config->seen_sample_rate) {
+		sample_rate = config->sample_rate;
+		audio_config->sample_rate_explicit = 1;
+	}
+	if (config->seen_channels)
+		channels = config->channels;
+	if (cp_audio_config_set_format(audio_config, channels,
+	    sample_rate) != CP_AUDIO_OK)
+		return CP_ERR_RANGE;
+	if (config->seen_block_size)
+		audio_config->block_size = config->block_size;
+	if (config->seen_meter_interval_ms)
+		audio_config->meter_interval_ms = config->meter_interval_ms;
+	if (config->seen_tui) {
+		audio_config->tui_enabled = config->tui_enabled;
+		if (config->tui_enabled)
+			audio_config->gui_enabled = 0;
+	}
+	if (config->seen_gui) {
+		audio_config->gui_enabled = config->gui_enabled;
+		if (config->gui_enabled)
+			audio_config->tui_enabled = 0;
+	}
+
+	if (cp_audio_validate_config(audio_config) != CP_AUDIO_OK)
+		return CP_ERR_RANGE;
+
+	return CP_OK;
+}
+
+int
+cp_config_file_has_profile(const struct cp_config_file *config)
+{
+	if (config == NULL)
+		return 0;
+
+	return config->seen_profile && config->profile_path[0] != '\0';
+}
+
+int
 cp_config_file_parse_file(const char *path, struct cp_config_file *config,
 	struct cp_config_file_error *error)
 {
@@ -277,6 +343,15 @@ cp_config_file_parse_line(const char *line, size_t line_number,
 	    "unknown key");
 }
 
+const char *
+cp_config_file_profile_path(const struct cp_config_file *config)
+{
+	if (!cp_config_file_has_profile(config))
+		return NULL;
+
+	return config->profile_path;
+}
+
 int
 cp_config_file_validate(const struct cp_config_file *config,
 	struct cp_config_file_error *error)
@@ -315,6 +390,10 @@ cp_config_file_validate(const struct cp_config_file *config,
 	    config->meter_interval_ms > CP_AUDIO_MAX_METER_MS)
 		return cp_config_file_set_error(error, 0,
 		    "meter_interval_ms", "invalid meter interval");
+	if (config->seen_tui && config->seen_gui &&
+	    config->tui_enabled && config->gui_enabled)
+		return cp_config_file_set_error(error, 0, "gui",
+		    "tui and gui cannot both be enabled");
 
 	return CP_OK;
 }

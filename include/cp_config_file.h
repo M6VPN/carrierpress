@@ -47,10 +47,14 @@ struct cp_config_file_error {
 };
 
 void	cp_config_file_init(struct cp_config_file *);
+int	cp_config_file_apply_to_audio_config(const struct cp_config_file *,
+	    struct cp_audio_config *);
+int	cp_config_file_has_profile(const struct cp_config_file *);
 int	cp_config_file_parse_file(const char *, struct cp_config_file *,
 	    struct cp_config_file_error *);
 int	cp_config_file_parse_line(const char *, size_t,
 	    struct cp_config_file *, struct cp_config_file_error *);
+const char	*cp_config_file_profile_path(const struct cp_config_file *);
 int	cp_config_file_validate(const struct cp_config_file *,
 	    struct cp_config_file_error *);
 
