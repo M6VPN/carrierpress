@@ -1410,11 +1410,10 @@ SSB mode does not add carrier generation, sideband modulation, VOX, CAT control,
 ## Roadmap
 
 The next planning cycle is documented in
-[`docs/roadmap-v0.2.md`](docs/roadmap-v0.2.md). v0.2 is focused on practical
-audio workflow improvements such as profile files, config-file support,
-playout polish, measurement reports, GUI/TUI polish, sndio validation notes,
-and packaging notes. PTT control remains deferred to the separate T5 safety
-gate.
+[`docs/roadmap-v0.3.md`](docs/roadmap-v0.3.md). v0.3 is focused on operator
+polish, effective profile/config inspection, safer batch offline WAV workflow,
+report schema polish, GUI/TUI status clarity, library examples, and packaging
+maintainer notes. PTT control remains deferred to the separate T5 safety gate.
 
 The v0.2.0 release notes are in
 [`docs/release-notes-v0.2.0.md`](docs/release-notes-v0.2.0.md).

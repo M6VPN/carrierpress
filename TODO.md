@@ -228,3 +228,56 @@ implemented until code, docs, and validation are complete.
 - [x] Preserve v0.1.0 and v0.1.1 historical notes.
 - [x] Keep PTT control deferred.
 - [x] Keep release publication manual and local.
+
+## V3 v0.3.0 Planning
+
+- [x] Add v0.3 roadmap document.
+- [x] Keep PTT control deferred to T5.
+- [x] Preserve v0.2.0 release boundary.
+
+## M17 Effective Config/Profile Inspection
+
+- [ ] Add `--print-effective-config`.
+- [ ] Add `--validate-profile PATH`.
+- [ ] Add `--validate-config PATH`.
+- [ ] Show profile/config source paths.
+- [ ] Document final override precedence in inspection output.
+- [ ] Keep PTT and station-control settings out of ordinary inspection output.
+
+## M18 Batch Offline WAV Workflow
+
+- [ ] Define batch input-list format.
+- [ ] Add batch dry-run validation.
+- [ ] Add safe output-directory handling.
+- [ ] Avoid overwriting files unless explicitly requested.
+- [ ] Generate sidecar reports per processed file.
+- [ ] Keep compressed formats external unless selected later.
+
+## M19 Report Schema and Compare Tools
+
+- [ ] Add report schema version field.
+- [ ] Document stable report fields.
+- [ ] Add report summary mode.
+- [ ] Add report compare helper.
+- [ ] Keep reports free of transmitter-compliance and regulatory claims.
+
+## M20 TUI/GUI Operator Polish
+
+- [ ] Display active profile/config state.
+- [ ] Display cue/status context more clearly.
+- [ ] Improve spectrum and level labels.
+- [ ] Improve screenshot/evidence metadata.
+- [ ] Keep CLI usable without TUI/GUI.
+
+## M21 Library/API Examples
+
+- [ ] Add minimal library usage example.
+- [ ] Review public headers.
+- [ ] Document stable and experimental API areas.
+- [ ] Keep internal implementation details private where practical.
+
+## M22 Packaging Maintainer Notes
+
+- [ ] Add package-maintainer checklist.
+- [ ] Add example distro packaging notes.
+- [ ] Keep source tarball/checksum workflow local and manual.
