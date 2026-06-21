@@ -12,6 +12,7 @@ Offline WAV processing is available as an optional M1 foundation when built with
 
 - [Requirements](#requirements)
 - [Setup](#setup)
+- [Examples](#examples)
 - [Usage](#usage)
 - [Development](#development)
 - [License](#license)
@@ -272,6 +273,28 @@ make quality
 make professional-check
 make WITH_SNDFILE=1 WITH_PORTAUDIO=1 WITH_TUI=1
 make WITH_SNDFILE=1 WITH_PORTAUDIO=1 test
+```
+
+## Examples
+
+Safe example wrappers are in [`examples/`](examples/). They cover self-test,
+WAV processing, WAV playout, GUI demo, GUI screenshot capture, mock CAT,
+read-only flrig CAT, read-only hamlib CAT, local Hamlib 4.7.1 validation, and
+local release validation.
+
+The examples do not use `sudo`, install packages, create tags, publish GitHub
+releases, key PTT, change rig frequency, change rig mode, or send CAT
+write/control commands. Optional examples require matching build flags:
+`WITH_SNDFILE=1` for WAV processing, `WITH_SNDFILE=1 WITH_PORTAUDIO=1` for
+playout, `WITH_GUI=1` for GUI examples, `WITH_FFTW=1` for GUI spectrum, and
+`WITH_FLRIG=1` or `WITH_HAMLIB=1` for read-only CAT backend examples.
+
+Start with:
+
+```sh
+make
+./examples/self-test.sh
+./examples/cat-mock-status.sh
 ```
 
 ## Usage

@@ -135,3 +135,13 @@ implemented until code, docs, and validation are complete.
 - [x] Add README CI badge.
 - [x] Keep releases manual and local.
 - [x] Keep PTT control deferred.
+
+## R5 Examples and Sample Configs
+
+- [x] Add examples README.
+- [x] Add safe self-test examples.
+- [x] Add WAV processing and playout examples.
+- [x] Add GUI demo and screenshot examples.
+- [x] Add read-only CAT mock, flrig, and hamlib examples.
+- [x] Add local Hamlib 4.7.1 validation example.
+- [x] Keep all examples free of PTT control and release publication.

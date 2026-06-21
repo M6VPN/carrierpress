@@ -1,0 +1,7 @@
+# CarrierPress - Developed by M6VPN (M6VPN@tuta.com)
+# carrierpress/examples/playout-playlist.txt
+
+# Replace these with local WAV files before running playlist playout.
+# Unsupported or missing entries should be reported by CarrierPress.
+media/example-1.wav
+media/example-2.wav

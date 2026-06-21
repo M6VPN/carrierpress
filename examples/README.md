@@ -1,0 +1,92 @@
+# CarrierPress Examples
+
+These examples are safe command wrappers for local CarrierPress testing. They
+do not install packages, use sudo, publish releases, create tags, key a radio,
+or send CAT write/control commands.
+
+Run examples from the repository root after building `./carrierpress`.
+
+## Base Examples
+
+```sh
+make
+./examples/self-test.sh
+./examples/cat-mock-status.sh
+./examples/release-check-local.sh
+```
+
+`self-test.sh` runs the built-in tone through the default chain plus AM, SSB,
+and dehummer/multiband examples.
+
+## WAV Processing
+
+WAV processing requires a `WITH_SNDFILE=1` build:
+
+```sh
+make WITH_SNDFILE=1
+./examples/wav-process.sh input.wav output.wav
+```
+
+The wrapper processes a WAV file through the current chain with dehummer and a
+three-band multiband stage. It does not overwrite the input file.
+
+## Playout
+
+WAV playout requires a `WITH_SNDFILE=1 WITH_PORTAUDIO=1` build and a usable
+PortAudio output device:
+
+```sh
+make WITH_SNDFILE=1 WITH_PORTAUDIO=1
+./examples/playout.sh input.wav
+```
+
+To test playlist syntax, edit `examples/playout-playlist.txt` so it points at
+local WAV files, then run:
+
+```sh
+./carrierpress --playlist examples/playout-playlist.txt --meter-interval-ms 1000
+```
+
+## GUI Demo
+
+The GUI monitor requires `WITH_GUI=1`. The spectrum panel requires
+`WITH_FFTW=1`:
+
+```sh
+make WITH_GUI=1 WITH_FFTW=1
+./examples/gui-demo.sh
+./examples/gui-screenshot.sh
+```
+
+The screenshot example writes `build/gui-demo.bmp`.
+
+## Read-only CAT
+
+CAT examples are read-only. They do not key PTT, change frequency, change
+mode, or send transmit commands.
+
+```sh
+./examples/cat-mock-status.sh
+./examples/cat-flrig-readonly.sh
+./examples/cat-hamlib-readonly.sh
+```
+
+`cat-flrig-readonly.sh` expects flrig XML-RPC on `127.0.0.1:12345`. If flrig is
+not running, an unavailable or error status is expected. `cat-hamlib-readonly.sh`
+uses hamlib model `1`, the hamlib dummy backend documented in the main README.
+
+## Local Hamlib 4.7.1
+
+Local Hamlib validation is optional and local-only:
+
+```sh
+./examples/local-hamlib-4.7.1.sh
+```
+
+The script defaults to `/home/dgm/vendored/hamlib-4.7.1`, does not install
+Hamlib, does not require a radio, and does not make CarrierPress depend on the
+local vendored path. Override with:
+
+```sh
+HAMLIB_LOCAL=/path/to/hamlib ./examples/local-hamlib-4.7.1.sh
+```
