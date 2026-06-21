@@ -155,3 +155,58 @@ implemented until code, docs, and validation are complete.
 - [x] Keep v0.1.0 historical notes unchanged.
 - [x] Keep PTT control deferred.
 - [x] Keep release publication manual and local.
+
+## V2 v0.2 Planning
+
+- [x] Add v0.2 roadmap document.
+- [x] Keep PTT control deferred to T5.
+- [x] Preserve v0.1.1 release boundary.
+
+## M11 Preset and Profile Files
+
+- [ ] Define profile file format.
+- [ ] Add profile parser with strict validation.
+- [ ] Add AM-safe, AM-shortwave, SSB-speech, and file-cleanup example profiles.
+- [ ] Add profile CLI option.
+- [ ] Add profile tests.
+- [ ] Document command-line override precedence.
+- [ ] Keep PTT and station-control settings out of ordinary audio profiles.
+
+## M12 Config File Support
+
+- [ ] Define config file scope.
+- [ ] Add config parser.
+- [ ] Add config validation tests.
+- [ ] Document default config search paths.
+- [ ] Keep command-line options overriding config values.
+- [ ] Keep PTT/control settings out of ordinary audio config.
+
+## M13 Playout Workflow Polish
+
+- [ ] Improve playlist diagnostics.
+- [ ] Add playlist dry-run validation.
+- [ ] Add cue/status output.
+- [ ] Document external decode workflow.
+- [ ] Keep unsupported formats clearly reported.
+- [ ] Keep MP3, FLAC, and OGG support separate and optional unless selected.
+
+## M14 Measurement Report Export
+
+- [ ] Add machine-readable quality report output.
+- [ ] Add processed-file report sidecar option.
+- [ ] Document report fields as engineering metrics, not compliance proof.
+- [ ] Keep reports free of transmitter-compliance and regulatory claims.
+
+## M15 OpenBSD/sndio Validation
+
+- [ ] Add OpenBSD build notes.
+- [ ] Add sndio manual validation checklist.
+- [ ] Add sndio device notes.
+- [ ] Keep Linux PortAudio path unchanged.
+
+## M16 Packaging and Release Polish
+
+- [ ] Add distro packaging notes.
+- [ ] Review install paths and staged install output.
+- [ ] Document source tarball checksum workflow.
+- [ ] Keep release publication manual and local.

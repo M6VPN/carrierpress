@@ -15,6 +15,7 @@ Offline WAV processing is available as an optional M1 foundation when built with
 - [Examples](#examples)
 - [Usage](#usage)
 - [Development](#development)
+- [Roadmap](#roadmap)
 - [License](#license)
 
 ## Requirements
@@ -1295,6 +1296,15 @@ SSB mode does not add carrier generation, sideband modulation, VOX, CAT control,
 | Live audio | Optional PortAudio foundation        |
 | OpenBSD IO | Optional sndio foundation, deferred  |
 | MCU port   | Planned STM32H753/CMSIS-DSP, deferred |
+
+## Roadmap
+
+The next planning cycle is documented in
+[`docs/roadmap-v0.2.md`](docs/roadmap-v0.2.md). v0.2 is focused on practical
+audio workflow improvements such as profile files, config-file support,
+playout polish, measurement reports, GUI/TUI polish, sndio validation notes,
+and packaging notes. PTT control remains deferred to the separate T5 safety
+gate.
 
 ## License
 
