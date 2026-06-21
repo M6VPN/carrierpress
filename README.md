@@ -610,6 +610,18 @@ Process a mono or stereo WAV file through the current chain:
 ./carrierpress --input input.wav --output output.wav
 ```
 
+Write a processed-file JSON sidecar report:
+
+```sh
+make WITH_SNDFILE=1
+./carrierpress --input input.wav --output output.wav --report output.report.json
+```
+
+The sidecar report contains engineering metrics for the input and processed
+output. It does not prove RF bandwidth, transmitter compliance, regulatory
+approval, legal operation, or broadcast quality. See
+[docs/measurement-reports.md](docs/measurement-reports.md).
+
 Process a WAV file and print source analysis metrics:
 
 ```sh

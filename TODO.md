@@ -201,7 +201,7 @@ implemented until code, docs, and validation are complete.
 ## M14 Measurement Report Export
 
 - [x] Add machine-readable quality report output.
-- [ ] Add processed-file report sidecar option.
+- [x] Add processed-file report sidecar option.
 - [x] Document report fields as engineering metrics, not compliance proof.
 - [x] Keep reports free of transmitter-compliance and regulatory claims.
 

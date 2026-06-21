@@ -10,7 +10,10 @@
 #include <sndfile.h>
 
 #include "cp_block.h"
+#include "cp_report.h"
 #include "cp_wav.h"
+
+static void	cp_wav_report_init(struct cp_wav_report *, size_t, size_t);
 
 int
 cp_wav_process_file(const char *input_path, const char *output_path,
@@ -54,6 +57,16 @@ cp_wav_process_file_config_full_report(const char *input_path,
 	const struct cp_block_config *block_config,
 	struct cp_wav_report *report)
 {
+	return cp_wav_process_file_config_full_sidecar_report(input_path,
+	    output_path, block_frames, block_config, report, NULL);
+}
+
+int
+cp_wav_process_file_config_full_sidecar_report(const char *input_path,
+	const char *output_path, size_t block_frames,
+	const struct cp_block_config *block_config,
+	struct cp_wav_report *report, const char *report_path)
+{
 	SF_INFO input_info;
 	SF_INFO output_info;
 	SNDFILE *input_file;
@@ -61,8 +74,11 @@ cp_wav_process_file_config_full_report(const char *input_path,
 	cp_sample_t *input;
 	cp_sample_t *output;
 	cp_sample_t *scratch;
+	struct cp_report_processed_file processed_report;
 	struct cp_block_config config;
 	struct cp_block_processor processor;
+	struct cp_wav_report local_report;
+	struct cp_wav_report *active_report;
 	sf_count_t frames_read;
 	sf_count_t frames_written;
 	size_t block_samples;
@@ -74,6 +90,10 @@ cp_wav_process_file_config_full_report(const char *input_path,
 		return CP_WAV_ERR_NULL;
 	if (block_frames == 0)
 		return CP_WAV_ERR_FORMAT;
+
+	active_report = report;
+	if (active_report == NULL && report_path != NULL)
+		active_report = &local_report;
 
 	memset(&input_info, 0, sizeof(input_info));
 	memset(&output_info, 0, sizeof(output_info));
@@ -112,6 +132,9 @@ cp_wav_process_file_config_full_report(const char *input_path,
 		config = *block_config;
 	config.channels = channels;
 	config.sample_rate = (cp_sample_t)input_info.samplerate;
+	if (active_report != NULL)
+		cp_wav_report_init(active_report, (size_t)input_info.samplerate,
+		    channels);
 	status = cp_block_init(&processor, &config);
 	if (status != CP_OK) {
 		free(input);
@@ -140,6 +163,15 @@ cp_wav_process_file_config_full_report(const char *input_path,
 			result = CP_WAV_ERR_PROCESS;
 			break;
 		}
+		if (active_report != NULL) {
+			status = cp_report_metrics_update(&active_report->metrics,
+			    input, output, (size_t)frames_read, channels);
+			if (status != CP_REPORT_OK) {
+				result = CP_WAV_ERR_REPORT;
+				break;
+			}
+			active_report->frames += (uint64_t)frames_read;
+		}
 
 		frames_written = sf_writef_float(output_file, output,
 		    frames_read);
@@ -151,9 +183,9 @@ cp_wav_process_file_config_full_report(const char *input_path,
 
 	if (frames_read < 0 && result == CP_WAV_OK)
 		result = CP_WAV_ERR_READ;
-	if (report != NULL) {
-		report->restoration_metrics = processor.restoration.metrics;
-		report->auto_eq_metrics = processor.auto_eq.metrics;
+	if (active_report != NULL) {
+		active_report->restoration_metrics = processor.restoration.metrics;
+		active_report->auto_eq_metrics = processor.auto_eq.metrics;
 	}
 
 	sf_close(output_file);
@@ -162,7 +194,39 @@ cp_wav_process_file_config_full_report(const char *input_path,
 	free(output);
 	free(scratch);
 
+	if (result == CP_WAV_OK && report_path != NULL &&
+	    active_report != NULL) {
+		(void)memset(&processed_report, 0, sizeof(processed_report));
+		processed_report.input_path = input_path;
+		processed_report.output_path = output_path;
+		processed_report.sample_rate_hz = active_report->sample_rate_hz;
+		processed_report.channels = active_report->channels;
+		processed_report.frames = active_report->frames;
+		processed_report.metrics = &active_report->metrics;
+		processed_report.block_config = &config;
+		processed_report.restoration_metrics =
+		    &active_report->restoration_metrics;
+		processed_report.auto_eq_metrics =
+		    &active_report->auto_eq_metrics;
+		if (cp_report_write_processed_file_json(report_path,
+		    &processed_report) != CP_REPORT_OK)
+			result = CP_WAV_ERR_REPORT;
+	}
+
 	return result;
+}
+
+static void
+cp_wav_report_init(struct cp_wav_report *report, size_t sample_rate_hz,
+	size_t channels)
+{
+	if (report == NULL)
+		return;
+
+	(void)memset(report, 0, sizeof(*report));
+	cp_report_metrics_init(&report->metrics);
+	report->sample_rate_hz = sample_rate_hz;
+	report->channels = channels;
 }
 
 const char *
@@ -189,6 +253,8 @@ cp_wav_status_string(int status)
 		return "could not write WAV data";
 	case CP_WAV_ERR_PROCESS:
 		return "DSP processing failed";
+	case CP_WAV_ERR_REPORT:
+		return "could not write sidecar report";
 	default:
 		return "unknown WAV error";
 	}

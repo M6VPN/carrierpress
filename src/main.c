@@ -60,7 +60,7 @@ static int	run_playout_file(const char *, const struct cp_audio_config *,
 static int	run_playout_playlist(const char *, const struct cp_audio_config *,
 		    const struct cp_block_config *, const struct cp_cat_config *,
 		    volatile sig_atomic_t *);
-static int	run_wav_process(const char *, const char *,
+static int	run_wav_process(const char *, const char *, const char *,
 		    const struct cp_block_config *);
 static int	run_self_test(const struct cp_block_config *);
 static void	print_auto_eq_metrics(const struct cp_auto_eq_metrics *);
@@ -77,6 +77,7 @@ main(int argc, char *argv[])
 	const char *play_path;
 	const char *playlist_check_path;
 	const char *playlist_path;
+	const char *report_path;
 	const char *gui_screenshot_path;
 	struct cp_audio_config audio_config;
 	struct cp_block_config block_config;
@@ -100,6 +101,7 @@ main(int argc, char *argv[])
 	play_path    = NULL;
 	playlist_check_path = NULL;
 	playlist_path = NULL;
+	report_path = NULL;
 	gui_screenshot_path = NULL;
 	cat_status_mode = 0;
 	channels_explicit = 0;
@@ -130,6 +132,9 @@ main(int argc, char *argv[])
 		} else if (strcmp(argv[arg], "--output") == 0 &&
 		    arg + 1 < argc) {
 			output_path = argv[++arg];
+		} else if (strcmp(argv[arg], "--report") == 0 &&
+		    arg + 1 < argc) {
+			report_path = argv[++arg];
 		} else if (strcmp(argv[arg], "--config") == 0 &&
 		    arg + 1 < argc) {
 			if (config_seen) {
@@ -697,7 +702,8 @@ main(int argc, char *argv[])
 
 	if (gui_demo_mode) {
 		if (input_path != NULL || output_path != NULL ||
-		    play_path != NULL || playlist_path != NULL || live_mode ||
+		    report_path != NULL || play_path != NULL ||
+		    playlist_path != NULL || live_mode ||
 		    playlist_check_path != NULL || list_devices ||
 		    self_test_mode || cat_status_mode) {
 			usage(argv[0]);
@@ -710,7 +716,8 @@ main(int argc, char *argv[])
 
 	if (cat_status_mode) {
 		if (input_path != NULL || output_path != NULL ||
-		    play_path != NULL || playlist_path != NULL ||
+		    report_path != NULL || play_path != NULL ||
+		    playlist_path != NULL ||
 		    playlist_check_path != NULL || live_mode || list_devices ||
 		    self_test_mode || audio_config.gui_enabled) {
 			usage(argv[0]);
@@ -722,7 +729,8 @@ main(int argc, char *argv[])
 
 	if (self_test_mode) {
 		if (input_path != NULL || output_path != NULL ||
-		    play_path != NULL || playlist_path != NULL ||
+		    report_path != NULL || play_path != NULL ||
+		    playlist_path != NULL ||
 		    playlist_check_path != NULL || live_mode || list_devices ||
 		    audio_config.gui_enabled) {
 			usage(argv[0]);
@@ -734,8 +742,9 @@ main(int argc, char *argv[])
 
 	if (playlist_check_path != NULL) {
 		if (input_path != NULL || output_path != NULL ||
-		    play_path != NULL || playlist_path != NULL || live_mode ||
-		    list_devices || audio_config.tui_enabled ||
+		    report_path != NULL || play_path != NULL ||
+		    playlist_path != NULL || live_mode || list_devices ||
+		    audio_config.tui_enabled ||
 		    audio_config.gui_enabled) {
 			usage(argv[0]);
 			return 1;
@@ -745,8 +754,8 @@ main(int argc, char *argv[])
 	}
 
 	if (play_path != NULL || playlist_path != NULL) {
-		if (input_path != NULL || output_path != NULL || live_mode ||
-		    list_devices ||
+		if (input_path != NULL || output_path != NULL ||
+		    report_path != NULL || live_mode || list_devices ||
 		    (play_path != NULL && playlist_path != NULL)) {
 			usage(argv[0]);
 			return 1;
@@ -764,7 +773,7 @@ main(int argc, char *argv[])
 		    &block_config, &cat_config, &stop_requested);
 	}
 
-	if (input_path != NULL || output_path != NULL) {
+	if (input_path != NULL || output_path != NULL || report_path != NULL) {
 		if (live_mode || list_devices || audio_config.gui_enabled) {
 			usage(argv[0]);
 			return 1;
@@ -774,7 +783,8 @@ main(int argc, char *argv[])
 			return 1;
 		}
 
-		return run_wav_process(input_path, output_path, &block_config);
+		return run_wav_process(input_path, output_path, report_path,
+		    &block_config);
 	}
 
 	if (list_devices) {
@@ -1384,14 +1394,14 @@ run_playout_playlist(const char *path,
 
 static int
 run_wav_process(const char *input_path, const char *output_path,
-	const struct cp_block_config *config)
+	const char *report_path, const struct cp_block_config *config)
 {
 #ifdef CP_WITH_SNDFILE
 	struct cp_wav_report report;
 	int status;
 
-	status = cp_wav_process_file_config_full_report(input_path,
-	    output_path, CP_WAV_BLOCK_FRAMES, config, &report);
+	status = cp_wav_process_file_config_full_sidecar_report(input_path,
+	    output_path, CP_WAV_BLOCK_FRAMES, config, &report, report_path);
 	if (status != CP_WAV_OK) {
 		printf("carrierpress: WAV processing failed: %s\n",
 		    cp_wav_status_string(status));
@@ -1408,6 +1418,7 @@ run_wav_process(const char *input_path, const char *output_path,
 #else
 	(void)input_path;
 	(void)output_path;
+	(void)report_path;
 	(void)config;
 
 	printf("WAV support not enabled. Rebuild with WITH_SNDFILE=1.\n");
@@ -1672,7 +1683,8 @@ usage(const char *program)
 	    "--low-level-boost\n", program);
 	printf("usage: %s --self-test --ssb --ssb-preset ssb-speech\n",
 	    program);
-	printf("usage: %s --input input.wav --output output.wav\n", program);
+	printf("usage: %s --input input.wav --output output.wav "
+	    "[--report report.json]\n", program);
 	printf("usage: %s --play input.wav [--output-device N]\n", program);
 	printf("usage: %s --playlist-check playlist.txt\n", program);
 	printf("usage: %s --playlist playlist.txt [--output-device N]\n",

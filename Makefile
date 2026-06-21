@@ -56,6 +56,7 @@ CORE_SRCS = \
 	src/cp_natural_dynamics.c \
 	src/cp_playlist_check.c \
 	src/cp_profile.c \
+	src/cp_report.c \
 	src/cp_restoration.c \
 	src/cp_resampler.c \
 	src/cp_ssb.c \
@@ -89,6 +90,7 @@ TEST_SRCS = \
 	tests/test_playlist_check.c \
 	tests/test_profile.c \
 	tests/test_quality_report.c \
+	tests/test_report.c \
 	tests/test_restoration.c \
 	tests/test_resampler.c \
 	tests/test_ssb.c \
@@ -223,6 +225,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_natural_dynamics \
 	$(TEST_BIN_DIR)/test_playlist_check \
 	$(TEST_BIN_DIR)/test_profile \
+	$(TEST_BIN_DIR)/test_report \
 	$(TEST_BIN_DIR)/test_restoration \
 	$(TEST_BIN_DIR)/test_resampler \
 	$(TEST_BIN_DIR)/test_ssb \
@@ -452,6 +455,10 @@ $(TEST_BIN_DIR)/test_quality_report: $(TEST_OBJ_DIR)/tests/test_quality_report.o
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_quality_report.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_report: $(TEST_OBJ_DIR)/tests/test_report.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_report.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_professional_check: $(TEST_OBJ_DIR)/tests/test_professional_check.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_professional_check.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -500,6 +507,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_natural_dynamics
 	./$(TEST_BIN_DIR)/test_playlist_check
 	./$(TEST_BIN_DIR)/test_profile
+	./$(TEST_BIN_DIR)/test_report
 	./$(TEST_BIN_DIR)/test_restoration
 	./$(TEST_BIN_DIR)/test_resampler
 	./$(TEST_BIN_DIR)/test_ssb

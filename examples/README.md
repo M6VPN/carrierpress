@@ -49,12 +49,15 @@ WAV processing requires a `WITH_SNDFILE=1` build:
 ```sh
 make WITH_SNDFILE=1
 ./examples/wav-process.sh input.wav output.wav
+./examples/wav-report.sh input.wav output.wav output.report.json
 ./examples/profile-wav-process.sh profiles/file-cleanup.profile input.wav output.wav
 ```
 
 The wrapper processes a WAV file through the current chain with dehummer and a
 three-band multiband stage. It does not overwrite the input file.
 The profile wrapper loads one safe audio profile before processing.
+The report wrapper writes a processed-file JSON sidecar with engineering
+metrics only.
 
 ## Playout
 

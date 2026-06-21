@@ -11,10 +11,12 @@
 #include "cp_wav.h"
 
 #define TEST_WAV_BLOCK		8
+#define TEST_WAV_BUFSIZ		8192
 #define TEST_WAV_CHANNELS	2
 #define TEST_WAV_FRAMES		32
 #define TEST_WAV_RATE		48000
 
+static int	read_report(const char *, char *, size_t);
 static int	write_fixture(const char *);
 
 int
@@ -24,10 +26,13 @@ main(void)
 	SNDFILE *file;
 	const char *input_path;
 	const char *output_path;
+	const char *report_path;
+	char report_buffer[TEST_WAV_BUFSIZ];
 	int status;
 
 	input_path  = "build/tests/wav_input.wav";
 	output_path = "build/tests/wav_output.wav";
+	report_path = "build/tests/wav_output.report.json";
 
 	if (!write_fixture(input_path)) {
 		printf("test_wav: fixture write failed\n");
@@ -62,7 +67,52 @@ main(void)
 		return 1;
 	}
 
+	status = cp_wav_process_file_config_full_sidecar_report(input_path,
+	    output_path, TEST_WAV_BLOCK, NULL, NULL, report_path);
+	if (status != CP_WAV_OK) {
+		printf("test_wav: report process failed: %s\n",
+		    cp_wav_status_string(status));
+		return 1;
+	}
+	if (!read_report(report_path, report_buffer, sizeof(report_buffer))) {
+		printf("test_wav: report read failed\n");
+		return 1;
+	}
+	if (strstr(report_buffer,
+	    "\"carrierpress_report\": \"processed_file\"") == NULL ||
+	    strstr(report_buffer, "\"status\": \"ok\"") == NULL ||
+	    strstr(report_buffer, "\"input_rms\"") == NULL ||
+	    strstr(report_buffer, "\"output_rms\"") == NULL ||
+	    strstr(report_buffer, "compliance") != NULL) {
+		printf("test_wav: report content mismatch\n");
+		return 1;
+	}
+
 	return 0;
+}
+
+static int
+read_report(const char *path, char *buffer, size_t buffer_size)
+{
+	FILE *file;
+	size_t count;
+
+	if (path == NULL || buffer == NULL || buffer_size == 0)
+		return 0;
+
+	file = fopen(path, "r");
+	if (file == NULL)
+		return 0;
+
+	count = fread(buffer, 1, buffer_size - 1, file);
+	buffer[count] = '\0';
+	if (ferror(file)) {
+		fclose(file);
+		return 0;
+	}
+	fclose(file);
+
+	return 1;
 }
 
 static int

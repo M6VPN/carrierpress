@@ -23,6 +23,13 @@ Run the same QA report as JSON:
 make quality-json
 ```
 
+Save engineering metrics for an offline processed WAV:
+
+```sh
+make WITH_SNDFILE=1
+./carrierpress --input input.wav --output output.wav --report output.report.json
+```
+
 Run the stricter professional validation gate:
 
 ```sh
