@@ -212,8 +212,9 @@ With `WITH_FFTW=1`, the GUI spectrum panel shows a monitor-only processed-output
 spectrum preview. These displays do not alter audio samples.
 Future GUI file and output-device workflows are documented in
 [`docs/gui-workflow.md`](docs/gui-workflow.md). They use deferred requests and
-are not active file dialogs or device-switching controls yet. The GUI can now
-request preconfigured WAV and playlist cue slots with `l` and `p`:
+are not active file dialogs or stream-switching controls yet. The GUI can now
+request preconfigured WAV and playlist cue slots with `l` and `p`, and create a
+deferred output-device selection request with `o` or `O`:
 
 ```sh
 ./carrierpress --gui-demo --gui-cue-wav audio/program.wav --gui-cue-playlist playlist.txt

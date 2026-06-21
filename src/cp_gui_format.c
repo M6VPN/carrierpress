@@ -115,7 +115,7 @@ cp_gui_format_help(enum cp_control_bank bank, int next_enabled,
 
 	return cp_gui_snprintf(buffer, buffer_size,
 	    "Keys: q/Esc stop | %s | a AM s SSB | d hum | m MB1 b MB2 | "
-	    "l WAV p playlist c cue | %s | %s",
+	    "l WAV p playlist c cue | o/O output | %s | %s",
 	    next_enabled ? "n next" : "n next locked", bank_label,
 	    preset_label);
 }
@@ -158,6 +158,35 @@ cp_gui_format_operator_state(const struct cp_operator_state *state,
 	char *buffer, size_t buffer_size)
 {
 	return cp_operator_state_format_summary(state, buffer, buffer_size);
+}
+
+int
+cp_gui_format_output_device(const struct cp_audio_config *config,
+	int current_device, const struct cp_gui_workflow_request *request,
+	char *buffer, size_t buffer_size)
+{
+	char device[64];
+	const char *device_name;
+
+	if (config == NULL || buffer == NULL || buffer_size == 0)
+		return CP_ERR_NULL;
+
+	device_name = config->device_name == NULL ? "-" : config->device_name;
+	(void)cp_gui_format_truncate(device_name, device, sizeof(device),
+	    sizeof(device) - 1);
+
+	if (request != NULL &&
+	    request->type == CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE) {
+		return cp_gui_snprintf(buffer, buffer_size,
+		    "output_device=current:%d requested:%d backend=%s device=%s",
+		    current_device, request->device_index,
+		    cp_audio_backend_string(config->backend), device);
+	}
+
+	return cp_gui_snprintf(buffer, buffer_size,
+	    "output_device=current:%d requested:- backend=%s device=%s",
+	    current_device, cp_audio_backend_string(config->backend),
+	    device);
 }
 
 int

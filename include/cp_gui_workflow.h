@@ -34,7 +34,7 @@ void		cp_gui_workflow_request_clear(
 int		cp_gui_workflow_request_format(
 		    const struct cp_gui_workflow_request *, char *, size_t);
 int		cp_gui_workflow_request_from_key(int, const char *,
-		    const char *, const char *, size_t, size_t,
+		    const char *, const char *, size_t, size_t, int,
 		    struct cp_gui_workflow_request *);
 int		cp_gui_workflow_request_set_device(
 		    struct cp_gui_workflow_request *, int);
@@ -44,6 +44,8 @@ int		cp_gui_workflow_request_set_path(
 int		cp_gui_workflow_request_set_playlist_item(
 		    struct cp_gui_workflow_request *, const char *, size_t);
 int		cp_gui_workflow_request_validate(
+		    struct cp_gui_workflow_request *);
+int		cp_gui_workflow_request_validate_device(
 		    struct cp_gui_workflow_request *);
 const char	*cp_gui_workflow_request_type_string(
 		    enum cp_gui_workflow_request_type);

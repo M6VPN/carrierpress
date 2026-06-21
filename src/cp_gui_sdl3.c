@@ -173,6 +173,7 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	char meters[256];
 	char mode[64];
 	char operator_status[512];
+	char output_device[256];
 	char transport[256];
 	char workflow[256];
 
@@ -199,6 +200,9 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	    operator_status, sizeof(operator_status)) != CP_OK ||
 	    cp_gui_format_workflow(view->workflow_request, workflow,
 	    sizeof(workflow)) != CP_OK ||
+	    cp_gui_format_output_device(view->config, view->output_device,
+	    view->workflow_request, output_device, sizeof(output_device)) !=
+	    CP_OK ||
 	    cp_gui_format_chain(view->snapshot, chain, sizeof(chain)) !=
 	    CP_OK ||
 	    cp_gui_format_cat(view->cat_snapshot, cat, sizeof(cat)) !=
@@ -251,6 +255,8 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	    operator_status);
 	cp_gui_draw_panel_text(renderer, 492.0f, 216.0f, 440.0f, 16.0f,
 	    workflow);
+	cp_gui_draw_panel_text(renderer, 492.0f, 238.0f, 440.0f, 16.0f,
+	    output_device);
 
 	cp_gui_draw_panel(renderer, CP_GUI_MARGIN, 276.0f, 928.0f, 92.0f,
 	    "Processing Chain");
@@ -501,6 +507,7 @@ cp_gui_poll_events(struct cp_gui *gui, const struct cp_gui_view *view)
 		    view != NULL ? view->path : NULL,
 		    view != NULL ? view->playlist_index : 0,
 		    view != NULL ? view->playlist_count : 0,
+		    view != NULL ? view->output_device : -1,
 		    &workflow_request) == CP_OK) {
 			gui->pending_workflow = workflow_request;
 			gui->pending_workflow_set = 1;

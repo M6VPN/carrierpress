@@ -89,13 +89,30 @@ test_device_request(void)
 
 	if (cp_gui_workflow_request_set_device(NULL, 1) != CP_ERR_NULL)
 		return 0;
-	if (cp_gui_workflow_request_set_device(&request, -1) !=
+	if (cp_gui_workflow_request_set_device(&request, -2) !=
 	    CP_ERR_RANGE)
+		return 0;
+	if (cp_gui_workflow_request_set_device(&request, -1) != CP_OK ||
+	    request.type != CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE ||
+	    request.device_index != -1)
 		return 0;
 	if (cp_gui_workflow_request_set_device(&request, 3) != CP_OK)
 		return 0;
 	if (request.type != CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE ||
 	    request.device_index != 3)
+		return 0;
+	if (cp_gui_workflow_request_validate_device(&request) != CP_OK ||
+	    request.validation_status != CP_OK ||
+	    strstr(request.reason, "deferred output device request") == NULL)
+		return 0;
+	request.type = CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE;
+	request.device_index = -2;
+	if (cp_gui_workflow_request_validate_device(&request) !=
+	    CP_ERR_RANGE ||
+	    request.validation_status != CP_ERR_RANGE ||
+	    strstr(request.reason, "invalid output device") == NULL)
+		return 0;
+	if (cp_gui_workflow_request_set_device(&request, 3) != CP_OK)
 		return 0;
 	if (cp_gui_workflow_request_format(&request, buffer,
 	    sizeof(buffer)) != CP_OK ||
@@ -139,29 +156,48 @@ test_key_mapping(void)
 	struct cp_gui_workflow_request request;
 
 	if (cp_gui_workflow_request_from_key('l', "audio/program.wav",
-	    "playlist.txt", "audio/current.wav", 0, 1, &request) != CP_OK ||
+	    "playlist.txt", "audio/current.wav", 0, 1, 3, &request) !=
+	    CP_OK ||
 	    request.type != CP_GUI_WORKFLOW_REQUEST_LOAD_WAV ||
 	    strcmp(request.path, "audio/program.wav") != 0) {
 		printf("test_gui_workflow: WAV key mapping failed\n");
 		return 0;
 	}
 	if (cp_gui_workflow_request_from_key('p', "audio/program.wav",
-	    "playlist.txt", "audio/current.wav", 0, 1, &request) != CP_OK ||
+	    "playlist.txt", "audio/current.wav", 0, 1, 3, &request) !=
+	    CP_OK ||
 	    request.type != CP_GUI_WORKFLOW_REQUEST_LOAD_PLAYLIST ||
 	    strcmp(request.path, "playlist.txt") != 0) {
 		printf("test_gui_workflow: playlist key mapping failed\n");
 		return 0;
 	}
 	if (cp_gui_workflow_request_from_key('c', "audio/program.wav",
-	    "playlist.txt", "audio/current.wav", 2, 5, &request) != CP_OK ||
+	    "playlist.txt", "audio/current.wav", 2, 5, 3, &request) !=
+	    CP_OK ||
 	    request.type != CP_GUI_WORKFLOW_REQUEST_CUE_PLAYLIST_ITEM ||
 	    request.playlist_index != 2 ||
 	    strcmp(request.path, "audio/current.wav") != 0) {
 		printf("test_gui_workflow: cue key mapping failed\n");
 		return 0;
 	}
+	if (cp_gui_workflow_request_from_key('o', "audio/program.wav",
+	    "playlist.txt", "audio/current.wav", 2, 5, -1, &request) !=
+	    CP_OK ||
+	    request.type != CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE ||
+	    request.device_index != 0) {
+		printf("test_gui_workflow: output next key mapping failed\n");
+		return 0;
+	}
+	if (cp_gui_workflow_request_from_key('O', "audio/program.wav",
+	    "playlist.txt", "audio/current.wav", 2, 5, 0, &request) !=
+	    CP_OK ||
+	    request.type != CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE ||
+	    request.device_index != -1) {
+		printf("test_gui_workflow: output prev key mapping failed\n");
+		return 0;
+	}
 	if (cp_gui_workflow_request_from_key('t', "audio/program.wav",
-	    "playlist.txt", "audio/current.wav", 0, 1, &request) !=
+	    "playlist.txt", "audio/current.wav", 0, 1, 3, &request) !=
 	    CP_ERR_RANGE ||
 	    request.type != CP_GUI_WORKFLOW_REQUEST_NONE) {
 		printf("test_gui_workflow: forbidden key mapped request\n");

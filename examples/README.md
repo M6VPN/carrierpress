@@ -189,9 +189,10 @@ The screenshot example writes `build/gui-demo.bmp` and
 
 The current GUI is a monitor and safe-control demo. Preconfigured WAV and
 playlist cue slots can be requested from the GUI with `l` and `p`, then
-validated outside SDL callbacks. Future file dialogs and output-device
-selection are documented in `docs/gui-workflow.md`, but they are not active
-file dialogs or device switches yet.
+validated outside SDL callbacks. Deferred output-device selection requests can
+be created with `o` and `O` and displayed in the GUI, but stream switching is
+not active yet. Future file dialogs and output-device stream switching are
+documented in `docs/gui-workflow.md`.
 
 ## Read-only CAT
 

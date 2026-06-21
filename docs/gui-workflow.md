@@ -2,8 +2,8 @@
 
 This document defines the safe boundary for GUI file cueing and output device
 selection. CarrierPress supports preconfigured GUI cue requests for WAV and
-playlist paths. It does not implement GUI file dialogs or GUI output-device
-switching yet.
+playlist paths, plus deferred output-device selection requests. It does not
+implement GUI file dialogs or GUI audio stream switching yet.
 
 CarrierPress is baseband audio processing software. The GUI workflow path must
 not add RF generation, transmitter compliance claims, licence-compliance
@@ -33,6 +33,7 @@ workflow=load_wav path=audio/program.wav
 workflow=load_playlist path=playlists/show.txt
 workflow=cue_playlist_item index=2 path=audio/program.wav
 workflow=select_output_device device=3
+output_device=current:3 requested:4 backend=auto device=default
 ```
 
 When a request is consumed and validated by the host loop, the status is shown
@@ -42,6 +43,7 @@ in the same bounded format:
 workflow=load_wav status=ok reason=ok path=audio/program.wav
 workflow=load_wav status=error reason=unsupported format: convert to WAV first path=audio/music.mp3
 workflow=load_playlist status=ok reason=ok path=playlists/show.txt
+workflow=select_output_device status=ok reason=deferred output device request device=4
 ```
 
 ## Deferred Application
@@ -103,14 +105,29 @@ practical:
 
 ## Output Device Rules
 
-Future GUI output-device selection should:
+M23C1 adds GUI output-device selection state as a deferred request. The GUI can
+display the current configured output device, requested output device, selected
+backend string, and configured device name. It does not enumerate hardware
+devices in the base build, and it does not open, close, or restart audio
+streams.
 
-- Display available devices only when the selected host backend can enumerate
-  them safely.
-- Represent the user selection as a deferred request.
-- Apply the selection in the outer host loop.
-- Preserve CLI-only output-device selection.
-- Keep device open, close, and restart work outside real-time audio callbacks.
+The GUI keys are:
+
+- `o` requests the next output device index.
+- `O` requests the previous output device index, down to the default-device
+  sentinel.
+
+Output-device request rules:
+
+- The GUI records the request only.
+- The host loop validates the request after it is consumed.
+- The default output-device sentinel is accepted where the CLI already uses it.
+- Non-negative output device indices are accepted for deferred selection.
+- Invalid negative device indices are rejected.
+- Hardware existence is not checked in the base build.
+- CLI-only output-device selection is preserved.
+- Device open, close, stream stop, and stream restart work remain future M23C2
+  work outside GUI callbacks and real-time audio callbacks.
 
 ## Current GUI Controls
 
@@ -134,8 +151,10 @@ M23B adds GUI-safe WAV and playlist cue requests with path validation in the
 outer host loop. It does not process audio inside GUI callbacks, and it does
 not add native file dialogs.
 
-M23C should add output-device selection display and a deferred output-device
-selection request. Stream restart must happen outside callbacks.
+M23C1 adds output-device selection display and a deferred output-device
+selection request. M23C2 should apply that deferred request by stopping and
+reopening audio streams outside callbacks, with safe fallback on device-open
+failure.
 
 Any GUI TRANSMIT or CAT control toggle is T5-only work. It must require the T5
 safety gates: compile-time opt-in, runtime arming, mock-only tests first,

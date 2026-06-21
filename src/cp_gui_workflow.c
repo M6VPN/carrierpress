@@ -73,7 +73,7 @@ cp_gui_workflow_request_format(
 int
 cp_gui_workflow_request_from_key(int key, const char *cue_wav_path,
 	const char *cue_playlist_path, const char *current_path,
-	size_t playlist_index, size_t playlist_count,
+	size_t playlist_index, size_t playlist_count, int output_device,
 	struct cp_gui_workflow_request *request)
 {
 	if (request == NULL)
@@ -102,6 +102,16 @@ cp_gui_workflow_request_from_key(int key, const char *cue_wav_path,
 			return CP_ERR_RANGE;
 		return cp_gui_workflow_request_set_playlist_item(request,
 		    current_path, playlist_index);
+	case 'o':
+		if (output_device < -1)
+			return CP_ERR_RANGE;
+		return cp_gui_workflow_request_set_device(request,
+		    output_device + 1);
+	case 'O':
+		if (output_device <= -1)
+			return cp_gui_workflow_request_set_device(request, -1);
+		return cp_gui_workflow_request_set_device(request,
+		    output_device - 1);
 	default:
 		return CP_ERR_RANGE;
 	}
@@ -113,7 +123,7 @@ cp_gui_workflow_request_set_device(
 {
 	if (request == NULL)
 		return CP_ERR_NULL;
-	if (device_index < 0)
+	if (device_index < -1)
 		return CP_ERR_RANGE;
 
 	cp_gui_workflow_request_clear(request);
@@ -226,16 +236,34 @@ cp_gui_workflow_request_validate(struct cp_gui_workflow_request *request)
 		}
 		return cp_gui_workflow_set_reason(request, "ok");
 	case CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE:
-		request->validation_status = CP_ERR_RANGE;
-		(void)cp_gui_workflow_set_reason(request,
-		    "output device selection deferred to M23C");
-		return CP_ERR_RANGE;
+		return cp_gui_workflow_request_validate_device(request);
 	default:
 		request->validation_status = CP_ERR_RANGE;
 		(void)cp_gui_workflow_set_reason(request,
 		    "unknown workflow request");
 		return CP_ERR_RANGE;
 	}
+}
+
+int
+cp_gui_workflow_request_validate_device(
+	struct cp_gui_workflow_request *request)
+{
+	if (request == NULL)
+		return CP_ERR_NULL;
+	if (request->type != CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE)
+		return CP_ERR_RANGE;
+
+	request->validated = 1;
+	if (request->device_index < -1) {
+		request->validation_status = CP_ERR_RANGE;
+		(void)cp_gui_workflow_set_reason(request,
+		    "invalid output device");
+		return CP_ERR_RANGE;
+	}
+	request->validation_status = CP_OK;
+	return cp_gui_workflow_set_reason(request,
+	    "deferred output device request");
 }
 
 const char *

@@ -19,6 +19,7 @@ static int	test_help_format(void);
 static int	test_meter_format(void);
 static int	test_mode_format(void);
 static int	test_operator_format(void);
+static int	test_output_device_format(void);
 static int	test_truncate_format(void);
 static int	test_transport_format(void);
 static int	test_workflow_format(void);
@@ -41,6 +42,8 @@ main(void)
 	if (!test_transport_format())
 		return 1;
 	if (!test_operator_format())
+		return 1;
+	if (!test_output_device_format())
 		return 1;
 	if (!test_truncate_format())
 		return 1;
@@ -210,6 +213,7 @@ test_help_format(void)
 	    strstr(buffer, "l WAV") == NULL ||
 	    strstr(buffer, "p playlist") == NULL ||
 	    strstr(buffer, "c cue") == NULL ||
+	    strstr(buffer, "o/O output") == NULL ||
 	    strstr(buffer, "AM bank") == NULL) {
 		printf("test_gui_format: AM help mismatch: %s\n", buffer);
 		return 0;
@@ -301,6 +305,46 @@ test_operator_format(void)
 	    strstr(buffer, "hamlib") != NULL ||
 	    strstr(buffer, "flrig") != NULL) {
 		printf("test_gui_format: operator forbidden text: %s\n",
+		    buffer);
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_output_device_format(void)
+{
+	struct cp_audio_config config;
+	struct cp_gui_workflow_request request;
+	char buffer[256];
+
+	cp_audio_default_config(&config);
+	if (cp_gui_format_output_device(&config, CP_AUDIO_DEFAULT_DEVICE,
+	    NULL, buffer, sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "output_device=current:-1 requested:-") == NULL ||
+	    strstr(buffer, "backend=auto") == NULL) {
+		printf("test_gui_format: default output mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	config.device_name =
+	    "very-long-device-name-for-gui-output-display-that-must-fit";
+	if (cp_gui_workflow_request_set_device(&request, 4) != CP_OK ||
+	    cp_gui_format_output_device(&config, 3, &request, buffer,
+	    sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "output_device=current:3 requested:4") == NULL ||
+	    strstr(buffer, "device=") == NULL) {
+		printf("test_gui_format: requested output mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	if (strstr(buffer, "ptt") != NULL ||
+	    strstr(buffer, "transmit") != NULL ||
+	    strstr(buffer, "cat_ptt") != NULL ||
+	    strstr(buffer, "rig_frequency") != NULL ||
+	    strstr(buffer, "rig_mode") != NULL) {
+		printf("test_gui_format: output forbidden text: %s\n",
 		    buffer);
 		return 0;
 	}

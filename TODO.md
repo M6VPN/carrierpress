@@ -286,7 +286,7 @@ implemented until code, docs, and validation are complete.
 
 - [x] Load/cue WAV files from GUI.
 - [x] Load/cue playlist entries from GUI.
-- [ ] Select output sound interface from GUI.
+- [x] Select output sound interface from GUI.
 - [x] Keep GUI file/device changes outside real-time callbacks.
 - [x] Keep GUI transmit controls deferred to T5.
 
@@ -299,7 +299,14 @@ implemented until code, docs, and validation are complete.
 
 ## M23C GUI Output Device Selection
 
-- [ ] Display output device choices.
-- [ ] Add deferred output-device selection request.
+- [x] Display output device choices.
+- [x] Add deferred output-device selection request.
 - [ ] Reopen and restart audio outside callbacks.
-- [ ] Preserve CLI-only output-device selection.
+- [x] Preserve CLI-only output-device selection.
+
+## M23C2 GUI Output Stream Restart
+
+- [ ] Apply deferred output-device requests in the outer host loop.
+- [ ] Stop and reopen audio streams outside GUI callbacks.
+- [ ] Preserve safe fallback on device-open failure.
+- [ ] Keep CLI-only output-device selection working.
