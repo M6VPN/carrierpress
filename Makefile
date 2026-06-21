@@ -51,6 +51,7 @@ CORE_SRCS = \
 	src/cp_dc_blocker.c \
 	src/cp_declipper.c \
 	src/cp_dehummer.c \
+	src/cp_evidence.c \
 	src/cp_gui_format.c \
 	src/cp_limiter.c \
 	src/cp_low_level_boost.c \
@@ -87,6 +88,7 @@ TEST_SRCS = \
 	tests/test_dc_blocker.c \
 	tests/test_declipper.c \
 	tests/test_dehummer.c \
+	tests/test_evidence.c \
 	tests/test_gui_format.c \
 	tests/test_limiter.c \
 	tests/test_low_level_boost.c \
@@ -226,6 +228,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_dc_blocker \
 	$(TEST_BIN_DIR)/test_declipper \
 	$(TEST_BIN_DIR)/test_dehummer \
+	$(TEST_BIN_DIR)/test_evidence \
 	$(TEST_BIN_DIR)/test_gui_format \
 	$(TEST_BIN_DIR)/test_limiter \
 	$(TEST_BIN_DIR)/test_low_level_boost \
@@ -415,6 +418,10 @@ $(TEST_BIN_DIR)/test_dehummer: $(TEST_OBJ_DIR)/tests/test_dehummer.o $(TEST_CORE
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_dehummer.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_evidence: $(TEST_OBJ_DIR)/tests/test_evidence.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_evidence.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_gui_format: $(TEST_OBJ_DIR)/tests/test_gui_format.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_gui_format.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -527,6 +534,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_crossover
 	./$(TEST_BIN_DIR)/test_declipper
 	./$(TEST_BIN_DIR)/test_dehummer
+	./$(TEST_BIN_DIR)/test_evidence
 	./$(TEST_BIN_DIR)/test_gui_format
 	./$(TEST_BIN_DIR)/test_limiter
 	./$(TEST_BIN_DIR)/test_low_level_boost

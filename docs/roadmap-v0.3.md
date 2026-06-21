@@ -89,6 +89,12 @@ Planned work:
 - Keep GUI rendering outside real-time audio callbacks.
 - Keep CLI operation independent from TUI and GUI support.
 
+Future GUI workflow ideas are intentionally separate from M20. Possible later
+work includes loading or cueing WAV files, loading playlist entries, selecting
+the sound output interface, and showing the selected output interface. Those
+changes must stay outside real-time audio callbacks. Compressed formats remain
+external unless a later optional decoder milestone is selected.
+
 ## E. Library and API Examples
 
 CarrierPress now installs public headers and `libcarrierpress.a`. v0.3 should
@@ -133,3 +139,6 @@ Planned constraints:
 - No CAT control from real-time audio callbacks.
 - No regulatory, licence, legal-bandwidth, RF-generation, or
   transmitter-compliance claim.
+- Any future GUI TRANSMIT control must start from T5, not from GUI polish, and
+  must require compile-time gating, runtime arming, mock-only tests, emergency
+  RX/drop handling, and manual dummy-load validation.

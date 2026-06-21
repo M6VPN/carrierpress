@@ -165,7 +165,8 @@ make WITH_GUI=1 WITH_FFTW=1
 ./examples/gui-screenshot.sh
 ```
 
-The screenshot example writes `build/gui-demo.bmp`.
+The screenshot example writes `build/gui-demo.bmp` and
+`build/gui-demo.bmp.txt`.
 
 ## Read-only CAT
 

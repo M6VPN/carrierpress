@@ -19,6 +19,7 @@
 #include "cp_batch_wav.h"
 #endif
 #include "cp_cat.h"
+#include "cp_evidence.h"
 #include "cp_gui.h"
 #include "cp_operator_state.h"
 #include "cp_playlist_check.h"
@@ -1471,6 +1472,7 @@ run_gui_demo(const struct cp_audio_config *config,
 {
 #ifdef CP_WITH_GUI
 	struct cp_cat_snapshot cat_snapshot;
+	struct cp_evidence_metadata evidence;
 	struct cp_gui gui;
 	struct cp_gui_view view;
 	struct cp_monitor_snapshot snapshot;
@@ -1572,9 +1574,31 @@ run_gui_demo(const struct cp_audio_config *config,
 			break;
 		if (screenshot_path != NULL) {
 			status = cp_gui_save_bmp(&gui, screenshot_path);
-			if (status != CP_OK)
+			if (status != CP_OK) {
 				printf("carrierpress: could not save GUI "
 				    "screenshot\n");
+			} else {
+				(void)memset(&evidence, 0, sizeof(evidence));
+				evidence.version = CP_VERSION_STRING;
+				evidence.screenshot_path = screenshot_path;
+				evidence.mode = "demo";
+				if (operator_state != NULL) {
+					evidence.config_path =
+					    operator_state->config_path;
+					evidence.profile_path =
+					    operator_state->profile_path;
+					evidence.profile_name =
+					    operator_state->profile_name;
+					evidence.report_path =
+					    operator_state->report_path;
+				}
+				if (cp_evidence_write_screenshot_metadata(
+				    screenshot_path, &evidence) != CP_OK) {
+					printf("carrierpress: could not save "
+					    "GUI screenshot metadata\n");
+					status = CP_ERR_RANGE;
+				}
+			}
 			break;
 		}
 		tick++;

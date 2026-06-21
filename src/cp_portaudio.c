@@ -182,7 +182,7 @@ static void		cp_pa_print_recommendation(
 			    const struct cp_audio_device_candidate *, size_t);
 static int		cp_pa_select_devices(const struct cp_audio_config *,
 			    PaDeviceIndex *, PaDeviceIndex *);
-#ifdef CP_WITH_TUI
+#if defined(CP_WITH_TUI) || defined(CP_WITH_GUI)
 static void		cp_pa_store_control_request(
 			    struct cp_portaudio_runtime *,
 			    const struct cp_control_command *);
@@ -264,14 +264,13 @@ cp_portaudio_run(const struct cp_audio_config *config,
 	struct cp_portaudio_runtime runtime;
 	struct cp_monitor_snapshot snapshot;
 	double stream_rate;
-#ifdef CP_WITH_TUI
+#if defined(CP_WITH_TUI) || defined(CP_WITH_GUI)
 	struct cp_cat_snapshot cat_snapshot;
 	struct cp_control_command command;
+#endif
+#ifdef CP_WITH_TUI
 	struct cp_tui tui;
 	struct cp_tui_view tui_view;
-#endif
-#if defined(CP_WITH_GUI) && !defined(CP_WITH_TUI)
-	struct cp_cat_snapshot cat_snapshot;
 #endif
 #ifdef CP_WITH_GUI
 	struct cp_gui gui;
@@ -482,6 +481,12 @@ cp_portaudio_run(const struct cp_audio_config *config,
 			if (cp_gui_update(&gui, &gui_view) != CP_OK ||
 			    cp_gui_should_stop(&gui))
 				*stop_requested = 1;
+			if (cp_gui_take_control_command(&gui,
+			    &command) == CP_OK &&
+			    command.type != CP_CONTROL_COMMAND_NONE &&
+			    command.type != CP_CONTROL_COMMAND_STOP)
+				cp_pa_store_control_request(&runtime,
+				    &command);
 		} else
 #endif
 		{
@@ -1340,7 +1345,7 @@ cp_pa_select_devices(const struct cp_audio_config *config,
 	return CP_PORTAUDIO_OK;
 }
 
-#ifdef CP_WITH_TUI
+#if defined(CP_WITH_TUI) || defined(CP_WITH_GUI)
 static void
 cp_pa_store_control_request(struct cp_portaudio_runtime *runtime,
 	const struct cp_control_command *command)

@@ -265,8 +265,8 @@ implemented until code, docs, and validation are complete.
 
 - [x] Display active profile/config state.
 - [x] Display cue/status context more clearly.
-- [ ] Improve spectrum and level labels.
-- [ ] Improve screenshot/evidence metadata.
+- [x] Improve spectrum and level labels.
+- [x] Improve screenshot/evidence metadata.
 - [x] Keep CLI usable without TUI/GUI.
 
 ## M21 Library/API Examples
@@ -281,3 +281,11 @@ implemented until code, docs, and validation are complete.
 - [ ] Add package-maintainer checklist.
 - [ ] Add example distro packaging notes.
 - [ ] Keep source tarball/checksum workflow local and manual.
+
+## M23 Future GUI Workflow Ideas
+
+- [ ] Load/cue WAV files from GUI.
+- [ ] Load/cue playlist entries from GUI.
+- [ ] Select output sound interface from GUI.
+- [ ] Keep GUI file/device changes outside real-time callbacks.
+- [ ] Keep GUI transmit controls deferred to T5.

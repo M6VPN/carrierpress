@@ -348,14 +348,13 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	struct cp_operator_state operator_state;
 	struct cp_resampler resampler;
 	struct cp_resampler_config resampler_config;
-#ifdef CP_WITH_TUI
+#if defined(CP_WITH_TUI) || defined(CP_WITH_GUI)
 	struct cp_cat_snapshot cat_snapshot;
 	struct cp_control_command command;
+#endif
+#ifdef CP_WITH_TUI
 	struct cp_tui tui;
 	struct cp_tui_view tui_view;
-#endif
-#if defined(CP_WITH_GUI) && !defined(CP_WITH_TUI)
-	struct cp_cat_snapshot cat_snapshot;
 #endif
 #ifdef CP_WITH_GUI
 	struct cp_gui gui;
@@ -785,6 +784,25 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 				if (config->stop_requested != NULL)
 					*config->stop_requested = 1;
 				break;
+			}
+			if (cp_gui_take_control_command(&gui, &command) ==
+			    CP_OK) {
+				if (command.type ==
+				    CP_CONTROL_COMMAND_PLAYOUT_NEXT) {
+					result = CP_PLAYOUT_NEXT;
+					break;
+				}
+				if (command.type != CP_CONTROL_COMMAND_NONE &&
+				    command.type !=
+				    CP_CONTROL_COMMAND_STOP) {
+					status = cp_control_apply(&processor,
+					    &command);
+					if (status != CP_OK) {
+						result =
+						    CP_PLAYOUT_ERR_PROCESS;
+						break;
+					}
+				}
 			}
 			continue;
 		}

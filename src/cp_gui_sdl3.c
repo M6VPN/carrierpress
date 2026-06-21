@@ -4,6 +4,7 @@
 #include <sys/types.h>
 
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <SDL3/SDL.h>
@@ -17,18 +18,25 @@
 #define CP_GUI_METER_WIDTH	320.0f
 #define CP_GUI_METER_HEIGHT	14.0f
 #define CP_GUI_METER_FULL	1.0f
+#define CP_GUI_DEBUG_CHAR_WIDTH	8.0f
+#define CP_GUI_TEXT_BUFSIZ	256
 
 static void	cp_gui_draw_bar(SDL_Renderer *, float, float, float);
 static void	cp_gui_draw_panel(SDL_Renderer *, float, float, float, float,
 		    const char *);
+static void	cp_gui_draw_panel_text(SDL_Renderer *, float, float, float,
+		    float, const char *);
 #ifdef CP_WITH_FFTW
 static void	cp_gui_draw_spectrum(SDL_Renderer *, float, float, float, float,
 		    const struct cp_spectrum_snapshot *);
 #endif
 static void	cp_gui_draw_text(SDL_Renderer *, float, float, const char *);
+static void	cp_gui_draw_text_clipped(SDL_Renderer *, float, float, float,
+		    float, const char *);
 static void	cp_gui_draw_waveform(SDL_Renderer *, float, float, float, float,
 		    const struct cp_waveform_snapshot *);
-static void	cp_gui_poll_events(struct cp_gui *);
+static void	cp_gui_poll_events(struct cp_gui *, const struct cp_gui_view *);
+static int	cp_gui_view_next_enabled(const struct cp_gui_view *);
 
 void
 cp_gui_close(struct cp_gui *gui)
@@ -74,6 +82,10 @@ cp_gui_init(struct cp_gui *gui)
 
 	gui->active = 1;
 	gui->should_stop = 0;
+	gui->control_bank_set = 1;
+	gui->pending_command_set = 0;
+	gui->control_bank = CP_CONTROL_BANK_AM;
+	cp_control_command_clear(&gui->pending_command);
 	gui->window = window;
 	gui->renderer = renderer;
 
@@ -87,6 +99,24 @@ cp_gui_should_stop(const struct cp_gui *gui)
 		return 1;
 
 	return gui->should_stop;
+}
+
+int
+cp_gui_take_control_command(struct cp_gui *gui,
+	struct cp_control_command *command)
+{
+	if (gui == NULL || command == NULL)
+		return CP_ERR_NULL;
+
+	cp_control_command_clear(command);
+	if (!gui->pending_command_set)
+		return CP_OK;
+
+	*command = gui->pending_command;
+	cp_control_command_clear(&gui->pending_command);
+	gui->pending_command_set = 0;
+
+	return CP_OK;
 }
 
 int
@@ -119,6 +149,7 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	char cat[256];
 	char chain[512];
 	char flags[128];
+	char help[256];
 	char meters[256];
 	char mode[64];
 	char operator_status[512];
@@ -128,7 +159,7 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	    view->snapshot == NULL || !gui->active)
 		return CP_ERR_NULL;
 
-	cp_gui_poll_events(gui);
+	cp_gui_poll_events(gui, view);
 	if (gui->should_stop)
 		return CP_OK;
 
@@ -141,6 +172,8 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	    cp_gui_format_agc(view->snapshot, agc, sizeof(agc)) != CP_OK ||
 	    cp_gui_format_flags(view->snapshot->stream_flags, flags,
 	    sizeof(flags)) != CP_OK ||
+	    cp_gui_format_help(gui->control_bank,
+	    cp_gui_view_next_enabled(view), help, sizeof(help)) != CP_OK ||
 	    cp_gui_format_operator_state(view->operator_state,
 	    operator_status, sizeof(operator_status)) != CP_OK ||
 	    cp_gui_format_chain(view->snapshot, chain, sizeof(chain)) !=
@@ -155,51 +188,72 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 
 	cp_gui_draw_panel(renderer, CP_GUI_MARGIN, CP_GUI_MARGIN, 928.0f,
 	    72.0f, "CarrierPress Monitor");
-	cp_gui_draw_text(renderer, 28.0f, 40.0f, transport);
-	cp_gui_draw_text(renderer, 28.0f, 58.0f, mode);
+	cp_gui_draw_panel_text(renderer, 28.0f, 40.0f, 904.0f, 16.0f,
+	    transport);
+	cp_gui_draw_panel_text(renderer, 28.0f, 58.0f, 904.0f, 16.0f,
+	    mode);
 
 	cp_gui_draw_panel(renderer, CP_GUI_MARGIN, 104.0f, 448.0f, 152.0f,
 	    "Meters");
-	cp_gui_draw_text(renderer, 28.0f, 128.0f, meters);
-	cp_gui_draw_text(renderer, 28.0f, 148.0f, "Input peak");
+	cp_gui_draw_panel_text(renderer, 28.0f, 128.0f, 424.0f, 16.0f,
+	    meters);
+	cp_gui_draw_panel_text(renderer, 28.0f, 148.0f, 104.0f, 16.0f,
+	    "Input peak");
 	cp_gui_draw_bar(renderer, 140.0f, 148.0f,
 	    cp_monitor_level_to_sample(view->snapshot->input_peak));
-	cp_gui_draw_text(renderer, 28.0f, 170.0f, "Input RMS");
+	cp_gui_draw_panel_text(renderer, 28.0f, 170.0f, 104.0f, 16.0f,
+	    "Input RMS");
 	cp_gui_draw_bar(renderer, 140.0f, 170.0f,
 	    cp_monitor_level_to_sample(view->snapshot->input_rms));
-	cp_gui_draw_text(renderer, 28.0f, 192.0f, "Output peak");
+	cp_gui_draw_panel_text(renderer, 28.0f, 192.0f, 104.0f, 16.0f,
+	    "Output peak");
 	cp_gui_draw_bar(renderer, 140.0f, 192.0f,
 	    cp_monitor_level_to_sample(view->snapshot->output_peak));
-	cp_gui_draw_text(renderer, 28.0f, 214.0f, "Output RMS");
+	cp_gui_draw_panel_text(renderer, 28.0f, 214.0f, 104.0f, 16.0f,
+	    "Output RMS");
 	cp_gui_draw_bar(renderer, 140.0f, 214.0f,
 	    cp_monitor_level_to_sample(view->snapshot->output_rms));
+	cp_gui_draw_panel_text(renderer, 28.0f, 236.0f, 424.0f, 16.0f,
+	    "Level scale: linear 0.0 to 1.0");
 
 	cp_gui_draw_panel(renderer, 480.0f, 104.0f, 464.0f, 152.0f,
 	    "Status");
-	cp_gui_draw_text(renderer, 492.0f, 128.0f, agc);
-	cp_gui_draw_text(renderer, 492.0f, 150.0f, flags);
-	cp_gui_draw_text(renderer, 492.0f, 172.0f, cat);
-	cp_gui_draw_text(renderer, 492.0f, 194.0f, operator_status);
+	cp_gui_draw_panel_text(renderer, 492.0f, 128.0f, 440.0f, 16.0f,
+	    agc);
+	cp_gui_draw_panel_text(renderer, 492.0f, 150.0f, 440.0f, 16.0f,
+	    flags);
+	cp_gui_draw_panel_text(renderer, 492.0f, 172.0f, 440.0f, 16.0f,
+	    cat);
+	cp_gui_draw_panel_text(renderer, 492.0f, 194.0f, 440.0f, 16.0f,
+	    operator_status);
 
 	cp_gui_draw_panel(renderer, CP_GUI_MARGIN, 276.0f, 928.0f, 92.0f,
 	    "Processing Chain");
-	cp_gui_draw_text(renderer, 28.0f, 302.0f, chain);
+	cp_gui_draw_panel_text(renderer, 28.0f, 302.0f, 904.0f, 16.0f,
+	    chain);
 
 	cp_gui_draw_panel(renderer, CP_GUI_MARGIN, 388.0f, 448.0f, 116.0f,
 	    "Processed Output Waveform");
-	cp_gui_draw_waveform(renderer, 28.0f, 414.0f, 424.0f, 72.0f,
+	cp_gui_draw_panel_text(renderer, 28.0f, 412.0f, 424.0f, 16.0f,
+	    "Processed output waveform: +/-1.0");
+	cp_gui_draw_waveform(renderer, 28.0f, 434.0f, 424.0f, 52.0f,
 	    view->waveform);
 
 	cp_gui_draw_panel(renderer, 480.0f, 388.0f, 464.0f, 116.0f,
 	    "Processed Output Spectrum");
+	cp_gui_draw_panel_text(renderer, 492.0f, 412.0f, 440.0f, 16.0f,
+	    "Relative magnitude: low Hz to high Hz");
 #ifdef CP_WITH_FFTW
-	cp_gui_draw_spectrum(renderer, 492.0f, 414.0f, 440.0f, 72.0f,
+	cp_gui_draw_spectrum(renderer, 492.0f, 434.0f, 440.0f, 52.0f,
 	    view->spectrum);
 #else
-	cp_gui_draw_text(renderer, 492.0f, 430.0f, "spectrum unavailable");
+	cp_gui_draw_panel_text(renderer, 492.0f, 448.0f, 440.0f, 16.0f,
+	    "spectrum unavailable; build WITH_FFTW=1");
 #endif
-	cp_gui_draw_text(renderer, 28.0f, 516.0f,
-	    "Keys: q or Escape stop");
+	cp_gui_draw_panel(renderer, CP_GUI_MARGIN, 508.0f, 928.0f, 24.0f,
+	    NULL);
+	cp_gui_draw_panel_text(renderer, 28.0f, 514.0f, 904.0f, 14.0f,
+	    help);
 
 	(void)SDL_RenderPresent(renderer);
 
@@ -255,7 +309,15 @@ cp_gui_draw_panel(SDL_Renderer *renderer, float x, float y, float w, float h,
 	(void)SDL_SetRenderDrawColor(renderer, 120, 134, 148, 255);
 	(void)SDL_RenderRect(renderer, &rect);
 	if (title != NULL)
-		cp_gui_draw_text(renderer, x + 12.0f, y + 8.0f, title);
+		cp_gui_draw_text_clipped(renderer, x + 12.0f, y + 8.0f,
+		    w - 24.0f, CP_GUI_LINE_HEIGHT, title);
+}
+
+static void
+cp_gui_draw_panel_text(SDL_Renderer *renderer, float x, float y, float w,
+	float h, const char *text)
+{
+	cp_gui_draw_text_clipped(renderer, x, y, w, h, text);
 }
 
 static void
@@ -266,6 +328,32 @@ cp_gui_draw_text(SDL_Renderer *renderer, float x, float y, const char *text)
 
 	(void)SDL_SetRenderDrawColor(renderer, 220, 226, 232, 255);
 	(void)SDL_RenderDebugText(renderer, x, y, text);
+}
+
+static void
+cp_gui_draw_text_clipped(SDL_Renderer *renderer, float x, float y, float w,
+	float h, const char *text)
+{
+	SDL_Rect clip;
+	char display[CP_GUI_TEXT_BUFSIZ];
+	size_t max_chars;
+
+	if (renderer == NULL || text == NULL || w <= 0.0f || h <= 0.0f)
+		return;
+
+	max_chars = (size_t)(w / CP_GUI_DEBUG_CHAR_WIDTH);
+	if (max_chars == 0)
+		max_chars = 1;
+	(void)cp_gui_format_truncate(text, display, sizeof(display),
+	    max_chars);
+
+	clip.x = (int)x;
+	clip.y = (int)y;
+	clip.w = (int)w;
+	clip.h = (int)h;
+	(void)SDL_SetRenderClipRect(renderer, &clip);
+	cp_gui_draw_text(renderer, x, y, display);
+	(void)SDL_SetRenderClipRect(renderer, NULL);
 }
 
 #ifdef CP_WITH_FFTW
@@ -283,7 +371,7 @@ cp_gui_draw_spectrum(SDL_Renderer *renderer, float x, float y, float w,
 		return;
 	if (spectrum == NULL || !spectrum->valid ||
 	    spectrum->bin_count == 0) {
-		cp_gui_draw_text(renderer, x, y + 24.0f,
+		cp_gui_draw_panel_text(renderer, x, y + 14.0f, w, 16.0f,
 		    "spectrum unavailable");
 		return;
 	}
@@ -331,7 +419,7 @@ cp_gui_draw_waveform(SDL_Renderer *renderer, float x, float y, float w,
 		return;
 	if (waveform == NULL || !waveform->valid ||
 	    waveform->point_count < 2) {
-		cp_gui_draw_text(renderer, x, y + 24.0f,
+		cp_gui_draw_panel_text(renderer, x, y + 14.0f, w, 16.0f,
 		    "waveform unavailable");
 		return;
 	}
@@ -367,19 +455,54 @@ cp_gui_draw_waveform(SDL_Renderer *renderer, float x, float y, float w,
 }
 
 static void
-cp_gui_poll_events(struct cp_gui *gui)
+cp_gui_poll_events(struct cp_gui *gui, const struct cp_gui_view *view)
 {
+	struct cp_control_command command;
 	SDL_Event event;
+	int next_enabled;
 
 	if (gui == NULL)
 		return;
 
+	next_enabled = cp_gui_view_next_enabled(view);
 	while (SDL_PollEvent(&event)) {
 		if (event.type == SDL_EVENT_QUIT) {
 			gui->should_stop = 1;
 		} else if (event.type == SDL_EVENT_KEY_DOWN &&
-		    (event.key.key == 'q' || event.key.key == SDLK_ESCAPE)) {
-			gui->should_stop = 1;
+		    (event.key.key == SDLK_ESCAPE ||
+		    cp_gui_control_command_from_key((int)event.key.key,
+		    gui->control_bank, next_enabled, &command) == CP_OK)) {
+			if (event.key.key == SDLK_ESCAPE)
+				cp_control_command_clear(&command);
+			if (event.key.key == SDLK_ESCAPE)
+				command.type = CP_CONTROL_COMMAND_STOP;
+			if (command.type == CP_CONTROL_COMMAND_SELECT_AM) {
+				gui->control_bank = CP_CONTROL_BANK_AM;
+				gui->control_bank_set = 1;
+				cp_control_command_clear(&command);
+			} else if (command.type ==
+			    CP_CONTROL_COMMAND_SELECT_SSB) {
+				gui->control_bank = CP_CONTROL_BANK_SSB;
+				gui->control_bank_set = 1;
+				cp_control_command_clear(&command);
+			}
+			if (command.type == CP_CONTROL_COMMAND_STOP)
+				gui->should_stop = 1;
+			if (command.type != CP_CONTROL_COMMAND_NONE) {
+				gui->pending_command = command;
+				gui->pending_command_set = 1;
+			}
 		}
 	}
+}
+
+static int
+cp_gui_view_next_enabled(const struct cp_gui_view *view)
+{
+	if (view == NULL || view->mode != CP_GUI_MODE_PLAYOUT)
+		return 0;
+	if (view->playlist_count == 0)
+		return 0;
+
+	return view->playlist_count > view->playlist_index + 1;
 }

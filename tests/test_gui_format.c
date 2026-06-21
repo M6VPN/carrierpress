@@ -14,9 +14,12 @@
 
 static int	test_cat_format(void);
 static int	test_chain_format(void);
+static int	test_control_mapping(void);
+static int	test_help_format(void);
 static int	test_meter_format(void);
 static int	test_mode_format(void);
 static int	test_operator_format(void);
+static int	test_truncate_format(void);
 static int	test_transport_format(void);
 
 int
@@ -28,11 +31,17 @@ main(void)
 		return 1;
 	if (!test_chain_format())
 		return 1;
+	if (!test_control_mapping())
+		return 1;
 	if (!test_cat_format())
+		return 1;
+	if (!test_help_format())
 		return 1;
 	if (!test_transport_format())
 		return 1;
 	if (!test_operator_format())
+		return 1;
+	if (!test_truncate_format())
 		return 1;
 
 	return 0;
@@ -113,6 +122,40 @@ test_chain_format(void)
 }
 
 static int
+test_control_mapping(void)
+{
+	struct cp_control_command command;
+
+	if (cp_gui_control_command_from_key('d', CP_CONTROL_BANK_AM, 0,
+	    &command) != CP_OK ||
+	    command.type != CP_CONTROL_COMMAND_DEHUMMER_TOGGLE) {
+		printf("test_gui_format: dehummer key mismatch\n");
+		return 0;
+	}
+	if (cp_gui_control_command_from_key('1', CP_CONTROL_BANK_SSB, 0,
+	    &command) != CP_OK ||
+	    command.type != CP_CONTROL_COMMAND_SSB_PRESET ||
+	    command.ssb_preset != CP_SSB_PRESET_SPEECH) {
+		printf("test_gui_format: SSB preset key mismatch\n");
+		return 0;
+	}
+	if (cp_gui_control_command_from_key('n', CP_CONTROL_BANK_AM, 0,
+	    &command) != CP_OK ||
+	    command.type != CP_CONTROL_COMMAND_NONE) {
+		printf("test_gui_format: locked next key mismatch\n");
+		return 0;
+	}
+	if (cp_gui_control_command_from_key('n', CP_CONTROL_BANK_AM, 1,
+	    &command) != CP_OK ||
+	    command.type != CP_CONTROL_COMMAND_PLAYOUT_NEXT) {
+		printf("test_gui_format: next key mismatch\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
 test_meter_format(void)
 {
 	struct cp_monitor_snapshot snapshot;
@@ -144,6 +187,41 @@ test_meter_format(void)
 	    strstr(buffer, "in_overflow") == NULL ||
 	    strstr(buffer, "out_underflow") == NULL) {
 		printf("test_gui_format: flags mismatch: %s\n", buffer);
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_help_format(void)
+{
+	char buffer[256];
+
+	if (cp_gui_format_help(CP_CONTROL_BANK_AM, 1, buffer,
+	    sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "q/Esc stop") == NULL ||
+	    strstr(buffer, "n next") == NULL ||
+	    strstr(buffer, "m MB1") == NULL ||
+	    strstr(buffer, "b MB2") == NULL ||
+	    strstr(buffer, "AM bank") == NULL) {
+		printf("test_gui_format: AM help mismatch: %s\n", buffer);
+		return 0;
+	}
+	if (cp_gui_format_help(CP_CONTROL_BANK_SSB, 0, buffer,
+	    sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "n next locked") == NULL ||
+	    strstr(buffer, "SSB bank") == NULL ||
+	    strstr(buffer, "SSB presets") == NULL) {
+		printf("test_gui_format: SSB help mismatch: %s\n", buffer);
+		return 0;
+	}
+	if (strstr(buffer, "ptt") != NULL ||
+	    strstr(buffer, "transmit") != NULL ||
+	    strstr(buffer, "hamlib") != NULL ||
+	    strstr(buffer, "flrig") != NULL) {
+		printf("test_gui_format: help forbidden text: %s\n",
+		    buffer);
 		return 0;
 	}
 
@@ -217,6 +295,34 @@ test_operator_format(void)
 	    strstr(buffer, "hamlib") != NULL ||
 	    strstr(buffer, "flrig") != NULL) {
 		printf("test_gui_format: operator forbidden text: %s\n",
+		    buffer);
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_truncate_format(void)
+{
+	char buffer[16];
+
+	if (cp_gui_format_truncate("short", buffer, sizeof(buffer), 12) !=
+	    CP_OK || strcmp(buffer, "short") != 0) {
+		printf("test_gui_format: short truncate mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	if (cp_gui_format_truncate("abcdefghijklmnopqrstuvwxyz", buffer,
+	    sizeof(buffer), 10) != CP_ERR_RANGE ||
+	    strcmp(buffer, "abcdefg...") != 0) {
+		printf("test_gui_format: long truncate mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	if (cp_gui_format_truncate("abcdef", buffer, sizeof(buffer), 3) !=
+	    CP_ERR_RANGE || strcmp(buffer, "abc") != 0) {
+		printf("test_gui_format: small truncate mismatch: %s\n",
 		    buffer);
 		return 0;
 	}

@@ -14,6 +14,25 @@ static const char	*cp_gui_onoff(unsigned int);
 static int		cp_gui_snprintf(char *, size_t, const char *, ...);
 
 int
+cp_gui_control_command_from_key(int key, enum cp_control_bank bank,
+	int next_enabled, struct cp_control_command *command)
+{
+	int status;
+
+	if (command == NULL)
+		return CP_ERR_NULL;
+
+	status = cp_control_command_from_key(key, bank, command);
+	if (status != CP_OK)
+		return status;
+	if (!next_enabled &&
+	    command->type == CP_CONTROL_COMMAND_PLAYOUT_NEXT)
+		cp_control_command_clear(command);
+
+	return CP_OK;
+}
+
+int
 cp_gui_format_agc(const struct cp_monitor_snapshot *snapshot,
 	char *buffer, size_t buffer_size)
 {
@@ -81,6 +100,27 @@ cp_gui_format_flags(unsigned int flags, char *buffer, size_t buffer_size)
 }
 
 int
+cp_gui_format_help(enum cp_control_bank bank, int next_enabled,
+	char *buffer, size_t buffer_size)
+{
+	const char *bank_label;
+	const char *preset_label;
+
+	if (buffer == NULL || buffer_size == 0)
+		return CP_ERR_NULL;
+
+	bank_label = bank == CP_CONTROL_BANK_SSB ? "SSB bank" : "AM bank";
+	preset_label = bank == CP_CONTROL_BANK_SSB ?
+	    "0 SSB off 1-4 SSB presets" : "0 AM off 1-4 AM presets";
+
+	return cp_gui_snprintf(buffer, buffer_size,
+	    "Keys: q/Esc stop | %s | a AM s SSB | d hum | m MB1 b MB2 | "
+	    "%s | %s",
+	    next_enabled ? "n next" : "n next locked", bank_label,
+	    preset_label);
+}
+
+int
 cp_gui_format_meters(const struct cp_monitor_snapshot *snapshot,
 	char *buffer, size_t buffer_size)
 {
@@ -118,6 +158,38 @@ cp_gui_format_operator_state(const struct cp_operator_state *state,
 	char *buffer, size_t buffer_size)
 {
 	return cp_operator_state_format_summary(state, buffer, buffer_size);
+}
+
+int
+cp_gui_format_truncate(const char *text, char *buffer, size_t buffer_size,
+	size_t max_chars)
+{
+	size_t copy;
+	size_t length;
+
+	if (text == NULL || buffer == NULL || buffer_size == 0 ||
+	    max_chars == 0)
+		return CP_ERR_NULL;
+
+	length = strlen(text);
+	if (max_chars >= buffer_size)
+		max_chars = buffer_size - 1;
+	if (length <= max_chars) {
+		(void)snprintf(buffer, buffer_size, "%s", text);
+		return CP_OK;
+	}
+	if (max_chars <= 3) {
+		copy = max_chars;
+		(void)memcpy(buffer, text, copy);
+		buffer[copy] = '\0';
+		return CP_ERR_RANGE;
+	}
+
+	copy = max_chars - 3;
+	(void)memcpy(buffer, text, copy);
+	(void)memcpy(buffer + copy, "...", 4);
+
+	return CP_ERR_RANGE;
 }
 
 int

@@ -531,14 +531,20 @@ GUI support not enabled. Rebuild with WITH_GUI=1.
 The GUI monitor shows transport state, input and output peak/RMS meters, AGC
 state, stream flags, processing-chain state, read-only CAT status, a
 processed-output waveform preview, and an optional FFTW spectrum preview. The
-waveform and spectrum previews are monitor-only. Live capture uses preallocated
-storage and does not allocate, print, lock, call FFTW planning, call SDL, or do
-blocking work from the audio callback. FFTW planning and execution run outside
-the callback. For stereo audio, the waveform preview draws channel 1 and the
-spectrum preview averages channels for display. It is an engineering monitor,
-not a calibrated spectrum analyser, and does not replace the ncurses TUI.
+waveform and spectrum previews are monitor-only. GUI text is clipped inside
+the monitor panels, and safe keyboard controls mirror the ncurses TUI:
+`q`/Escape stop, `n` playlist next, `d` dehummer, `m` multiband 1, `b`
+multiband 2, `a` AM bank, `s` SSB bank, `0` off, and `1` to `4` presets.
+Live capture uses preallocated storage and does not allocate, print, lock, call
+FFTW planning, call SDL, or do blocking work from the audio callback. FFTW
+planning and execution run outside the callback. For stereo audio, the waveform
+preview draws channel 1 and the spectrum preview averages channels for display.
+It is an engineering monitor, not a calibrated spectrum analyser, and does not
+replace the ncurses TUI.
 Screenshot and visual-regression checks are manual or optional. They are not
-required by base builds or normal tests. See
+required by base builds or normal tests. `--gui-demo-screenshot` writes a BMP
+and a `.txt` metadata sidecar with version, mode, profile/config, and report
+context when available. See
 [`docs/gui-visual-regression.md`](docs/gui-visual-regression.md).
 
 Run the same self-test with the M9.3 restoration analyzer enabled:
@@ -1132,6 +1138,9 @@ checks:
 ```sh
 ./carrierpress --gui-demo-screenshot build/gui-demo.bmp --cat-backend mock --cat-frequency-hz 14230000 --cat-mode USB --cat-ptt off
 ```
+
+The screenshot command also writes `build/gui-demo.bmp.txt` with operator
+context metadata.
 
 Run the hardware-free GUI demo and confirm the window opens, mock CAT appears,
 the processed-output waveform moves, the optional FFTW spectrum moves, `q`

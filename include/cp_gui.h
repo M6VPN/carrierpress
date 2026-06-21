@@ -15,6 +15,10 @@
 struct cp_gui {
 	int active;
 	int should_stop;
+	int control_bank_set;
+	int pending_command_set;
+	enum cp_control_bank control_bank;
+	struct cp_control_command pending_command;
 	void *window;
 	void *renderer;
 };
@@ -40,6 +44,8 @@ void	cp_gui_delay_ms(unsigned int);
 int	cp_gui_init(struct cp_gui *);
 int	cp_gui_save_bmp(struct cp_gui *, const char *);
 int	cp_gui_should_stop(const struct cp_gui *);
+int	cp_gui_take_control_command(struct cp_gui *,
+	    struct cp_control_command *);
 int	cp_gui_update(struct cp_gui *, const struct cp_gui_view *);
 
 #endif
