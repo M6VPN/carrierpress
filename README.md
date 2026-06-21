@@ -286,6 +286,25 @@ make dist-check
 ls -lh build/dist/
 ```
 
+## Library API
+
+CarrierPress installs public headers and `libcarrierpress.a` for dependency-light
+C programs that use the core baseband audio processor. The API status and
+stable/experimental header areas are documented in [docs/api.md](docs/api.md).
+
+Build the minimal in-tree example with:
+
+```sh
+make example-libcarrierpress
+./build/examples/libcarrierpress-minimal
+```
+
+Check that the umbrella public header links without optional dependencies:
+
+```sh
+make public-header-smoke
+```
+
 The active Linux-host validation path is:
 
 ```sh

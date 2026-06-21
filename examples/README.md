@@ -29,6 +29,24 @@ checks AM and SSB command-line profile overrides.
 `print-effective-config.sh` inspect profile/config files without opening audio
 devices.
 
+## Library Example
+
+The minimal library example links against the in-tree static library and uses
+only the dependency-light block-processing API:
+
+```sh
+make example-libcarrierpress
+./build/examples/libcarrierpress-minimal
+```
+
+After installing CarrierPress, the same example can be built with pkg-config:
+
+```sh
+cc -std=c17 -Wall -Wextra -o libcarrierpress-minimal \
+  examples/libcarrierpress-minimal.c \
+  $(pkg-config --cflags --libs carrierpress)
+```
+
 ## Config Files
 
 Config examples live in `configs/` and are documented in

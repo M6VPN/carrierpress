@@ -33,6 +33,7 @@ FEATURE_DIR = base
 APP_OBJ_DIR = $(BUILD_DIR)/obj/$(FEATURE_DIR)/app
 TEST_OBJ_DIR = $(BUILD_DIR)/obj/$(FEATURE_DIR)/test
 TEST_BIN_DIR = $(BUILD_DIR)/tests/$(FEATURE_DIR)
+EXAMPLE_BIN_DIR = $(BUILD_DIR)/examples
 
 CORE_SRCS = \
 	src/cp_agc.c \
@@ -333,6 +334,16 @@ carrierpress: $(APP_OBJS)
 
 libcarrierpress.a: $(APP_CORE_OBJS)
 	$(AR) rcs $@ $(APP_CORE_OBJS)
+
+example-libcarrierpress: libcarrierpress.a
+	@mkdir -p $(EXAMPLE_BIN_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $(EXAMPLE_BIN_DIR)/libcarrierpress-minimal examples/libcarrierpress-minimal.c libcarrierpress.a $(LDLIBS)
+
+public-header-smoke: libcarrierpress.a
+	@mkdir -p $(BUILD_DIR)
+	@printf '#include "carrierpress.h"\nint main(void) { struct cp_block_config c; cp_block_default_config(&c, CP_CHANNELS_MONO); return c.channels == CP_CHANNELS_MONO ? 0 : 1; }\n' > $(BUILD_DIR)/public-header-smoke.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $(BUILD_DIR)/public-header-smoke.o $(BUILD_DIR)/public-header-smoke.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BUILD_DIR)/public-header-smoke $(BUILD_DIR)/public-header-smoke.o libcarrierpress.a $(LDLIBS)
 
 $(BUILD_DIR)/carrierpress.pc: carrierpress.pc.in
 	@mkdir -p $(BUILD_DIR)
@@ -726,4 +737,4 @@ clean:
 	rm -f tests/playlist_check.txt tests/playlist_too_long.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check feature-summary install install-manifest install-smoke professional-check quality quality-json release-check test uninstall validate
+.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check example-libcarrierpress feature-summary install install-manifest install-smoke professional-check public-header-smoke quality quality-json release-check test uninstall validate

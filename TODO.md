@@ -271,9 +271,9 @@ implemented until code, docs, and validation are complete.
 
 ## M21 Library/API Examples
 
-- [ ] Add minimal library usage example.
-- [ ] Review public headers.
-- [ ] Document stable and experimental API areas.
+- [x] Add minimal library usage example.
+- [x] Review public headers.
+- [x] Document stable and experimental API areas.
 - [ ] Keep internal implementation details private where practical.
 
 ## M22 Packaging Maintainer Notes
