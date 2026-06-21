@@ -38,6 +38,11 @@ static void	cp_playout_error_set(struct cp_playlist_error *, size_t,
 static int	cp_playout_name_contains(const char *, const char *);
 static int	cp_playout_open_output_stream(PaStream **,
 		    const PaStreamParameters *, double, size_t);
+#ifdef CP_WITH_GUI
+static int	cp_playout_open_started_output_stream(PaStream **,
+		    PaStreamParameters *, const struct cp_audio_config *,
+		    size_t, double, size_t, PaDeviceIndex *);
+#endif
 static int	cp_playout_output_device_contains(PaDeviceIndex, const char *);
 static int	cp_playout_output_matches(const struct cp_audio_config *,
 		    PaDeviceIndex, size_t);
@@ -45,6 +50,13 @@ static PaTime	cp_playout_output_latency(const PaDeviceInfo *);
 static int	cp_playout_rate_valid(double);
 static int	cp_playout_rates_equal(double, double);
 static int	cp_playout_read_line(FILE *, char *, size_t, int *);
+#ifdef CP_WITH_GUI
+static int	cp_playout_restart_output_stream(PaStream **,
+		    struct cp_audio_config *, PaStreamParameters *, size_t,
+		    double, size_t, PaDeviceIndex *, int, int, int *);
+#endif
+static int	cp_playout_return_result(struct cp_playout_run_result *, int);
+static void	cp_playout_run_result_clear(struct cp_playout_run_result *);
 static int	cp_playout_select_output_device(
 		    const struct cp_audio_config *, size_t, PaDeviceIndex *);
 static int	cp_playout_should_stop(const struct cp_playout_config *);
@@ -52,6 +64,10 @@ static int	cp_playout_status_enabled(const struct cp_audio_config *);
 static void	cp_playout_print_line(const char *);
 static void	cp_playout_print_meters(const struct cp_monitor_snapshot *);
 static char	*cp_playout_trim_line(char *);
+#ifdef CP_WITH_GUI
+static void	cp_playout_workflow_reason(
+		    struct cp_gui_workflow_request *, int, const char *);
+#endif
 
 int
 cp_playout_format_file_done(char *buffer, size_t buffer_size,
@@ -329,6 +345,14 @@ cp_playout_path_is_wav(const char *path)
 int
 cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 {
+	return cp_playout_run_file_with_result(path, config, NULL);
+}
+
+int
+cp_playout_run_file_with_result(const char *path,
+	const struct cp_playout_config *config,
+	struct cp_playout_run_result *run_result)
+{
 	struct cp_monitor_snapshot snapshot;
 	SF_INFO input_info;
 	SNDFILE *input_file;
@@ -386,49 +410,60 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	int resampling;
 	int status;
 	unsigned int block_stream_flags;
+#ifdef CP_WITH_GUI
+	int requested_output_device;
+	int fallback_used;
+	int restart_needed;
+#endif
 
 #ifdef CP_WITH_FFTW
 	spectrum_ready = 0;
 #endif
+	cp_playout_run_result_clear(run_result);
 	if (path == NULL || config == NULL)
-		return CP_PLAYOUT_ERR_NULL;
+		return cp_playout_return_result(run_result, CP_PLAYOUT_ERR_NULL);
 	status = cp_playout_validate_config(config);
 	if (status != CP_PLAYOUT_OK)
-		return status;
+		return cp_playout_return_result(run_result, status);
 	if (!cp_playout_path_is_wav(path))
-		return CP_PLAYOUT_ERR_UNSUPPORTED;
+		return cp_playout_return_result(run_result,
+		    CP_PLAYOUT_ERR_UNSUPPORTED);
 	if (config->audio_config.tui_enabled &&
 	    config->audio_config.gui_enabled)
-		return CP_PLAYOUT_ERR_AUDIO;
+		return cp_playout_return_result(run_result, CP_PLAYOUT_ERR_AUDIO);
 #ifndef CP_WITH_TUI
 	if (config->audio_config.tui_enabled)
-		return CP_PLAYOUT_ERR_AUDIO;
+		return cp_playout_return_result(run_result, CP_PLAYOUT_ERR_AUDIO);
 #endif
 #ifndef CP_WITH_GUI
 	if (config->audio_config.gui_enabled)
-		return CP_PLAYOUT_ERR_AUDIO;
+		return cp_playout_return_result(run_result, CP_PLAYOUT_ERR_AUDIO);
 #endif
 
 	memset(&input_info, 0, sizeof(input_info));
 	input_file = sf_open(path, SFM_READ, &input_info);
 	if (input_file == NULL)
-		return CP_PLAYOUT_ERR_OPEN_IN;
+		return cp_playout_return_result(run_result,
+		    CP_PLAYOUT_ERR_OPEN_IN);
 	if (input_info.channels != CP_CHANNELS_MONO &&
 	    input_info.channels != CP_CHANNELS_STEREO) {
 		sf_close(input_file);
-		return CP_PLAYOUT_ERR_CHANNELS;
+		return cp_playout_return_result(run_result,
+		    CP_PLAYOUT_ERR_CHANNELS);
 	}
 	if (input_info.samplerate < CP_AUDIO_MIN_SAMPLE_RATE ||
 	    input_info.samplerate > CP_AUDIO_MAX_SAMPLE_RATE) {
 		sf_close(input_file);
-		return CP_PLAYOUT_ERR_FORMAT;
+		return cp_playout_return_result(run_result,
+		    CP_PLAYOUT_ERR_FORMAT);
 	}
 
 	channels     = (size_t)input_info.channels;
 	block_frames = config->block_frames;
 	if (block_frames > (SIZE_MAX / channels)) {
 		sf_close(input_file);
-		return CP_PLAYOUT_ERR_FORMAT;
+		return cp_playout_return_result(run_result,
+		    CP_PLAYOUT_ERR_FORMAT);
 	}
 	block_samples = block_frames * channels;
 
@@ -448,12 +483,14 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	    output_rate);
 	if (status != CP_AUDIO_OK) {
 		sf_close(input_file);
-		return CP_PLAYOUT_ERR_CONFIG;
+		return cp_playout_return_result(run_result,
+		    CP_PLAYOUT_ERR_CONFIG);
 	}
 	status = cp_audio_validate_config(&audio_config);
 	if (status != CP_AUDIO_OK) {
 		sf_close(input_file);
-		return CP_PLAYOUT_ERR_CONFIG;
+		return cp_playout_return_result(run_result,
+		    CP_PLAYOUT_ERR_CONFIG);
 	}
 	if (config->operator_state != NULL)
 		operator_state = *config->operator_state;
@@ -466,21 +503,23 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	error = Pa_Initialize();
 	if (error != paNoError) {
 		sf_close(input_file);
-		return CP_PLAYOUT_ERR_AUDIO;
+		return cp_playout_return_result(run_result,
+		    CP_PLAYOUT_ERR_AUDIO);
 	}
 	status = cp_playout_select_output_device(&audio_config, channels,
 	    &output_device);
 	if (status != CP_PLAYOUT_OK) {
 		Pa_Terminate();
 		sf_close(input_file);
-		return status;
+		return cp_playout_return_result(run_result, status);
 	}
 
 	output_info = Pa_GetDeviceInfo(output_device);
 	if (output_info == NULL) {
 		Pa_Terminate();
 		sf_close(input_file);
-		return CP_PLAYOUT_ERR_AUDIO;
+		return cp_playout_return_result(run_result,
+		    CP_PLAYOUT_ERR_AUDIO);
 	}
 
 	output_params.device = output_device;
@@ -800,6 +839,43 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 				(void)cp_gui_workflow_request_validate(
 				    &pending_workflow);
 				workflow_request = pending_workflow;
+				if (pending_workflow.type ==
+				    CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE &&
+				    pending_workflow.validation_status == CP_OK &&
+				    cp_gui_workflow_output_device_restart_needed(
+				    (int)output_device, &pending_workflow,
+				    &restart_needed,
+				    &requested_output_device) == CP_OK &&
+				    restart_needed) {
+					fallback_used = 0;
+					status = cp_playout_restart_output_stream(
+					    &stream, &audio_config,
+					    &output_params, channels,
+					    output_rate, block_frames,
+					    &output_device,
+					    requested_output_device,
+					    (int)output_device,
+					    &fallback_used);
+					if (run_result != NULL) {
+						run_result->restart_requested = 1;
+						run_result->requested_output_device =
+						    requested_output_device;
+					}
+					if (status == CP_PLAYOUT_OK) {
+						cp_playout_workflow_reason(
+						    &workflow_request, CP_OK,
+						    fallback_used ?
+						    "fallback" :
+						    "accepted");
+					} else {
+						cp_playout_workflow_reason(
+						    &workflow_request, status,
+						    cp_playout_status_string(
+						    status));
+						result = status;
+						break;
+					}
+				}
 			}
 			if (cp_gui_take_control_command(&gui, &command) ==
 			    CP_OK) {
@@ -840,7 +916,8 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 			cp_playout_print_meters(&snapshot);
 	}
 
-	Pa_StopStream(stream);
+	if (stream != NULL)
+		Pa_StopStream(stream);
 #ifdef CP_WITH_TUI
 	cp_tui_close(&tui);
 #endif
@@ -851,7 +928,8 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	if (spectrum_ready)
 		cp_spectrum_analyzer_close(&spectrum_analyzer);
 #endif
-	Pa_CloseStream(stream);
+	if (stream != NULL)
+		Pa_CloseStream(stream);
 	Pa_Terminate();
 	free(input);
 	free(output);
@@ -872,6 +950,9 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 		}
 	}
 
+	if (run_result != NULL)
+		run_result->status = result;
+
 	return result;
 }
 
@@ -879,17 +960,27 @@ int
 cp_playout_run_playlist(const char *path,
 	const struct cp_playout_config *config)
 {
+	return cp_playout_run_playlist_with_result(path, config, NULL);
+}
+
+int
+cp_playout_run_playlist_with_result(const char *path,
+	const struct cp_playout_config *config,
+	struct cp_playout_run_result *run_result)
+{
 	struct cp_playout_config file_config;
 	struct cp_playlist_error error;
 	struct cp_playlist playlist;
+	struct cp_playout_run_result file_result;
 	const char *entry;
 	char status_line[CP_PLAYOUT_MAX_LINE + CP_PLAYOUT_ERROR_TEXT];
 	size_t index;
 	int status_output;
 	int status;
 
+	cp_playout_run_result_clear(run_result);
 	if (path == NULL || config == NULL)
-		return CP_PLAYOUT_ERR_NULL;
+		return cp_playout_return_result(run_result, CP_PLAYOUT_ERR_NULL);
 
 	status = cp_playlist_load_report(path, &playlist, &error);
 	if (status != CP_PLAYOUT_OK) {
@@ -901,7 +992,7 @@ cp_playout_run_playlist(const char *path,
 			fprintf(stderr, "playlist error: path=%s reason=%s\n",
 			    error.path, error.reason);
 		}
-		return status;
+		return cp_playout_return_result(run_result, status);
 	}
 
 	if (playlist.count == 0) {
@@ -927,7 +1018,13 @@ cp_playout_run_playlist(const char *path,
 		file_config = *config;
 		file_config.playlist_index = index;
 		file_config.playlist_count = playlist.count;
-		status = cp_playout_run_file(entry, &file_config);
+		status = cp_playout_run_file_with_result(entry, &file_config,
+		    &file_result);
+		if (run_result != NULL && file_result.restart_requested) {
+			run_result->restart_requested = 1;
+			run_result->requested_output_device =
+			    file_result.requested_output_device;
+		}
 		if (status == CP_PLAYOUT_NEXT) {
 			if (status_output)
 				cp_playout_print_line("cue: next requested");
@@ -950,7 +1047,17 @@ cp_playout_run_playlist(const char *path,
 	}
 
 	cp_playlist_free(&playlist);
+	if (run_result != NULL)
+		run_result->status = status;
 	return status;
+}
+
+int
+cp_playout_status_allows_output_fallback(int status)
+{
+	return status == CP_PLAYOUT_ERR_AUDIO ||
+	    status == CP_PLAYOUT_ERR_STREAM ||
+	    status == CP_PLAYOUT_ERR_CONFIG;
 }
 
 const char *
@@ -1148,6 +1255,54 @@ cp_playout_open_output_stream(PaStream **stream,
 	return CP_PLAYOUT_OK;
 }
 
+#ifdef CP_WITH_GUI
+static int
+cp_playout_open_started_output_stream(PaStream **stream,
+	PaStreamParameters *output_params, const struct cp_audio_config *config,
+	size_t channels, double sample_rate, size_t block_frames,
+	PaDeviceIndex *output_device)
+{
+	const PaDeviceInfo *output_info;
+	PaError error;
+	int status;
+
+	if (stream == NULL || output_params == NULL || config == NULL ||
+	    output_device == NULL)
+		return CP_PLAYOUT_ERR_NULL;
+
+	*stream = NULL;
+	status = cp_playout_select_output_device(config, channels,
+	    output_device);
+	if (status != CP_PLAYOUT_OK)
+		return status;
+
+	output_info = Pa_GetDeviceInfo(*output_device);
+	if (output_info == NULL)
+		return CP_PLAYOUT_ERR_AUDIO;
+
+	output_params->device = *output_device;
+	output_params->channelCount = (int)channels;
+	output_params->sampleFormat = paFloat32;
+	output_params->suggestedLatency =
+	    cp_playout_output_latency(output_info);
+	output_params->hostApiSpecificStreamInfo = NULL;
+
+	status = cp_playout_open_output_stream(stream, output_params,
+	    sample_rate, block_frames);
+	if (status != CP_PLAYOUT_OK)
+		return status;
+
+	error = Pa_StartStream(*stream);
+	if (error != paNoError) {
+		Pa_CloseStream(*stream);
+		*stream = NULL;
+		return CP_PLAYOUT_ERR_STREAM;
+	}
+
+	return CP_PLAYOUT_OK;
+}
+#endif
+
 static int
 cp_playout_output_matches(const struct cp_audio_config *config,
 	PaDeviceIndex device, size_t channels)
@@ -1262,6 +1417,93 @@ cp_playout_read_line(FILE *file, char *buffer, size_t buffer_size,
 	} while (character != '\n' && character != EOF);
 
 	return 1;
+}
+
+#ifdef CP_WITH_GUI
+static int
+cp_playout_restart_output_stream(PaStream **stream,
+	struct cp_audio_config *config, PaStreamParameters *output_params,
+	size_t channels, double sample_rate, size_t block_frames,
+	PaDeviceIndex *output_device, int requested_output_device,
+	int fallback_output_device, int *fallback_used)
+{
+	PaStream *replacement;
+	int original_output_device;
+	int status;
+
+	if (stream == NULL || config == NULL || output_params == NULL ||
+	    output_device == NULL)
+		return CP_PLAYOUT_ERR_NULL;
+	if (requested_output_device < CP_AUDIO_DEFAULT_DEVICE ||
+	    fallback_output_device < CP_AUDIO_DEFAULT_DEVICE)
+		return CP_PLAYOUT_ERR_AUDIO;
+	if (fallback_used != NULL)
+		*fallback_used = 0;
+
+	if (*stream != NULL) {
+		(void)Pa_StopStream(*stream);
+		Pa_CloseStream(*stream);
+		*stream = NULL;
+	}
+
+	original_output_device = config->output_device;
+	config->output_device = requested_output_device;
+	replacement = NULL;
+	status = cp_playout_open_started_output_stream(&replacement,
+	    output_params, config, channels, sample_rate, block_frames,
+	    output_device);
+	if (status == CP_PLAYOUT_OK) {
+		*stream = replacement;
+		return CP_PLAYOUT_OK;
+	}
+	if (!cp_playout_status_allows_output_fallback(status)) {
+		config->output_device = original_output_device;
+		return status;
+	}
+
+	printf("carrierpress: requested playout output device %d failed: %s\n",
+	    requested_output_device, cp_playout_status_string(status));
+	printf("carrierpress: falling back to previous playout output "
+	    "device %d\n", fallback_output_device);
+
+	config->output_device = fallback_output_device;
+	replacement = NULL;
+	status = cp_playout_open_started_output_stream(&replacement,
+	    output_params, config, channels, sample_rate, block_frames,
+	    output_device);
+	if (status == CP_PLAYOUT_OK) {
+		*stream = replacement;
+		if (fallback_used != NULL)
+			*fallback_used = 1;
+		return CP_PLAYOUT_OK;
+	}
+
+	config->output_device = original_output_device;
+	printf("carrierpress: previous playout output device %d failed: %s\n",
+	    fallback_output_device, cp_playout_status_string(status));
+
+	return status;
+}
+#endif
+
+static int
+cp_playout_return_result(struct cp_playout_run_result *result, int status)
+{
+	if (result != NULL)
+		result->status = status;
+
+	return status;
+}
+
+static void
+cp_playout_run_result_clear(struct cp_playout_run_result *result)
+{
+	if (result == NULL)
+		return;
+
+	result->status = CP_PLAYOUT_OK;
+	result->restart_requested = 0;
+	result->requested_output_device = CP_AUDIO_DEFAULT_DEVICE;
 }
 
 static void
@@ -1550,3 +1792,25 @@ cp_playout_trim_line(char *line)
 
 	return start;
 }
+
+#ifdef CP_WITH_GUI
+static void
+cp_playout_workflow_reason(struct cp_gui_workflow_request *request,
+	int validation_status, const char *reason)
+{
+	int written;
+
+	if (request == NULL)
+		return;
+
+	request->validated = 1;
+	request->validation_status = validation_status;
+	if (reason == NULL)
+		return;
+
+	written = snprintf(request->reason, sizeof(request->reason), "%s",
+	    reason);
+	if (written < 0 || (size_t)written >= sizeof(request->reason))
+		request->reason[sizeof(request->reason) - 1] = '\0';
+}
+#endif

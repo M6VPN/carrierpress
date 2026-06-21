@@ -193,9 +193,10 @@ validated outside SDL callbacks. Deferred output-device selection requests can
 be created with `o` and `O`. In live PortAudio GUI mode, those requests are
 consumed by the host loop and applied by restarting the stream outside SDL and
 audio callbacks. If the requested device cannot open or start, CarrierPress
-tries once to fall back to the previous live output device. Future file dialogs,
-playout switching, and sndio switching are documented in
-`docs/gui-workflow.md`.
+tries once to fall back to the previous output device. GUI WAV playout uses the
+same deferred request pattern and reopens the blocking PortAudio output stream
+between processed blocks. Future file dialogs and sndio switching are
+documented in `docs/gui-workflow.md`.
 
 ## Read-only CAT
 

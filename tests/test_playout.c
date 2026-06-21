@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "cp_gui_workflow.h"
 #include "cp_playout.h"
 
 static int	write_text_file(const char *, const char *);
@@ -16,6 +17,7 @@ static int	test_path_filter(void);
 static int	test_playlist_load(void);
 static int	test_playlist_report(void);
 static int	test_playlist_rejects_mp3(void);
+static int	test_restart_decision(void);
 
 int
 main(void)
@@ -33,6 +35,8 @@ main(void)
 	if (!test_playlist_report())
 		return 1;
 	if (!test_playlist_rejects_mp3())
+		return 1;
+	if (!test_restart_decision())
 		return 1;
 
 	return 0;
@@ -318,6 +322,54 @@ test_playlist_rejects_mp3(void)
 	status = cp_playlist_load(path, &playlist);
 	if (status != CP_PLAYOUT_ERR_UNSUPPORTED) {
 		printf("test_playout: unsupported file accepted\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_restart_decision(void)
+{
+	struct cp_gui_workflow_request request;
+	int requested_device;
+	int restart_needed;
+
+	if (!cp_playout_status_allows_output_fallback(CP_PLAYOUT_ERR_AUDIO) ||
+	    !cp_playout_status_allows_output_fallback(
+	    CP_PLAYOUT_ERR_STREAM) ||
+	    !cp_playout_status_allows_output_fallback(
+	    CP_PLAYOUT_ERR_CONFIG)) {
+		printf("test_playout: fallback status rejected\n");
+		return 0;
+	}
+	if (cp_playout_status_allows_output_fallback(
+	    CP_PLAYOUT_ERR_PROCESS) ||
+	    cp_playout_status_allows_output_fallback(CP_PLAYOUT_ERR_READ) ||
+	    cp_playout_status_allows_output_fallback(CP_PLAYOUT_OK)) {
+		printf("test_playout: non-output status allows fallback\n");
+		return 0;
+	}
+
+	cp_gui_workflow_request_clear(&request);
+	if (cp_gui_workflow_request_set_device(&request, 3) != CP_OK ||
+	    cp_gui_workflow_output_device_restart_needed(2, &request,
+	    &restart_needed, &requested_device) != CP_OK ||
+	    !restart_needed || requested_device != 3) {
+		printf("test_playout: device restart request rejected\n");
+		return 0;
+	}
+	if (cp_gui_workflow_output_device_restart_needed(3, &request,
+	    &restart_needed, &requested_device) != CP_OK ||
+	    restart_needed) {
+		printf("test_playout: same-device restart requested\n");
+		return 0;
+	}
+	cp_gui_workflow_request_clear(&request);
+	if (cp_gui_workflow_request_set_device(&request, -2) == CP_OK ||
+	    cp_gui_workflow_output_device_restart_needed(2, &request,
+	    &restart_needed, &requested_device) == CP_OK) {
+		printf("test_playout: invalid device restart accepted\n");
 		return 0;
 	}
 

@@ -61,6 +61,12 @@ struct cp_playout_config {
 	size_t playlist_count;
 };
 
+struct cp_playout_run_result {
+	int status;
+	int restart_requested;
+	int requested_output_device;
+};
+
 void		cp_playout_default_config(struct cp_playout_config *);
 int		cp_playout_build_snapshot(const struct cp_block_processor *,
 		    struct cp_monitor_snapshot *);
@@ -80,8 +86,15 @@ int		cp_playout_format_stop(char *, size_t);
 int		cp_playout_path_is_wav(const char *);
 int		cp_playout_run_file(const char *,
 		    const struct cp_playout_config *);
+int		cp_playout_run_file_with_result(const char *,
+		    const struct cp_playout_config *,
+		    struct cp_playout_run_result *);
 int		cp_playout_run_playlist(const char *,
 		    const struct cp_playout_config *);
+int		cp_playout_run_playlist_with_result(const char *,
+		    const struct cp_playout_config *,
+		    struct cp_playout_run_result *);
+int		cp_playout_status_allows_output_fallback(int);
 const char	*cp_playout_status_string(int);
 int		cp_playout_validate_config(const struct cp_playout_config *);
 

@@ -3,7 +3,8 @@
 This document defines the safe boundary for GUI file cueing and output device
 selection. CarrierPress supports preconfigured GUI cue requests for WAV and
 playlist paths, plus deferred output-device selection requests. It does not
-implement GUI file dialogs or GUI audio stream switching yet.
+implement GUI file dialogs. Live PortAudio and WAV playout can consume
+deferred GUI output-device requests outside callbacks.
 
 CarrierPress is baseband audio processing software. The GUI workflow path must
 not add RF generation, transmitter compliance claims, licence-compliance
@@ -66,8 +67,9 @@ processing, and SDL render/draw routines:
 - Audio stream stop, reopen, or restart.
 - Any future file loading or queue update.
 
-Output-device switching must stop and reopen streams safely in a later
-implementation. It must not be handled from an SDL render or key event callback.
+Output-device switching must stop and reopen streams safely from the host loop.
+It must not be handled from an SDL render, SDL key event callback, or real-time
+audio callback.
 
 ## File and Playlist Rules
 
@@ -134,8 +136,15 @@ Output-device request rules:
   reports the requested-device failure and tries once to fall back to the
   previous output device that was already running. If that fallback also fails,
   CarrierPress exits with the normal PortAudio error.
-- Playout and sndio output-device switching remain future work unless selected
-  in a later slice.
+- In GUI WAV playout, a changed output-device request is consumed by the
+  playout host loop after `cp_gui_update()` returns. CarrierPress stops and
+  reopens the blocking PortAudio output stream between processed blocks. File
+  position, DSP processor state, playlist position, and safe TUI/GUI controls
+  are preserved. If the requested device cannot be opened or started,
+  CarrierPress tries once to fall back to the previous output device that was
+  already running.
+- sndio output-device switching remains future work unless selected in a later
+  slice.
 
 ## Current GUI Controls
 
@@ -163,8 +172,9 @@ M23C1 adds output-device selection display and a deferred output-device
 selection request. M23C2 applies that deferred request in the live PortAudio
 GUI path by stopping and reopening audio streams outside callbacks. M23C2B adds
 a single fallback attempt to the previous live PortAudio output device when a
-requested device cannot be opened or started. Playout switching and sndio
-switching remain future work.
+requested device cannot be opened or started. M24A extends the same deferred
+restart and fallback pattern to GUI WAV playout between processed blocks.
+sndio switching remains future work.
 
 Any GUI TRANSMIT or CAT control toggle is T5-only work. It must require the T5
 safety gates: compile-time opt-in, runtime arming, mock-only tests first,

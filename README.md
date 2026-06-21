@@ -211,14 +211,14 @@ polling run in the foreground host loop, not in the real-time audio callback.
 The GUI waveform panel shows a monitor-only preview of processed output audio.
 With `WITH_FFTW=1`, the GUI spectrum panel shows a monitor-only processed-output
 spectrum preview. These displays do not alter audio samples.
-Future GUI file and output-device workflows are documented in
+Future GUI file workflows are documented in
 [`docs/gui-workflow.md`](docs/gui-workflow.md). They use deferred requests and
 are not active file dialogs. The GUI can request preconfigured WAV and playlist
-cue slots with `l` and `p`. In live PortAudio GUI mode, `o` and `O` create a
-deferred output-device request that is consumed by the host loop and applied by
-restarting the stream outside SDL and audio callbacks. If the requested device
-cannot open or start, CarrierPress tries once to fall back to the previous live
-output device:
+cue slots with `l` and `p`. In live PortAudio GUI mode and GUI WAV playout,
+`o` and `O` create a deferred output-device request that is consumed by the
+host loop and applied by restarting the stream outside SDL and audio callbacks.
+If the requested device cannot open or start, CarrierPress tries once to fall
+back to the previous output device:
 
 ```sh
 ./carrierpress --gui-demo --gui-cue-wav audio/program.wav --gui-cue-playlist playlist.txt
@@ -755,6 +755,10 @@ Play a simple playlist:
 Text playout prints concise cue/status lines when a file starts, a playlist
 item is cued, a file ends, playback stops, or a playlist completes. TUI and GUI
 playout suppress text cue lines so the monitor display stays readable.
+In GUI playout, `o` and `O` request an output-device change. The playout host
+loop consumes the request after GUI event handling, reopens the blocking
+PortAudio output stream between processed blocks, and falls back once to the
+previous output device if the requested device fails.
 
 Run playout with the ncurses monitor:
 

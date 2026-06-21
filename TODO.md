@@ -313,7 +313,6 @@ implemented until code, docs, and validation are complete.
 
 ## Deferred GUI Output Device Follow-up
 
-- [ ] Add GUI playout output-device restart if selected.
 - [ ] Add sndio GUI output-device restart if selected.
 
 ## R8 v0.3.0 Release Prep
@@ -334,11 +333,11 @@ implemented until code, docs, and validation are complete.
 
 ## M24 GUI Playout Workflow Parity
 
-- [ ] Add GUI playout output-device restart if selected.
-- [ ] Keep playout restart outside GUI callbacks.
-- [ ] Keep playout restart outside real-time audio callbacks.
-- [ ] Preserve CLI-only playout behaviour.
-- [ ] Preserve TUI playout controls.
+- [x] Add GUI playout output-device restart if selected.
+- [x] Keep playout restart outside GUI callbacks.
+- [x] Keep playout restart outside real-time audio callbacks.
+- [x] Preserve CLI-only playout behaviour.
+- [x] Preserve TUI playout controls.
 
 ## M25 sndio GUI Device Workflow Evaluation
 
