@@ -122,3 +122,18 @@ as OpenBSD `sha256`, and record the result with the release evidence.
 - No release publication is automated.
 - No RF, transmitter, licence, regulatory, legal-bandwidth, or broadcast-quality
   claims are made by package metadata.
+
+## Maintainer Notes
+
+Package maintainer checklists and example packaging notes are split into
+focused documents:
+
+- [`package-maintainer-checklist.md`](package-maintainer-checklist.md) covers
+  source input, staged install review, pkg-config checks, optional split
+  package ideas, and safety policy checks.
+- [`packaging-debian-notes.md`](packaging-debian-notes.md) gives Debian-style
+  packaging notes without adding a real `debian/` directory.
+- [`packaging-openbsd-notes.md`](packaging-openbsd-notes.md) gives OpenBSD
+  ports-style notes without adding a real ports tree.
+- [`packaging-portable-notes.md`](packaging-portable-notes.md) covers portable
+  source builds, local tarballs, and checksum review.

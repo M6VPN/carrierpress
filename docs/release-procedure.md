@@ -65,6 +65,14 @@ git status --short
 
 Confirm GitHub Actions CI is green for the same commit. Confirm
 `./carrierpress --version` prints `CarrierPress 0.2.0`.
+Review packaging maintainer notes before tagging:
+
+```sh
+sed -n '1,220p' docs/package-maintainer-checklist.md
+sed -n '1,220p' docs/packaging-debian-notes.md
+sed -n '1,220p' docs/packaging-openbsd-notes.md
+sed -n '1,220p' docs/packaging-portable-notes.md
+```
 
 Create and publish the tag only by explicit local operator action:
 

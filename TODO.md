@@ -278,9 +278,9 @@ implemented until code, docs, and validation are complete.
 
 ## M22 Packaging Maintainer Notes
 
-- [ ] Add package-maintainer checklist.
-- [ ] Add example distro packaging notes.
-- [ ] Keep source tarball/checksum workflow local and manual.
+- [x] Add package-maintainer checklist.
+- [x] Add example distro packaging notes.
+- [x] Keep source tarball/checksum workflow local and manual.
 
 ## M23 Future GUI Workflow Ideas
 

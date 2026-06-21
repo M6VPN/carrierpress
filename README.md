@@ -286,6 +286,10 @@ make dist-check
 ls -lh build/dist/
 ```
 
+Package maintainer checklists and example distro packaging notes are in
+[`docs/package-maintainer-checklist.md`](docs/package-maintainer-checklist.md).
+These notes are documentation only and do not add real distro packaging files.
+
 ## Library API
 
 CarrierPress installs public headers and `libcarrierpress.a` for dependency-light

@@ -72,6 +72,10 @@ milestones M11 through M16.
   `docs/measurement-reports.md`.
 - Confirm OpenBSD and sndio notes are present in `docs/openbsd-sndio.md`.
 - Confirm packaging notes are present in `docs/packaging.md`.
+- Confirm package maintainer notes are present in
+  `docs/package-maintainer-checklist.md`.
+- Confirm Debian-style, OpenBSD ports-style, and portable source packaging
+  notes are present under `docs/`.
 - Confirm `make install-manifest` prints the expected staged files.
 - Confirm `make dist-check` creates and verifies the source tarball checksum.
 - Confirm GitHub Actions CI is green before tagging.
@@ -253,6 +257,13 @@ Use `docs/openbsd-sndio.md` for the manual checklist.
 - Confirm the current `build/dist/carrierpress-VERSION.tar.gz` exists after
   `make dist-check`.
 - Confirm the current `build/dist/carrierpress-VERSION.tar.gz.sha256` verifies.
+- Review `docs/package-maintainer-checklist.md`.
+- Review `docs/packaging-debian-notes.md`.
+- Review `docs/packaging-openbsd-notes.md`.
+- Review `docs/packaging-portable-notes.md`.
+- Confirm no real `debian/` packaging directory was added.
+- Confirm no OpenBSD `ports/` tree was added.
+- Confirm source tarball and checksum generation remain local and manual.
 - Confirm no package metadata claims RF generation, transmitter compliance,
   licence compliance, regulatory approval, legal bandwidth, or broadcast
   quality.
