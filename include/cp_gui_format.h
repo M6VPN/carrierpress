@@ -9,6 +9,7 @@
 #include "cp_audio.h"
 #include "cp_cat.h"
 #include "cp_control.h"
+#include "cp_gui_workflow.h"
 #include "cp_monitor.h"
 #include "cp_operator_state.h"
 
@@ -34,6 +35,8 @@ int	cp_gui_format_operator_state(const struct cp_operator_state *,
 int	cp_gui_format_truncate(const char *, char *, size_t, size_t);
 int	cp_gui_format_transport(enum cp_gui_mode,
 	    const struct cp_audio_config *, const char *, size_t, size_t, int,
+	    char *, size_t);
+int	cp_gui_format_workflow(const struct cp_gui_workflow_request *,
 	    char *, size_t);
 int	cp_gui_control_command_from_key(int, enum cp_control_bank, int,
 	    struct cp_control_command *);

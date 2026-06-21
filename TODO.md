@@ -287,5 +287,19 @@ implemented until code, docs, and validation are complete.
 - [ ] Load/cue WAV files from GUI.
 - [ ] Load/cue playlist entries from GUI.
 - [ ] Select output sound interface from GUI.
-- [ ] Keep GUI file/device changes outside real-time callbacks.
-- [ ] Keep GUI transmit controls deferred to T5.
+- [x] Keep GUI file/device changes outside real-time callbacks.
+- [x] Keep GUI transmit controls deferred to T5.
+
+## M23B GUI File and Playlist Cueing
+
+- [ ] Add GUI-safe WAV path cue request.
+- [ ] Add GUI-safe playlist cue request.
+- [ ] Validate paths outside GUI callbacks.
+- [ ] Keep compressed formats external.
+
+## M23C GUI Output Device Selection
+
+- [ ] Display output device choices.
+- [ ] Add deferred output-device selection request.
+- [ ] Reopen and restart audio outside callbacks.
+- [ ] Preserve CLI-only output-device selection.

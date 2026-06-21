@@ -93,7 +93,8 @@ Future GUI workflow ideas are intentionally separate from M20. Possible later
 work includes loading or cueing WAV files, loading playlist entries, selecting
 the sound output interface, and showing the selected output interface. Those
 changes must stay outside real-time audio callbacks. Compressed formats remain
-external unless a later optional decoder milestone is selected.
+external unless a later optional decoder milestone is selected. The deferred
+request boundary is documented in [`gui-workflow.md`](gui-workflow.md).
 
 ## E. Library and API Examples
 

@@ -186,6 +186,11 @@ make WITH_GUI=1 WITH_FFTW=1
 The screenshot example writes `build/gui-demo.bmp` and
 `build/gui-demo.bmp.txt`.
 
+The current GUI is a monitor and safe-control demo. Future GUI file cueing,
+playlist cueing, and output-device selection are documented in
+`docs/gui-workflow.md`, but they are not active file dialogs or device
+switches yet.
+
 ## Read-only CAT
 
 CAT examples are read-only. They do not key PTT, change frequency, change

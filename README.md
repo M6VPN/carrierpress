@@ -210,6 +210,9 @@ polling run in the foreground host loop, not in the real-time audio callback.
 The GUI waveform panel shows a monitor-only preview of processed output audio.
 With `WITH_FFTW=1`, the GUI spectrum panel shows a monitor-only processed-output
 spectrum preview. These displays do not alter audio samples.
+Future GUI file and output-device workflows are documented in
+[`docs/gui-workflow.md`](docs/gui-workflow.md). They use deferred requests and
+are not active file dialogs or device-switching controls yet.
 
 Build with both optional WAV and PortAudio support:
 

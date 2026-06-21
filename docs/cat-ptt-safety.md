@@ -72,6 +72,8 @@ state.
 - Treat any GUI TRANSMIT toggle as T5-only work. It must not be added by
   ordinary GUI polish, and it must stay disabled unless PTT support is
   compiled, explicitly armed, and covered by mock-only tests first.
+- GUI file cueing, playlist cueing, and output-device selection milestones must
+  not introduce a TRANSMIT toggle or any CAT write/control command.
 - Make commands edge-triggered and bounded, not continuous hidden state.
 - Keep GUI and TUI controls locked unless PTT support is compiled and armed.
 - Prefer a single PTT state machine shared by mock, flrig, and hamlib command

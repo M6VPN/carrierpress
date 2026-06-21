@@ -54,6 +54,7 @@ CORE_SRCS = \
 	src/cp_dehummer.c \
 	src/cp_evidence.c \
 	src/cp_gui_format.c \
+	src/cp_gui_workflow.c \
 	src/cp_limiter.c \
 	src/cp_low_level_boost.c \
 	src/cp_meter.c \
@@ -91,6 +92,7 @@ TEST_SRCS = \
 	tests/test_dehummer.c \
 	tests/test_evidence.c \
 	tests/test_gui_format.c \
+	tests/test_gui_workflow.c \
 	tests/test_limiter.c \
 	tests/test_low_level_boost.c \
 	tests/test_meter.c \
@@ -231,6 +233,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_dehummer \
 	$(TEST_BIN_DIR)/test_evidence \
 	$(TEST_BIN_DIR)/test_gui_format \
+	$(TEST_BIN_DIR)/test_gui_workflow \
 	$(TEST_BIN_DIR)/test_limiter \
 	$(TEST_BIN_DIR)/test_low_level_boost \
 	$(TEST_BIN_DIR)/test_meter \
@@ -449,6 +452,10 @@ $(TEST_BIN_DIR)/test_gui_format: $(TEST_OBJ_DIR)/tests/test_gui_format.o $(TEST_
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_gui_format.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_gui_workflow: $(TEST_OBJ_DIR)/tests/test_gui_workflow.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_gui_workflow.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_limiter: $(TEST_OBJ_DIR)/tests/test_limiter.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_limiter.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -559,6 +566,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_dehummer
 	./$(TEST_BIN_DIR)/test_evidence
 	./$(TEST_BIN_DIR)/test_gui_format
+	./$(TEST_BIN_DIR)/test_gui_workflow
 	./$(TEST_BIN_DIR)/test_limiter
 	./$(TEST_BIN_DIR)/test_low_level_boost
 	./$(TEST_BIN_DIR)/test_meter
@@ -735,7 +743,7 @@ clean:
 	rm -f tests/test_compressor tests/test_crossover
 	rm -f tests/test_control
 	rm -f tests/test_dc_blocker tests/test_declipper tests/test_dehummer
-	rm -f tests/test_gui_format
+	rm -f tests/test_gui_format tests/test_gui_workflow
 	rm -f tests/test_limiter tests/test_low_level_boost tests/test_meter
 	rm -f tests/test_monitor tests/test_multiband
 	rm -f tests/test_natural_dynamics tests/test_operator_state

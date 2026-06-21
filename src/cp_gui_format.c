@@ -224,6 +224,13 @@ cp_gui_format_transport(enum cp_gui_mode mode,
 	    config->channels, output_device);
 }
 
+int
+cp_gui_format_workflow(const struct cp_gui_workflow_request *request,
+	char *buffer, size_t buffer_size)
+{
+	return cp_gui_workflow_request_format(request, buffer, buffer_size);
+}
+
 static const char *
 cp_gui_onoff(unsigned int enabled)
 {

@@ -21,6 +21,7 @@ static int	test_mode_format(void);
 static int	test_operator_format(void);
 static int	test_truncate_format(void);
 static int	test_transport_format(void);
+static int	test_workflow_format(void);
 
 int
 main(void)
@@ -42,6 +43,8 @@ main(void)
 	if (!test_operator_format())
 		return 1;
 	if (!test_truncate_format())
+		return 1;
+	if (!test_workflow_format())
 		return 1;
 
 	return 0;
@@ -351,6 +354,54 @@ test_transport_format(void)
 	    strstr(buffer, "input.wav") == NULL ||
 	    strstr(buffer, "out 7") == NULL) {
 		printf("test_gui_format: playlist transport mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_workflow_format(void)
+{
+	struct cp_gui_workflow_request request;
+	char buffer[160];
+
+	cp_gui_workflow_request_clear(&request);
+	if (cp_gui_format_workflow(&request, buffer, sizeof(buffer)) !=
+	    CP_OK ||
+	    strcmp(buffer, "workflow=none") != 0) {
+		printf("test_gui_format: workflow none mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	if (cp_gui_workflow_request_set_device(&request, 4) != CP_OK ||
+	    cp_gui_format_workflow(&request, buffer, sizeof(buffer)) !=
+	    CP_OK ||
+	    strcmp(buffer, "workflow=select_output_device device=4") !=
+	    0) {
+		printf("test_gui_format: workflow device mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	if (cp_gui_workflow_request_set_playlist_item(&request,
+	    "audio/program.wav", 7) != CP_OK ||
+	    cp_gui_format_workflow(&request, buffer, sizeof(buffer)) !=
+	    CP_OK ||
+	    strstr(buffer, "workflow=cue_playlist_item index=7") == NULL ||
+	    strstr(buffer, "audio/program.wav") == NULL) {
+		printf("test_gui_format: workflow cue mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	if (strstr(buffer, "ptt") != NULL ||
+	    strstr(buffer, "transmit") != NULL ||
+	    strstr(buffer, "cat_ptt") != NULL ||
+	    strstr(buffer, "rig_frequency") != NULL ||
+	    strstr(buffer, "rig_mode") != NULL ||
+	    strstr(buffer, "hamlib") != NULL ||
+	    strstr(buffer, "flrig") != NULL) {
+		printf("test_gui_format: workflow forbidden text: %s\n",
 		    buffer);
 		return 0;
 	}

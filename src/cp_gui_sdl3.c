@@ -154,6 +154,7 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	char mode[64];
 	char operator_status[512];
 	char transport[256];
+	char workflow[256];
 
 	if (gui == NULL || view == NULL || view->config == NULL ||
 	    view->snapshot == NULL || !gui->active)
@@ -176,6 +177,8 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	    cp_gui_view_next_enabled(view), help, sizeof(help)) != CP_OK ||
 	    cp_gui_format_operator_state(view->operator_state,
 	    operator_status, sizeof(operator_status)) != CP_OK ||
+	    cp_gui_format_workflow(view->workflow_request, workflow,
+	    sizeof(workflow)) != CP_OK ||
 	    cp_gui_format_chain(view->snapshot, chain, sizeof(chain)) !=
 	    CP_OK ||
 	    cp_gui_format_cat(view->cat_snapshot, cat, sizeof(cat)) !=
@@ -226,6 +229,8 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	    cat);
 	cp_gui_draw_panel_text(renderer, 492.0f, 194.0f, 440.0f, 16.0f,
 	    operator_status);
+	cp_gui_draw_panel_text(renderer, 492.0f, 216.0f, 440.0f, 16.0f,
+	    workflow);
 
 	cp_gui_draw_panel(renderer, CP_GUI_MARGIN, 276.0f, 928.0f, 92.0f,
 	    "Processing Chain");
