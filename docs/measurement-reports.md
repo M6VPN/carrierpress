@@ -38,6 +38,25 @@ mandatory JSON library dependency.
 Quality JSON reports include `schema_version: 1`. Scripts should treat the
 schema version as the contract for stable field names.
 
+Summarize a JSON report without opening audio devices:
+
+```sh
+./carrierpress --report-summary build/quality-report.json
+```
+
+Compare two CarrierPress JSON reports:
+
+```sh
+./carrierpress --report-compare build/old-quality.json build/quality-report.json
+```
+
+The compare helper uses an absolute default tolerance of `0.000001` for known
+numeric metrics. Override it when needed:
+
+```sh
+./carrierpress --report-compare old.report.json new.report.json --report-tolerance 0.00001
+```
+
 ## Processed-file Sidecar Report
 
 Offline WAV processing can write a processed-file sidecar report:
@@ -66,6 +85,22 @@ The sidecar report is a JSON document with:
 The sidecar metrics include input/output RMS, input/output peak, crest factor,
 DC estimate, output minimum and maximum, finite-output state, and analysis
 fields where the active chain produced them.
+
+Summarize and compare processed-file reports:
+
+```sh
+./carrierpress --report-summary output.report.json
+./carrierpress --report-compare old.report.json output.report.json
+```
+
+Report summary and compare modes are inspection-only. They read existing JSON
+reports, do not process audio, and do not require libsndfile, PortAudio, TUI,
+GUI, CAT, or FFTW support.
+
+The report reader is intentionally limited. It accepts CarrierPress-generated
+schema-version-1 reports, extracts known fields, ignores unknown future fields,
+and rejects missing or unsupported schema versions. It is not a general-purpose
+JSON parser.
 
 ## Report Shape
 
@@ -187,6 +222,54 @@ fields:
 Finite numeric values are emitted as JSON numbers. Non-finite values are emitted
 as `null`.
 
+## Summary Output
+
+`--report-summary` prints stable plain-text `key=value` lines.
+
+Quality reports include:
+
+- `report=quality`.
+- `schema_version`.
+- `version`.
+- `status`.
+- `cases`.
+- `failed_cases`.
+- `sample_rate_hz`.
+- `frames`.
+- `channels`.
+
+Processed-file reports include:
+
+- `report=processed_file`.
+- `schema_version`.
+- `version`.
+- `status`.
+- `input`.
+- `output`.
+- `sample_rate_hz`.
+- `frames`.
+- `channels`.
+- `input_rms`.
+- `output_rms`.
+- `input_peak`.
+- `output_peak`.
+
+## Compare Output
+
+`--report-compare` compares two reports of the same type and prints stable
+plain-text `key=value` lines. It exits `0` when known metrics are within the
+configured tolerance and non-zero when parsing fails, schema versions are
+unsupported, report types differ, required fields are missing, or deltas exceed
+the tolerance.
+
+For quality reports, the helper compares case counts, status fields, fixture
+dimensions, and known numeric per-case metrics. For processed-file reports, it
+compares WAV properties and known numeric metrics such as RMS, peak, crest, DC,
+output min/max, and sample count.
+
+Unknown future fields are ignored. Existing stable schema-version-1 fields
+should remain available to scripts until a schema version bump.
+
 ## Limits
 
 The reports are for repeatable software validation only. They do not prove:
@@ -201,3 +284,7 @@ The reports are for repeatable software validation only. They do not prove:
 Use the reports to compare CarrierPress builds and catch regressions. Use
 proper RF test equipment, dummy loads, licence conditions, and local regulations
 for transmitter and station checks.
+
+Report comparisons are regression metrics only. They do not prove listening
+quality, RF bandwidth, transmitter compliance, regulatory approval, legal
+station operation, or licence compliance.

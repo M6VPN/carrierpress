@@ -68,6 +68,20 @@ The profile wrapper loads one safe audio profile before processing.
 The report wrapper writes a processed-file JSON sidecar with engineering
 metrics only.
 
+## Report Tools
+
+Summarize or compare CarrierPress JSON reports without opening audio devices:
+
+```sh
+make -s quality-json > build/quality-report.json
+./examples/report-summary.sh build/quality-report.json
+./examples/report-compare.sh build/quality-report.json build/quality-report.json
+```
+
+Report comparisons are regression metrics only. They do not prove listening
+quality, RF bandwidth, transmitter compliance, regulatory approval, legal
+station operation, or licence compliance.
+
 ## Playout
 
 WAV playout requires a `WITH_SNDFILE=1 WITH_PORTAUDIO=1` build and a usable

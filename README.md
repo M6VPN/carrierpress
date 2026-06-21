@@ -1222,6 +1222,13 @@ stable schema-version-1 fields intended for scripts. It is an engineering
 metrics export only and does not prove RF bandwidth, transmitter compliance, or
 legal operation.
 
+Summarize or compare CarrierPress JSON reports:
+
+```sh
+./carrierpress --report-summary build/quality-report.json
+./carrierpress --report-compare old.report.json new.report.json
+```
+
 `make professional-check` is the stricter M9.5 gate. It runs deterministic
 fixtures through default, dehummer, declipper, natural dynamics plus low-level
 boost, multiband plus bass EQ, second multiband, AM, and SSB profiles. It fails

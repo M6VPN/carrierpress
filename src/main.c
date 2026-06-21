@@ -24,6 +24,7 @@
 #include "cp_playout.h"
 #include "cp_portaudio.h"
 #include "cp_profile.h"
+#include "cp_report_tool.h"
 #include "cp_sndio.h"
 #include "cp_wav.h"
 
@@ -82,6 +83,8 @@ static int	run_playout_playlist(const char *, const struct cp_audio_config *,
 static int	run_print_effective_config(const struct cp_audio_config *,
 		    const struct cp_block_config *,
 		    const struct cp_inspection_state *, const char *);
+static int	run_report_compare(const char *, const char *, double);
+static int	run_report_summary(const char *);
 static int	run_wav_process(const char *, const char *, const char *,
 		    const struct cp_block_config *);
 static int	run_self_test(const struct cp_block_config *);
@@ -110,6 +113,9 @@ main(int argc, char *argv[])
 	const char *playlist_check_path;
 	const char *playlist_path;
 	const char *report_path;
+	const char *report_compare_base;
+	const char *report_compare_new;
+	const char *report_summary_path;
 	const char *batch_check_path;
 	const char *batch_process_path;
 	const char *batch_output_dir;
@@ -122,6 +128,7 @@ main(int argc, char *argv[])
 	struct cp_config_file config_file;
 	struct cp_inspection_state inspection_state;
 	double parsed_double;
+	double report_tolerance;
 	uint64_t parsed_uint64;
 	size_t parsed_size;
 	int arg;
@@ -135,6 +142,7 @@ main(int argc, char *argv[])
 	int list_devices;
 	int print_effective_config;
 	int profile_seen;
+	int report_tolerance_seen;
 	int self_test_mode;
 
 	input_path   = NULL;
@@ -143,6 +151,9 @@ main(int argc, char *argv[])
 	playlist_check_path = NULL;
 	playlist_path = NULL;
 	report_path = NULL;
+	report_compare_base = NULL;
+	report_compare_new = NULL;
+	report_summary_path = NULL;
 	batch_check_path = NULL;
 	batch_process_path = NULL;
 	batch_output_dir = NULL;
@@ -159,6 +170,8 @@ main(int argc, char *argv[])
 	list_devices = 0;
 	print_effective_config = 0;
 	profile_seen = 0;
+	report_tolerance = CP_REPORT_TOOL_DEFAULT_TOLERANCE;
+	report_tolerance_seen = 0;
 	self_test_mode = 0;
 	memset(&inspection_state, 0, sizeof(inspection_state));
 	cp_audio_default_config(&audio_config);
@@ -185,6 +198,21 @@ main(int argc, char *argv[])
 		} else if (strcmp(argv[arg], "--report") == 0 &&
 		    arg + 1 < argc) {
 			report_path = argv[++arg];
+		} else if (strcmp(argv[arg], "--report-summary") == 0 &&
+		    arg + 1 < argc) {
+			report_summary_path = argv[++arg];
+		} else if (strcmp(argv[arg], "--report-compare") == 0 &&
+		    arg + 2 < argc) {
+			report_compare_base = argv[++arg];
+			report_compare_new = argv[++arg];
+		} else if (strcmp(argv[arg], "--report-tolerance") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_double_arg(argv[++arg],
+			    &report_tolerance) || report_tolerance < 0.0) {
+				usage(argv[0]);
+				return 1;
+			}
+			report_tolerance_seen = 1;
 		} else if (strcmp(argv[arg], "--config") == 0 &&
 		    arg + 1 < argc) {
 			if (config_seen) {
@@ -757,7 +785,15 @@ main(int argc, char *argv[])
 		inspection_modes++;
 	if (print_effective_config)
 		inspection_modes++;
+	if (report_summary_path != NULL)
+		inspection_modes++;
+	if (report_compare_base != NULL || report_compare_new != NULL)
+		inspection_modes++;
 	if (inspection_modes > 1) {
+		usage(argv[0]);
+		return 1;
+	}
+	if (report_tolerance_seen && report_compare_base == NULL) {
 		usage(argv[0]);
 		return 1;
 	}
@@ -765,6 +801,36 @@ main(int argc, char *argv[])
 		return run_validate_profile(validate_profile_path);
 	if (validate_config_path != NULL)
 		return run_validate_config(validate_config_path);
+	if (report_summary_path != NULL) {
+		if (input_path != NULL || output_path != NULL ||
+		    report_path != NULL || play_path != NULL ||
+		    playlist_path != NULL || playlist_check_path != NULL ||
+		    batch_check_path != NULL || batch_process_path != NULL ||
+		    batch_output_dir != NULL || batch_allow_overwrite ||
+		    gui_screenshot_path != NULL || gui_demo_mode || live_mode ||
+		    list_devices || self_test_mode || cat_status_mode ||
+		    audio_config.tui_enabled || audio_config.gui_enabled) {
+			usage(argv[0]);
+			return 1;
+		}
+		return run_report_summary(report_summary_path);
+	}
+	if (report_compare_base != NULL || report_compare_new != NULL) {
+		if (report_compare_base == NULL || report_compare_new == NULL ||
+		    input_path != NULL || output_path != NULL ||
+		    report_path != NULL || play_path != NULL ||
+		    playlist_path != NULL || playlist_check_path != NULL ||
+		    batch_check_path != NULL || batch_process_path != NULL ||
+		    batch_output_dir != NULL || batch_allow_overwrite ||
+		    gui_screenshot_path != NULL || gui_demo_mode || live_mode ||
+		    list_devices || self_test_mode || cat_status_mode ||
+		    audio_config.tui_enabled || audio_config.gui_enabled) {
+			usage(argv[0]);
+			return 1;
+		}
+		return run_report_compare(report_compare_base,
+		    report_compare_new, report_tolerance);
+	}
 
 	if (cp_audio_config_set_format(&audio_config, audio_config.channels,
 	    audio_config.sample_rate) != CP_AUDIO_OK) {
@@ -1237,6 +1303,38 @@ run_print_effective_config(const struct cp_audio_config *audio_config,
 	printf("ssb=%s\n", switch_string(block_config->ssb_config.enabled));
 	printf("ssb_preset=%s\n", block_config->ssb_config.preset_name);
 	printf("report_path=%s\n", report_path == NULL ? "" : report_path);
+
+	return 0;
+}
+
+static int
+run_report_compare(const char *base_path, const char *new_path,
+	double tolerance)
+{
+	int status;
+
+	status = cp_report_tool_compare_files(base_path, new_path, tolerance,
+	    stdout);
+	if (status != CP_REPORT_TOOL_OK) {
+		fprintf(stderr, "carrierpress: report compare failed: %s\n",
+		    cp_report_tool_status_string(status));
+		return 1;
+	}
+
+	return 0;
+}
+
+static int
+run_report_summary(const char *path)
+{
+	int status;
+
+	status = cp_report_tool_summary_file(path, stdout);
+	if (status != CP_REPORT_TOOL_OK) {
+		fprintf(stderr, "carrierpress: report summary failed: %s\n",
+		    cp_report_tool_status_string(status));
+		return 1;
+	}
 
 	return 0;
 }
@@ -2092,6 +2190,9 @@ usage(const char *program)
 	    program);
 	printf("usage: %s --input input.wav --output output.wav "
 	    "[--report report.json]\n", program);
+	printf("usage: %s --report-summary report.json\n", program);
+	printf("usage: %s --report-compare base.json new.json "
+	    "[--report-tolerance 0.000001]\n", program);
 	printf("usage: %s --play input.wav [--output-device N]\n", program);
 	printf("usage: %s --playlist-check playlist.txt\n", program);
 	printf("usage: %s --batch-check batch.txt --batch-output-dir "

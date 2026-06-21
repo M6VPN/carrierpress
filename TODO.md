@@ -257,8 +257,8 @@ implemented until code, docs, and validation are complete.
 
 - [x] Add report schema version field.
 - [x] Document stable report fields.
-- [ ] Add report summary mode.
-- [ ] Add report compare helper.
+- [x] Add report summary mode.
+- [x] Add report compare helper.
 - [x] Keep reports free of transmitter-compliance and regulatory claims.
 
 ## M20 TUI/GUI Operator Polish
