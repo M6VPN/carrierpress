@@ -118,6 +118,25 @@ cp_gui_workflow_request_from_key(int key, const char *cue_wav_path,
 }
 
 int
+cp_gui_workflow_output_device_restart_needed(int current_output_device,
+	const struct cp_gui_workflow_request *request, int *restart_needed,
+	int *requested_output_device)
+{
+	if (request == NULL || restart_needed == NULL ||
+	    requested_output_device == NULL)
+		return CP_ERR_NULL;
+	if (request->type != CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE)
+		return CP_ERR_RANGE;
+	if (request->device_index < -1)
+		return CP_ERR_RANGE;
+
+	*requested_output_device = request->device_index;
+	*restart_needed = request->device_index != current_output_device;
+
+	return CP_OK;
+}
+
+int
 cp_gui_workflow_request_set_device(
 	struct cp_gui_workflow_request *request, int device_index)
 {

@@ -253,6 +253,19 @@ cp_portaudio_run(const struct cp_audio_config *config,
 	const struct cp_operator_state *operator_state,
 	volatile sig_atomic_t *stop_requested)
 {
+	struct cp_portaudio_run_result result;
+
+	return cp_portaudio_run_with_result(config, cat_config, operator_state,
+	    stop_requested, &result);
+}
+
+int
+cp_portaudio_run_with_result(const struct cp_audio_config *config,
+	const struct cp_cat_config *cat_config,
+	const struct cp_operator_state *operator_state,
+	volatile sig_atomic_t *stop_requested,
+	struct cp_portaudio_run_result *result)
+{
 	PaStreamParameters input_params;
 	PaStreamParameters output_params;
 	PaStream *stream;
@@ -286,7 +299,16 @@ cp_portaudio_run(const struct cp_audio_config *config,
 	int spectrum_ready;
 #endif
 	int status;
+#ifdef CP_WITH_GUI
+	int requested_output_device;
+	int restart_needed;
+#endif
 
+	if (result != NULL) {
+		result->status = CP_PORTAUDIO_OK;
+		result->restart_requested = 0;
+		result->requested_output_device = CP_AUDIO_DEFAULT_DEVICE;
+	}
 #ifdef CP_WITH_FFTW
 	spectrum_ready = 0;
 #endif
@@ -495,6 +517,20 @@ cp_portaudio_run(const struct cp_audio_config *config,
 				(void)cp_gui_workflow_request_validate(
 				    &pending_workflow);
 				workflow_request = pending_workflow;
+				if (pending_workflow.type ==
+				    CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE &&
+				    result != NULL &&
+				    pending_workflow.validation_status == CP_OK &&
+				    cp_gui_workflow_output_device_restart_needed(
+				    (int)output_device, &pending_workflow,
+				    &restart_needed,
+				    &requested_output_device) == CP_OK &&
+				    restart_needed) {
+					result->restart_requested = 1;
+					result->requested_output_device =
+					    requested_output_device;
+					break;
+				}
 			}
 			if (cp_gui_take_control_command(&gui,
 			    &command) == CP_OK &&
@@ -536,6 +572,9 @@ cp_portaudio_run(const struct cp_audio_config *config,
 
 	if (atomic_load(&runtime.dsp_status) != CP_OK)
 		return CP_PORTAUDIO_ERR_DSP;
+
+	if (result != NULL)
+		result->status = status;
 
 	return status;
 }

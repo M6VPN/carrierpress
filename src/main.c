@@ -37,6 +37,7 @@
 #define CP_SELF_TEST_LEVEL	0.30f
 #define CP_TWO_PI		6.28318530717958647692f
 #define CP_WAV_BLOCK_FRAMES	512
+#define CP_LIVE_RESTART_LIMIT	8
 
 struct cp_inspection_state {
 	char config_path[CP_CONFIG_FILE_PATH_SIZE];
@@ -1726,12 +1727,36 @@ run_live_audio(const struct cp_audio_config *config,
 #endif
 
 #ifdef CP_WITH_PORTAUDIO
-	status = cp_portaudio_run(config, cat_config, operator_state,
-	    &stop_requested);
-	if (status != CP_PORTAUDIO_OK) {
-		printf("carrierpress: PortAudio failed: %s\n",
-		    cp_portaudio_status_string(status));
-		return 1;
+	{
+		struct cp_audio_config current_config;
+		struct cp_portaudio_run_result result;
+		int restart_count;
+
+		current_config = *config;
+		restart_count = 0;
+		for (;;) {
+			status = cp_portaudio_run_with_result(&current_config,
+			    cat_config, operator_state, &stop_requested,
+			    &result);
+			if (status != CP_PORTAUDIO_OK) {
+				printf("carrierpress: PortAudio failed: %s\n",
+				    cp_portaudio_status_string(status));
+				return 1;
+			}
+			if (!result.restart_requested)
+				break;
+			if (restart_count >= CP_LIVE_RESTART_LIMIT) {
+				printf("carrierpress: PortAudio output-device "
+				    "restart limit reached\n");
+				return 1;
+			}
+			restart_count++;
+			current_config.output_device =
+			    result.requested_output_device;
+			stop_requested = 0;
+			if (!current_config.gui_enabled)
+				break;
+		}
 	}
 
 	return 0;

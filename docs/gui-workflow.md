@@ -105,11 +105,10 @@ practical:
 
 ## Output Device Rules
 
-M23C1 adds GUI output-device selection state as a deferred request. The GUI can
+M23C adds GUI output-device selection state as a deferred request. The GUI can
 display the current configured output device, requested output device, selected
 backend string, and configured device name. It does not enumerate hardware
-devices in the base build, and it does not open, close, or restart audio
-streams.
+devices in the base build.
 
 The GUI keys are:
 
@@ -120,14 +119,22 @@ The GUI keys are:
 Output-device request rules:
 
 - The GUI records the request only.
-- The host loop validates the request after it is consumed.
+- The live PortAudio host loop validates the request after it is consumed.
 - The default output-device sentinel is accepted where the CLI already uses it.
 - Non-negative output device indices are accepted for deferred selection.
 - Invalid negative device indices are rejected.
 - Hardware existence is not checked in the base build.
 - CLI-only output-device selection is preserved.
-- Device open, close, stream stop, and stream restart work remain future M23C2
-  work outside GUI callbacks and real-time audio callbacks.
+- In the live PortAudio GUI path, a changed output-device request makes the
+  current stream loop exit cleanly. The outer host loop then starts a fresh
+  stream with the requested output device.
+- Device open, close, stream stop, and stream restart work is not performed
+  from SDL event/render callbacks or real-time audio callbacks.
+- If the requested device cannot be opened, the live PortAudio path fails
+  clearly through the normal PortAudio error path. Automatic fallback to the
+  previous device is future work.
+- Playout and sndio output-device switching remain future work unless selected
+  in a later slice.
 
 ## Current GUI Controls
 
@@ -152,9 +159,10 @@ outer host loop. It does not process audio inside GUI callbacks, and it does
 not add native file dialogs.
 
 M23C1 adds output-device selection display and a deferred output-device
-selection request. M23C2 should apply that deferred request by stopping and
-reopening audio streams outside callbacks, with safe fallback on device-open
-failure.
+selection request. M23C2 applies that deferred request in the live PortAudio
+GUI path by stopping and reopening audio streams outside callbacks. Automatic
+fallback on device-open failure, playout switching, and sndio switching remain
+future work.
 
 Any GUI TRANSMIT or CAT control toggle is T5-only work. It must require the T5
 safety gates: compile-time opt-in, runtime arming, mock-only tests first,

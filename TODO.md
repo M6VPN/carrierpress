@@ -301,12 +301,18 @@ implemented until code, docs, and validation are complete.
 
 - [x] Display output device choices.
 - [x] Add deferred output-device selection request.
-- [ ] Reopen and restart audio outside callbacks.
+- [x] Reopen and restart audio outside callbacks.
 - [x] Preserve CLI-only output-device selection.
 
 ## M23C2 GUI Output Stream Restart
 
-- [ ] Apply deferred output-device requests in the outer host loop.
-- [ ] Stop and reopen audio streams outside GUI callbacks.
+- [x] Apply deferred output-device requests in the outer host loop.
+- [x] Stop and reopen audio streams outside GUI callbacks.
 - [ ] Preserve safe fallback on device-open failure.
-- [ ] Keep CLI-only output-device selection working.
+- [x] Keep CLI-only output-device selection working.
+
+## M23C3 GUI Output Device Follow-up
+
+- [ ] Add safe fallback to the previous output device on restart-open failure.
+- [ ] Add GUI playout output-device restart if selected.
+- [ ] Add sndio GUI output-device restart if selected.

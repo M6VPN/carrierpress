@@ -21,6 +21,7 @@ static int	test_key_mapping(void);
 static int	test_path_request(void);
 static int	test_playlist_item_request(void);
 static int	test_playlist_validation(void);
+static int	test_restart_decision(void);
 static int	test_type_strings(void);
 static int	test_wav_validation(void);
 static int	write_file(const char *, const char *);
@@ -45,6 +46,8 @@ main(void)
 	if (!test_playlist_validation())
 		return 1;
 	if (!test_key_mapping())
+		return 1;
+	if (!test_restart_decision())
 		return 1;
 	if (!test_forbidden_text())
 		return 1;
@@ -203,6 +206,52 @@ test_key_mapping(void)
 		printf("test_gui_workflow: forbidden key mapped request\n");
 		return 0;
 	}
+
+	return 1;
+}
+
+static int
+test_restart_decision(void)
+{
+	struct cp_gui_workflow_request request;
+	int requested_device;
+	int restart_needed;
+
+	requested_device = -99;
+	restart_needed = -1;
+	if (cp_gui_workflow_output_device_restart_needed(2, NULL,
+	    &restart_needed, &requested_device) != CP_ERR_NULL)
+		return 0;
+	if (cp_gui_workflow_request_set_device(&request, 3) != CP_OK)
+		return 0;
+	if (cp_gui_workflow_output_device_restart_needed(2, &request,
+	    &restart_needed, &requested_device) != CP_OK ||
+	    restart_needed != 1 || requested_device != 3) {
+		printf("test_gui_workflow: restart decision failed\n");
+		return 0;
+	}
+	if (cp_gui_workflow_output_device_restart_needed(3, &request,
+	    &restart_needed, &requested_device) != CP_OK ||
+	    restart_needed != 0 || requested_device != 3) {
+		printf("test_gui_workflow: no-op restart decision failed\n");
+		return 0;
+	}
+	if (cp_gui_workflow_request_set_device(&request, -1) != CP_OK ||
+	    cp_gui_workflow_output_device_restart_needed(-1, &request,
+	    &restart_needed, &requested_device) != CP_OK ||
+	    restart_needed != 0 || requested_device != -1) {
+		printf("test_gui_workflow: default restart decision failed\n");
+		return 0;
+	}
+	request.type = CP_GUI_WORKFLOW_REQUEST_LOAD_WAV;
+	if (cp_gui_workflow_output_device_restart_needed(2, &request,
+	    &restart_needed, &requested_device) != CP_ERR_RANGE)
+		return 0;
+	request.type = CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE;
+	request.device_index = -2;
+	if (cp_gui_workflow_output_device_restart_needed(2, &request,
+	    &restart_needed, &requested_device) != CP_ERR_RANGE)
+		return 0;
 
 	return 1;
 }

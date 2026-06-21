@@ -36,6 +36,8 @@ int		cp_gui_workflow_request_format(
 int		cp_gui_workflow_request_from_key(int, const char *,
 		    const char *, const char *, size_t, size_t, int,
 		    struct cp_gui_workflow_request *);
+int		cp_gui_workflow_output_device_restart_needed(int,
+		    const struct cp_gui_workflow_request *, int *, int *);
 int		cp_gui_workflow_request_set_device(
 		    struct cp_gui_workflow_request *, int);
 int		cp_gui_workflow_request_set_path(
