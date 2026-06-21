@@ -12,6 +12,7 @@
 #include "cp_biquad.h"
 #include "cp_block.h"
 #include "cp_compressor.h"
+#include "cp_config_file.h"
 #include "cp_control.h"
 #include "cp_crossover.h"
 #include "cp_dc_blocker.h"

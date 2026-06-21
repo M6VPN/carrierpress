@@ -22,6 +22,15 @@ and dehummer/multiband examples.
 `profile-self-test.sh` runs each bundled profile through self-test and then
 checks AM and SSB command-line profile overrides.
 
+## Config Files
+
+Config examples live in `configs/` and are documented in
+`docs/config-file-format.md`. They are parsed and validated by the base test
+suite, but runtime `--config PATH` loading is deferred to M12B.
+
+Config files are host workflow defaults only. They do not configure DSP chain
+presets, CAT, PTT, rig frequency, rig mode, transmit state, or station control.
+
 ## WAV Processing
 
 WAV processing requires a `WITH_SNDFILE=1` build:

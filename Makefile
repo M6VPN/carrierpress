@@ -41,6 +41,7 @@ CORE_SRCS = \
 	src/cp_block.c \
 	src/cp_cat.c \
 	src/cp_compressor.c \
+	src/cp_config_file.c \
 	src/cp_control.c \
 	src/cp_crossover.c \
 	src/cp_dc_blocker.c \
@@ -71,6 +72,7 @@ TEST_SRCS = \
 	tests/test_cat.c \
 	tests/test_chain_quality.c \
 	tests/test_compressor.c \
+	tests/test_config_file.c \
 	tests/test_control.c \
 	tests/test_crossover.c \
 	tests/test_dc_blocker.c \
@@ -204,6 +206,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_biquad \
 	$(TEST_BIN_DIR)/test_cat \
 	$(TEST_BIN_DIR)/test_compressor \
+	$(TEST_BIN_DIR)/test_config_file \
 	$(TEST_BIN_DIR)/test_control \
 	$(TEST_BIN_DIR)/test_crossover \
 	$(TEST_BIN_DIR)/test_dc_blocker \
@@ -362,6 +365,10 @@ $(TEST_BIN_DIR)/test_compressor: $(TEST_OBJ_DIR)/tests/test_compressor.o $(TEST_
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_compressor.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_config_file: $(TEST_OBJ_DIR)/tests/test_config_file.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_config_file.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_control: $(TEST_OBJ_DIR)/tests/test_control.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_control.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -472,6 +479,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_biquad
 	./$(TEST_BIN_DIR)/test_cat
 	./$(TEST_BIN_DIR)/test_compressor
+	./$(TEST_BIN_DIR)/test_config_file
 	./$(TEST_BIN_DIR)/test_control
 	./$(TEST_BIN_DIR)/test_crossover
 	./$(TEST_BIN_DIR)/test_declipper

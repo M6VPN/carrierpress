@@ -14,6 +14,7 @@ Offline WAV processing is available as an optional M1 foundation when built with
 - [Setup](#setup)
 - [Examples](#examples)
 - [Profiles](#profiles)
+- [Config Files](#config-files)
 - [Usage](#usage)
 - [Development](#development)
 - [Roadmap](#roadmap)
@@ -333,6 +334,21 @@ and later command-line options override profile values. For example:
 
 Options before `--profile` may be overwritten by the loaded profile. Only one
 profile may be loaded in this M11 slice.
+
+## Config Files
+
+Config files are documented in
+[`docs/config-file-format.md`](docs/config-file-format.md). Safe examples are
+in [`configs/`](configs/), including default, live Pulse/PipeWire, GUI demo,
+and playout workflow defaults.
+
+Config files are host and workflow defaults only. Audio-chain settings belong
+in profiles. Config files do not control CAT, PTT, rig frequency, rig mode,
+transmit state, flrig, hamlib, or station-control state.
+
+M12A defines and tests the config format. Runtime `--config PATH` loading is
+planned for M12B, so current command-line defaults are unchanged unless a later
+slice explicitly loads a config file.
 
 ## Usage
 

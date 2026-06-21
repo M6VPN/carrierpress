@@ -174,12 +174,20 @@ implemented until code, docs, and validation are complete.
 
 ## M12 Config File Support
 
-- [ ] Define config file scope.
-- [ ] Add config parser.
-- [ ] Add config validation tests.
-- [ ] Document default config search paths.
+- [x] Define config file scope.
+- [x] Add config parser.
+- [x] Add config validation tests.
+- [x] Document default config search paths.
 - [ ] Keep command-line options overriding config values.
-- [ ] Keep PTT/control settings out of ordinary audio config.
+- [x] Keep PTT/control settings out of ordinary audio config.
+
+## M12B Runtime Config Loading
+
+- [ ] Add `--config PATH`.
+- [ ] Apply config files before later command-line overrides.
+- [ ] Load profile paths named by config files.
+- [ ] Document runtime config precedence.
+- [ ] Keep config parsing outside real-time audio callbacks.
 
 ## M13 Playout Workflow Polish
 
