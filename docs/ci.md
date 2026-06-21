@@ -87,9 +87,9 @@ public header directory.
 CI does not publish releases. Release tags and GitHub releases remain manual
 per `docs/release-procedure.md`.
 
-The pushed `v0.1.0` tag was created before the R3 packaging polish. Current CI
-and packaging changes are post-v0.1.0 hardening unless the project owner
-explicitly decides otherwise.
+The pushed `v0.1.0` tag was created before the R3 packaging polish. R3, R4,
+and R5 are post-v0.1.0 hardening and are prepared for the `v0.1.1` patch
+release.
 
 ## CAT and PTT Boundary
 

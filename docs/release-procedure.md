@@ -38,6 +38,39 @@ LD_LIBRARY_PATH="$HAMLIB_LOCAL/src/.libs:${LD_LIBRARY_PATH:-}" \
 	make WITH_HAMLIB=1 test
 ```
 
+## v0.1.1 Patch Release
+
+`v0.1.1` is the patch release for post-v0.1.0 install, packaging, CI, and
+examples work. Do not rewrite or retag `v0.1.0`.
+
+Before tagging:
+
+```sh
+make release-check
+git status --short
+```
+
+Confirm GitHub Actions CI is green for the same commit. Confirm
+`./carrierpress --version` prints `CarrierPress 0.1.1`.
+
+Create and publish the tag only by explicit local operator action:
+
+```sh
+git tag -a v0.1.1 -m "CarrierPress v0.1.1"
+git push origin v0.1.1
+```
+
+Create the GitHub release manually:
+
+```sh
+gh release create v0.1.1 \
+	--title "CarrierPress v0.1.1" \
+	--notes-file docs/release-notes-v0.1.1.md
+gh release view v0.1.1
+```
+
+No project script creates tags, pushes tags, or publishes GitHub releases.
+
 ## Local Release Assets
 
 Create optional local evidence files under `build/release-v0.1.0/`. These files

@@ -43,6 +43,24 @@ legal operation.
 GitHub Actions CI must also be green before a release tag is created. CI
 coverage is documented in `docs/ci.md`.
 
+## v0.1.1 Patch Release Checks
+
+Use this section when preparing `v0.1.1`, the patch release for post-v0.1.0
+install, packaging, CI, and examples work.
+
+- Confirm `./carrierpress --version` prints `CarrierPress 0.1.1`.
+- Confirm `make install-smoke` passes.
+- Confirm staged install pkg-config metadata reports `Version: 0.1.1`.
+- Confirm `docs/release-notes-v0.1.1.md` is the release body.
+- Confirm `docs/release-notes-v0.1.md` remains historical and unchanged.
+- Confirm `examples/README.md` and the example scripts are present.
+- Confirm examples do not publish releases, create tags, use `sudo`, or send
+  CAT write/PTT commands.
+- Confirm GitHub Actions CI is green before tagging.
+- Confirm T5 PTT control remains deferred and unchecked in `TODO.md`.
+- Confirm release publication remains manual and local per
+  `docs/release-procedure.md`.
+
 ## Optional Linux-host Validation
 
 Run optional profiles only on hosts with the matching development libraries:

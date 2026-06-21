@@ -143,8 +143,14 @@ GitHub Actions CI coverage is documented in [`docs/ci.md`](docs/ci.md).
 Release notes, the manual GitHub release procedure, and optional local release
 asset guidance are documented in
 [`docs/release-notes-v0.1.md`](docs/release-notes-v0.1.md),
+[`docs/release-notes-v0.1.1.md`](docs/release-notes-v0.1.1.md),
 [`docs/release-procedure.md`](docs/release-procedure.md), and
 [`docs/release-assets-v0.1.md`](docs/release-assets-v0.1.md).
+The latest patch release notes are in
+[`docs/release-notes-v0.1.1.md`](docs/release-notes-v0.1.1.md). Safe example
+wrappers are documented in [`examples/README.md`](examples/README.md). Manual
+release commands remain documented in
+[`docs/release-procedure.md`](docs/release-procedure.md).
 
 Build with optional WAV support:
 

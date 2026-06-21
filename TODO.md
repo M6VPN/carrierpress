@@ -145,3 +145,13 @@ implemented until code, docs, and validation are complete.
 - [x] Add read-only CAT mock, flrig, and hamlib examples.
 - [x] Add local Hamlib 4.7.1 validation example.
 - [x] Keep all examples free of PTT control and release publication.
+
+## R6 v0.1.1 Patch Release Prep
+
+- [x] Bump project version to 0.1.1.
+- [x] Add v0.1.1 release notes.
+- [x] Add manual v0.1.1 release procedure.
+- [x] Update release checklist for v0.1.1.
+- [x] Keep v0.1.0 historical notes unchanged.
+- [x] Keep PTT control deferred.
+- [x] Keep release publication manual and local.
