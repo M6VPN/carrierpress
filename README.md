@@ -1524,6 +1524,12 @@ polish, effective profile/config inspection, safer batch offline WAV workflow,
 report schema polish, GUI/TUI status clarity, library examples, and packaging
 maintainer notes. PTT control remains deferred to the separate T5 safety gate.
 
+The v0.4 roadmap is documented in
+[`docs/roadmap-v0.4.md`](docs/roadmap-v0.4.md). v0.4 planning focuses on GUI
+workflow parity, safer playout and device operations, report automation, API
+and packaging hardening, and optional decoder research without adding decoder
+libraries to the base build.
+
 The v0.3.0 release notes are in
 [`docs/release-notes-v0.3.0.md`](docs/release-notes-v0.3.0.md).
 

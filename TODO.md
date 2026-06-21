@@ -325,3 +325,65 @@ implemented until code, docs, and validation are complete.
 - [x] Preserve v0.1.0, v0.1.1, and v0.2.0 historical notes.
 - [x] Keep PTT control deferred.
 - [x] Keep release publication manual and local.
+
+## V4 v0.4.0 Planning
+
+- [x] Add v0.4 roadmap document.
+- [x] Keep PTT/TRANSMIT control deferred to T5.
+- [x] Preserve v0.3.0 release boundary.
+
+## M24 GUI Playout Workflow Parity
+
+- [ ] Add GUI playout output-device restart if selected.
+- [ ] Keep playout restart outside GUI callbacks.
+- [ ] Keep playout restart outside real-time audio callbacks.
+- [ ] Preserve CLI-only playout behaviour.
+- [ ] Preserve TUI playout controls.
+
+## M25 sndio GUI Device Workflow Evaluation
+
+- [ ] Document sndio GUI output-device constraints.
+- [ ] Add sndio GUI output-device restart only if technically safe.
+- [ ] Keep sndio optional.
+- [ ] Keep Linux PortAudio path unchanged.
+- [ ] Keep OpenBSD/sndio validation manual unless CI support appears.
+
+## M26 GUI File and Device Workflow Polish
+
+- [ ] Improve queued WAV/playlist display.
+- [ ] Improve pending request status display.
+- [ ] Improve rejected request error display.
+- [ ] Display output-device choices where enumeration is available.
+- [ ] Keep GUI text restrained to panels.
+
+## M27 Batch and Report Evidence Bundles
+
+- [ ] Add batch-level summary report.
+- [ ] Add batch report comparison helper.
+- [ ] Add evidence directory workflow.
+- [ ] Document report bundle fields.
+- [ ] Keep reports free of transmitter-compliance and regulatory claims.
+
+## M28 API and Packaging Hardening
+
+- [ ] Review `carrierpress_core.h` after example use.
+- [ ] Add more public-header smoke examples.
+- [ ] Review package-maintainer notes after v0.3.
+- [ ] Keep optional dependencies out of base pkg-config metadata.
+
+## M29 Optional Decoder Architecture Research
+
+- [ ] Document optional decoder interface options.
+- [ ] Keep compressed audio formats external by default.
+- [ ] Do not add decoder libraries unless selected later.
+- [ ] Keep base build WAV/PCM-native.
+
+## T5 Deferred TRANSMIT/PTT Safety Gate
+
+- [ ] Keep TRANSMIT/PTT out of ordinary GUI workflow.
+- [ ] Require compile-time opt-in before any transmit-control build.
+- [ ] Require runtime arming before any transmit-control action.
+- [ ] Add mock-only transmit-control tests before hardware backend work.
+- [ ] Add emergency RX/drop handling.
+- [ ] Keep CAT control out of real-time callbacks.
+- [ ] Require manual dummy-load or receive-only validation checklist.
