@@ -91,7 +91,18 @@ Check a future batch WAV plan without processing audio or writing outputs:
 ./examples/batch-check.sh
 ```
 
-Batch dry-run validation is documented in `docs/batch-workflow.md`.
+Process a checked WAV batch with a `WITH_SNDFILE=1` build:
+
+```sh
+make WITH_SNDFILE=1
+mkdir -p build/batch-out
+./examples/batch-process.sh examples/batch-list.txt build/batch-out --profile profiles/file-cleanup.profile
+```
+
+Batch processing writes output WAV files and one `.report.json` sidecar per
+file. It does not create the output directory and does not overwrite existing
+outputs unless `--allow-overwrite` is supplied. Batch workflow details are
+documented in `docs/batch-workflow.md`.
 
 To play the playlist, edit `examples/playout-playlist.txt` so it points at local
 WAV files, then run:

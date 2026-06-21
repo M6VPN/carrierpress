@@ -2,6 +2,9 @@
 /* carrierpress/src/main.c */
 
 #include <sys/types.h>
+#ifdef CP_WITH_SNDFILE
+#include <sys/stat.h>
+#endif
 
 #include <errno.h>
 #include <math.h>
@@ -12,6 +15,9 @@
 #include <string.h>
 
 #include "carrierpress.h"
+#ifdef CP_WITH_SNDFILE
+#include "cp_batch_wav.h"
+#endif
 #include "cp_cat.h"
 #include "cp_gui.h"
 #include "cp_playlist_check.h"
@@ -59,6 +65,8 @@ static int	parse_uint_arg(const char *, unsigned int *);
 static int	parse_uint64_arg(const char *, uint64_t *);
 static int	run_cat_status(const struct cp_cat_config *);
 static int	run_batch_check(const char *, const char *, int);
+static int	run_batch_process(const char *, const char *, int,
+		    const struct cp_block_config *);
 static int	run_gui_demo(const struct cp_audio_config *,
 		    const struct cp_cat_config *, const char *);
 static int	run_list_devices(void);
@@ -80,6 +88,9 @@ static int	run_self_test(const struct cp_block_config *);
 static int	run_validate_config(const char *);
 static int	run_validate_profile(const char *);
 static const char *switch_string(int);
+#ifdef CP_WITH_SNDFILE
+static int	path_is_directory(const char *);
+#endif
 static void	print_auto_eq_metrics(const struct cp_auto_eq_metrics *);
 static void	print_bass_eq_recommendation(
 		    const struct cp_auto_eq_metrics *);
@@ -100,6 +111,7 @@ main(int argc, char *argv[])
 	const char *playlist_path;
 	const char *report_path;
 	const char *batch_check_path;
+	const char *batch_process_path;
 	const char *batch_output_dir;
 	const char *gui_screenshot_path;
 	const char *validate_config_path;
@@ -132,6 +144,7 @@ main(int argc, char *argv[])
 	playlist_path = NULL;
 	report_path = NULL;
 	batch_check_path = NULL;
+	batch_process_path = NULL;
 	batch_output_dir = NULL;
 	gui_screenshot_path = NULL;
 	validate_config_path = NULL;
@@ -214,6 +227,9 @@ main(int argc, char *argv[])
 		} else if (strcmp(argv[arg], "--batch-check") == 0 &&
 		    arg + 1 < argc) {
 			batch_check_path = argv[++arg];
+		} else if (strcmp(argv[arg], "--batch-process") == 0 &&
+		    arg + 1 < argc) {
+			batch_process_path = argv[++arg];
 		} else if (strcmp(argv[arg], "--batch-output-dir") == 0 &&
 		    arg + 1 < argc) {
 			batch_output_dir = argv[++arg];
@@ -777,8 +793,9 @@ main(int argc, char *argv[])
 		    report_path != NULL || play_path != NULL ||
 		    playlist_path != NULL || live_mode ||
 		    playlist_check_path != NULL || batch_check_path != NULL ||
-		    batch_output_dir != NULL || batch_allow_overwrite ||
-		    list_devices || self_test_mode || cat_status_mode) {
+		    batch_process_path != NULL || batch_output_dir != NULL ||
+		    batch_allow_overwrite || list_devices || self_test_mode ||
+		    cat_status_mode) {
 			usage(argv[0]);
 			return 1;
 		}
@@ -792,9 +809,9 @@ main(int argc, char *argv[])
 		    report_path != NULL || play_path != NULL ||
 		    playlist_path != NULL ||
 		    playlist_check_path != NULL || batch_check_path != NULL ||
-		    batch_output_dir != NULL || batch_allow_overwrite ||
-		    live_mode || list_devices || self_test_mode ||
-		    audio_config.gui_enabled) {
+		    batch_process_path != NULL || batch_output_dir != NULL ||
+		    batch_allow_overwrite || live_mode || list_devices ||
+		    self_test_mode || audio_config.gui_enabled) {
 			usage(argv[0]);
 			return 1;
 		}
@@ -807,8 +824,9 @@ main(int argc, char *argv[])
 		    report_path != NULL || play_path != NULL ||
 		    playlist_path != NULL ||
 		    playlist_check_path != NULL || batch_check_path != NULL ||
-		    batch_output_dir != NULL || batch_allow_overwrite ||
-		    live_mode || list_devices || audio_config.gui_enabled) {
+		    batch_process_path != NULL || batch_output_dir != NULL ||
+		    batch_allow_overwrite || live_mode || list_devices ||
+		    audio_config.gui_enabled) {
 			usage(argv[0]);
 			return 1;
 		}
@@ -820,9 +838,9 @@ main(int argc, char *argv[])
 		if (input_path != NULL || output_path != NULL ||
 		    report_path != NULL || play_path != NULL ||
 		    playlist_path != NULL || batch_check_path != NULL ||
-		    batch_output_dir != NULL || batch_allow_overwrite ||
-		    live_mode || list_devices || audio_config.tui_enabled ||
-		    audio_config.gui_enabled) {
+		    batch_process_path != NULL || batch_output_dir != NULL ||
+		    batch_allow_overwrite || live_mode || list_devices ||
+		    audio_config.tui_enabled || audio_config.gui_enabled) {
 			usage(argv[0]);
 			return 1;
 		}
@@ -830,20 +848,25 @@ main(int argc, char *argv[])
 		return run_playlist_check(playlist_check_path);
 	}
 
-	if (batch_check_path != NULL || batch_output_dir != NULL ||
-	    batch_allow_overwrite) {
+	if (batch_check_path != NULL || batch_process_path != NULL ||
+	    batch_output_dir != NULL || batch_allow_overwrite) {
 		if (input_path != NULL || output_path != NULL ||
 		    report_path != NULL || play_path != NULL ||
 		    playlist_path != NULL || playlist_check_path != NULL ||
 		    live_mode || list_devices || audio_config.tui_enabled ||
-		    audio_config.gui_enabled || batch_check_path == NULL ||
-		    batch_output_dir == NULL) {
+		    audio_config.gui_enabled || batch_output_dir == NULL ||
+		    (batch_check_path == NULL && batch_process_path == NULL) ||
+		    (batch_check_path != NULL && batch_process_path != NULL)) {
 			usage(argv[0]);
 			return 1;
 		}
 
-		return run_batch_check(batch_check_path, batch_output_dir,
-		    batch_allow_overwrite);
+		if (batch_check_path != NULL)
+			return run_batch_check(batch_check_path,
+			    batch_output_dir, batch_allow_overwrite);
+
+		return run_batch_process(batch_process_path, batch_output_dir,
+		    batch_allow_overwrite, &block_config);
 	}
 
 	if (play_path != NULL || playlist_path != NULL) {
@@ -1557,6 +1580,62 @@ run_batch_check(const char *list_path, const char *output_dir,
 }
 
 static int
+run_batch_process(const char *list_path, const char *output_dir,
+	int allow_overwrite, const struct cp_block_config *config)
+{
+#ifdef CP_WITH_SNDFILE
+	struct cp_batch_plan plan;
+	struct cp_batch_error error;
+	struct cp_batch_wav_result result;
+	int status;
+
+	if (!path_is_directory(output_dir)) {
+		printf("carrierpress: batch output directory does not exist: %s\n",
+		    output_dir == NULL ? "" : output_dir);
+		return 1;
+	}
+
+	memset(&error, 0, sizeof(error));
+	status = cp_batch_plan_load(list_path, output_dir, &plan, &error);
+	if (status == CP_BATCH_OK)
+		status = cp_batch_plan_check_overwrites(&plan,
+		    allow_overwrite);
+	cp_batch_plan_print(&plan, stdout);
+	if (status != CP_BATCH_OK) {
+		if (error.reason[0] != '\0') {
+			fprintf(stderr, "carrierpress: batch %s: ", list_path);
+			if (error.line_number > 0)
+				fprintf(stderr, "line %zu: ",
+				    error.line_number);
+			if (error.path[0] != '\0')
+				fprintf(stderr, "%s: ", error.path);
+			fprintf(stderr, "%s\n", error.reason);
+		}
+		cp_batch_plan_free(&plan);
+		return 1;
+	}
+
+	status = cp_batch_wav_process_plan(&plan, config,
+	    CP_WAV_BLOCK_FRAMES, &result, stdout);
+	if (status != CP_BATCH_OK && result.last_status != CP_WAV_OK) {
+		printf("carrierpress: batch processing failed: %s\n",
+		    cp_wav_status_string(result.last_status));
+	}
+	cp_batch_plan_free(&plan);
+
+	return status == CP_BATCH_OK ? 0 : 1;
+#else
+	(void)list_path;
+	(void)output_dir;
+	(void)allow_overwrite;
+	(void)config;
+
+	printf("Batch WAV processing not enabled. Rebuild with WITH_SNDFILE=1.\n");
+	return 1;
+#endif
+}
+
+static int
 run_playlist_check(const char *path)
 {
 	struct cp_playlist_check_result result;
@@ -1974,6 +2053,19 @@ switch_string(int enabled)
 	return enabled ? "on" : "off";
 }
 
+#ifdef CP_WITH_SNDFILE
+static int
+path_is_directory(const char *path)
+{
+	struct stat st;
+
+	if (path == NULL || path[0] == '\0')
+		return 0;
+
+	return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
+}
+#endif
+
 static void
 usage(const char *program)
 {
@@ -2003,6 +2095,8 @@ usage(const char *program)
 	printf("usage: %s --play input.wav [--output-device N]\n", program);
 	printf("usage: %s --playlist-check playlist.txt\n", program);
 	printf("usage: %s --batch-check batch.txt --batch-output-dir "
+	    "processed [--allow-overwrite]\n", program);
+	printf("usage: %s --batch-process batch.txt --batch-output-dir "
 	    "processed [--allow-overwrite]\n", program);
 	printf("usage: %s --playlist playlist.txt [--output-device N]\n",
 	    program);

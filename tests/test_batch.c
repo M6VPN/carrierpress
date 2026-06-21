@@ -2,6 +2,7 @@
 /* carrierpress/tests/test_batch.c */
 
 #include <sys/types.h>
+#include <sys/stat.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -12,6 +13,7 @@
 
 static int	write_long_batch(const char *);
 static int	write_text_file(const char *, const char *);
+static int	ensure_dir(const char *);
 static int	test_allow_overwrite(void);
 static int	test_duplicate_outputs(void);
 static int	test_existing_output(void);
@@ -25,6 +27,10 @@ static int	test_valid_list(void);
 int
 main(void)
 {
+	if (!ensure_dir(TEST_BATCH_DIR)) {
+		printf("test_batch: could not create scratch dir\n");
+		return 1;
+	}
 	if (!test_path_filter())
 		return 1;
 	if (!test_valid_list())
@@ -45,6 +51,19 @@ main(void)
 		return 1;
 
 	return 0;
+}
+
+static int
+ensure_dir(const char *path)
+{
+	struct stat st;
+
+	if (mkdir(path, 0777) == -1) {
+		if (stat(path, &st) == -1 || !S_ISDIR(st.st_mode))
+			return 0;
+	}
+
+	return 1;
 }
 
 static int

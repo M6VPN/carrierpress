@@ -108,8 +108,8 @@ ifeq ($(WITH_SNDFILE),1)
 FEATURE_DIR := $(FEATURE_DIR)-sndfile
 CPPFLAGS += -DCP_WITH_SNDFILE
 LDLIBS	+= -lsndfile
-CORE_SRCS += src/cp_wav.c
-TEST_SRCS += tests/test_wav.c
+CORE_SRCS += src/cp_wav.c src/cp_batch_wav.c
+TEST_SRCS += tests/test_wav.c tests/test_batch_wav.c
 SNDFILE_ORDER = check-sndfile
 endif
 
@@ -239,7 +239,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_waveform
 
 ifeq ($(WITH_SNDFILE),1)
-TEST_BINS += $(TEST_BIN_DIR)/test_wav
+TEST_BINS += $(TEST_BIN_DIR)/test_wav $(TEST_BIN_DIR)/test_batch_wav
 endif
 
 ifeq ($(PLAYOUT_ENABLED),1)
@@ -352,6 +352,10 @@ $(TEST_BIN_DIR)/test_auto_eq: $(TEST_OBJ_DIR)/tests/test_auto_eq.o $(TEST_CORE_O
 $(TEST_BIN_DIR)/test_batch: $(TEST_OBJ_DIR)/tests/test_batch.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_batch.o $(TEST_CORE_OBJS) $(LDLIBS)
+
+$(TEST_BIN_DIR)/test_batch_wav: $(TEST_OBJ_DIR)/tests/test_batch_wav.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_batch_wav.o $(TEST_CORE_OBJS) $(LDLIBS)
 
 $(TEST_BIN_DIR)/test_bass_eq: $(TEST_OBJ_DIR)/tests/test_bass_eq.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
@@ -526,6 +530,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_waveform
 ifeq ($(WITH_SNDFILE),1)
 	./$(TEST_BIN_DIR)/test_wav
+	./$(TEST_BIN_DIR)/test_batch_wav
 endif
 ifeq ($(PLAYOUT_ENABLED),1)
 	./$(TEST_BIN_DIR)/test_playout

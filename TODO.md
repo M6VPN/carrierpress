@@ -250,7 +250,7 @@ implemented until code, docs, and validation are complete.
 - [x] Add batch dry-run validation.
 - [x] Add safe output-directory handling.
 - [x] Avoid overwriting files unless explicitly requested.
-- [ ] Generate sidecar reports per processed file.
+- [x] Generate sidecar reports per processed file.
 - [x] Keep compressed formats external unless selected later.
 
 ## M19 Report Schema and Compare Tools
