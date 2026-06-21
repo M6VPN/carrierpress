@@ -809,8 +809,8 @@ Choose a backend policy:
 ```
 
 On OpenBSD or systems using sndio, build with `WITH_SNDIO=1` and select sndio
-explicitly. Further sndio device-listing, TUI, and hardware-validation work is
-deferred:
+explicitly. See [docs/openbsd-sndio.md](docs/openbsd-sndio.md) for OpenBSD
+build notes and the manual sndio validation checklist:
 
 ```sh
 ./carrierpress --live --audio-backend sndio
@@ -1096,28 +1096,28 @@ If libsndfile and PortAudio are available, run playout GUI monitoring:
 ./carrierpress --playlist playlist.txt --gui
 ```
 
-## Deferred sndio Live-Audio Test
+## OpenBSD and sndio Manual Validation
 
-Build with sndio when OpenBSD-style audio testing resumes:
+OpenBSD and sndio validation is manual unless a stable OpenBSD runner is added.
+Linux PortAudio remains the active live-audio path. Build sndio explicitly:
 
 ```sh
 make WITH_SNDIO=1
 ```
 
-Run live processing through the default sndio device:
+Run the safe local smoke helper:
 
 ```sh
-./carrierpress --live --audio-backend sndio
+./examples/sndio-smoke.sh
 ```
 
-Run live processing through a named sndio device:
+Then follow the checklist in [docs/openbsd-sndio.md](docs/openbsd-sndio.md).
+The sndio backend uses named devices:
 
 ```sh
-./carrierpress --live --audio-backend sndio --device default --sample-rate 48000 --channels 2 --block-size 256
+./carrierpress --live --audio-backend sndio --device default
+./carrierpress --live --audio-backend sndio --device snd/0
 ```
-
-Check that meter lines update while audio is present. Stop with `Ctrl-C`.
-This is not part of the active Linux-host validation gate.
 
 ## Development
 

@@ -193,7 +193,19 @@ step.
 
 - PTT control remains deferred behind the T5 safety checklist.
 - MP3 playout remains planned.
-- sndio hardware validation remains deferred.
+- OpenBSD/sndio hardware validation is manual unless a stable runner is added.
 - STM32H753 and CMSIS-DSP support remain planned.
 - RF generation, transmitter control, NRSC certification, C-QUAM, and regulatory
   compliance tooling are not part of v0.1.
+
+## Optional OpenBSD and sndio Validation
+
+Use `docs/openbsd-sndio.md` for the manual checklist.
+
+- Confirm the base OpenBSD build runs `make`, `make test`, and `make validate`.
+- Confirm `make WITH_SNDIO=1` builds when sndio headers and libraries are
+  available.
+- Confirm `make WITH_SNDIO=1 test` passes.
+- Run `./examples/sndio-smoke.sh`.
+- Run live sndio only on a safe local device or loopback.
+- Confirm Linux PortAudio commands and validation remain unchanged.

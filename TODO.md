@@ -207,10 +207,10 @@ implemented until code, docs, and validation are complete.
 
 ## M15 OpenBSD/sndio Validation
 
-- [ ] Add OpenBSD build notes.
-- [ ] Add sndio manual validation checklist.
-- [ ] Add sndio device notes.
-- [ ] Keep Linux PortAudio path unchanged.
+- [x] Add OpenBSD build notes.
+- [x] Add sndio manual validation checklist.
+- [x] Add sndio device notes.
+- [x] Keep Linux PortAudio path unchanged.
 
 ## M16 Packaging and Release Polish
 

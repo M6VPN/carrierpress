@@ -96,6 +96,18 @@ milestone. Convert those files to WAV first:
 
 See `docs/external-decode-workflow.md` for the full external decode workflow.
 
+## OpenBSD and sndio
+
+The sndio smoke helper runs self-test and prints manual live-audio commands. It
+does not open a live stream or change system audio settings:
+
+```sh
+./examples/sndio-smoke.sh
+```
+
+Build with `WITH_SNDIO=1` before trying the printed live-audio commands. See
+`docs/openbsd-sndio.md` for the full manual checklist.
+
 ## GUI Demo
 
 The GUI monitor requires `WITH_GUI=1`. The spectrum panel requires

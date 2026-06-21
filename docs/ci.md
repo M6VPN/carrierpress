@@ -68,6 +68,13 @@ make WITH_GUI=1 WITH_FFTW=1 test
 
 Visual checks remain manual. CI does not do pixel comparison.
 
+## OpenBSD and sndio
+
+OpenBSD and sndio validation is manual unless a stable OpenBSD runner is added.
+The Linux CI path does not make sndio mandatory and does not use sndio as the
+active Linux audio backend. Use `docs/openbsd-sndio.md` for the manual build
+and hardware checklist.
+
 ## Packaging Smoke
 
 The packaging job checks a staged install and uninstall:
