@@ -250,6 +250,7 @@ cp_portaudio_list_devices(void)
 int
 cp_portaudio_run(const struct cp_audio_config *config,
 	const struct cp_cat_config *cat_config,
+	const struct cp_operator_state *operator_state,
 	volatile sig_atomic_t *stop_requested)
 {
 	PaStreamParameters input_params;
@@ -287,6 +288,9 @@ cp_portaudio_run(const struct cp_audio_config *config,
 
 #ifdef CP_WITH_FFTW
 	spectrum_ready = 0;
+#endif
+#if !defined(CP_WITH_TUI) && !defined(CP_WITH_GUI)
+	(void)operator_state;
 #endif
 	status = cp_audio_validate_config(config);
 	if (status != CP_AUDIO_OK)
@@ -450,6 +454,7 @@ cp_portaudio_run(const struct cp_audio_config *config,
 			tui_view.config        = config;
 			tui_view.snapshot      = &snapshot;
 			tui_view.cat_snapshot  = &cat_snapshot;
+			tui_view.operator_state = operator_state;
 			tui_view.output_device = (int)output_device;
 			if (cp_tui_update_view(&tui, &tui_view, &command))
 				*stop_requested = 1;
@@ -468,6 +473,7 @@ cp_portaudio_run(const struct cp_audio_config *config,
 			gui_view.config        = config;
 			gui_view.snapshot      = &snapshot;
 			gui_view.cat_snapshot  = &cat_snapshot;
+			gui_view.operator_state = operator_state;
 			gui_view.waveform      = &waveform;
 #ifdef CP_WITH_FFTW
 			gui_view.spectrum      = &spectrum;

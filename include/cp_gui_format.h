@@ -9,6 +9,7 @@
 #include "cp_audio.h"
 #include "cp_cat.h"
 #include "cp_monitor.h"
+#include "cp_operator_state.h"
 
 enum cp_gui_mode {
 	CP_GUI_MODE_LIVE = 0,
@@ -26,6 +27,8 @@ int	cp_gui_format_meters(const struct cp_monitor_snapshot *, char *,
 	    size_t);
 int	cp_gui_format_mode(const struct cp_monitor_snapshot *, char *,
 	    size_t);
+int	cp_gui_format_operator_state(const struct cp_operator_state *,
+	    char *, size_t);
 int	cp_gui_format_transport(enum cp_gui_mode,
 	    const struct cp_audio_config *, const char *, size_t, size_t, int,
 	    char *, size_t);

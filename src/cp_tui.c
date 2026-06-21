@@ -244,6 +244,13 @@ cp_tui_format_mode_status(const struct cp_monitor_snapshot *snapshot,
 	    ssb_state);
 }
 
+int
+cp_tui_format_operator_status(const struct cp_operator_state *state,
+	char *buffer, size_t buffer_size)
+{
+	return cp_operator_state_format_summary(state, buffer, buffer_size);
+}
+
 static enum cp_tui_processing_mode
 cp_tui_processing_mode(const struct cp_monitor_snapshot *snapshot)
 {
@@ -504,15 +511,18 @@ cp_tui_draw_mode(int rows, int cols, const struct cp_tui_view *view,
 	enum cp_control_bank bank)
 {
 	char mode_text[CP_TUI_TEXT_SIZE];
+	char operator_text[CP_TUI_TEXT_SIZE];
 
 	(void)rows;
 	cp_tui_draw_box_line(3, cols, " Mode / Controls ", 0);
 	if (cp_tui_format_mode_status(view->snapshot, bank, mode_text,
 	    sizeof(mode_text)) != CP_OK)
 		mode_text[0] = '\0';
+	if (cp_tui_format_operator_status(view->operator_state,
+	    operator_text, sizeof(operator_text)) != CP_OK)
+		operator_text[0] = '\0';
 	cp_tui_draw_text(4, 2, cols, "%s", mode_text);
-	cp_tui_draw_text(5, 2, cols, "Preset commands only. Audio-chain "
-	    "mode display is baseband audio processing, not RF generation.");
+	cp_tui_draw_text(5, 2, cols, "%s", operator_text);
 }
 
 static void
@@ -534,10 +544,18 @@ static void
 cp_tui_draw_transport(int rows, int cols, const struct cp_tui_view *view,
 	enum cp_control_bank bank)
 {
+	char cue[CP_TUI_TEXT_SIZE];
 	char keys[CP_TUI_TEXT_SIZE];
+	char report[CP_TUI_TEXT_SIZE];
 	const struct cp_audio_config *config;
 
 	config = view->config;
+	if (cp_operator_state_format_cue(view->operator_state, cue,
+	    sizeof(cue)) != CP_OK)
+		cue[0] = '\0';
+	if (cp_operator_state_format_report(view->operator_state, report,
+	    sizeof(report)) != CP_OK)
+		report[0] = '\0';
 	cp_tui_draw_box_line(0, cols, " CarrierPress Operator Panel ", 1);
 	if (view->mode == CP_TUI_MODE_PLAYOUT) {
 		if (view->playlist_count > 0) {
@@ -554,18 +572,17 @@ cp_tui_draw_transport(int rows, int cols, const struct cp_tui_view *view,
 			    config->sample_rate, config->channels,
 			    config->block_size, view->output_device);
 		}
-		cp_tui_draw_text(2, 2, cols, "Source %s",
-		    view->path == NULL ? "" : view->path);
+		cp_tui_draw_text(2, 2, cols, "%s | %s", cue, report);
 	} else {
 		cp_tui_draw_text(1, 2, cols, "Transport LIVE | rate %.0f Hz | "
 		    "channels %zu | block %zu | input %d | output %d",
 		    config->sample_rate, config->channels, config->block_size,
 		    config->input_device, config->output_device);
-		cp_tui_draw_text(2, 2, cols, "Backend %s | device %s",
+		cp_tui_draw_text(2, 2, cols, "Backend %s | device %s | %s",
 		    cp_audio_backend_string(config->backend),
 		    config->device_name == NULL ||
 		    config->device_name[0] == '\0' ? "auto" :
-		    config->device_name);
+		    config->device_name, report);
 	}
 
 	if (cp_tui_format_key_help(view, bank, keys,

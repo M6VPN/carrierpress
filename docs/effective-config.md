@@ -88,3 +88,7 @@ report_path=
 
 Only fields that map to existing public config structs are printed. Internal
 processor state is not printed here.
+
+The optional TUI and GUI monitors show a compact operator summary with active
+config/profile/report/cue context. That display is for live operation. This
+command remains the stable text inspection path for scripts and audits.

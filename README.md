@@ -1245,6 +1245,11 @@ are split into explicit banks so AM preset keys do not affect SSB mode, and SSB
 preset keys do not affect AM mode. It does not expose arbitrary DSP parameter
 editing.
 
+The optional TUI and SDL3 GUI monitor show the active config path, profile path,
+profile name, report path, batch path, and current cue/playlist position where
+that context exists. This is an operator-facing summary only. The authoritative
+plain-text inspection path remains `--print-effective-config`.
+
 CAT status is a host-side read-only boundary in this milestone slice. The mock
 backend is used for tests and TUI display without requiring a radio. The flrig
 backend reads frequency, mode, and PTT state through XML-RPC when built with

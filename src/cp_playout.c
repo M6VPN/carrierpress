@@ -184,6 +184,7 @@ cp_playout_default_config(struct cp_playout_config *config)
 	config->block_frames = CP_PLAYOUT_DEFAULT_BLOCK_FRAMES;
 	config->meter_interval_ms = CP_AUDIO_DEFAULT_METER_MS;
 	config->stop_requested = NULL;
+	config->operator_state = NULL;
 	config->playlist_index = 0;
 	config->playlist_count = 0;
 }
@@ -344,6 +345,7 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 	struct cp_audio_config audio_config;
 	struct cp_block_config block_config;
 	struct cp_block_processor processor;
+	struct cp_operator_state operator_state;
 	struct cp_resampler resampler;
 	struct cp_resampler_config resampler_config;
 #ifdef CP_WITH_TUI
@@ -452,6 +454,13 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 		sf_close(input_file);
 		return CP_PLAYOUT_ERR_CONFIG;
 	}
+	if (config->operator_state != NULL)
+		operator_state = *config->operator_state;
+	else
+		cp_operator_state_clear(&operator_state);
+	operator_state.cue_path = path;
+	operator_state.playlist_index = config->playlist_index;
+	operator_state.playlist_count = config->playlist_count;
 
 	error = Pa_Initialize();
 	if (error != paNoError) {
@@ -724,6 +733,7 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 			tui_view.config         = &audio_config;
 			tui_view.snapshot       = &snapshot;
 			tui_view.cat_snapshot   = &cat_snapshot;
+			tui_view.operator_state = &operator_state;
 			tui_view.path           = path;
 			tui_view.playlist_index = config->playlist_index;
 			tui_view.playlist_count = config->playlist_count;
@@ -758,6 +768,7 @@ cp_playout_run_file(const char *path, const struct cp_playout_config *config)
 			gui_view.config         = &audio_config;
 			gui_view.snapshot       = &snapshot;
 			gui_view.cat_snapshot   = &cat_snapshot;
+			gui_view.operator_state = &operator_state;
 			gui_view.waveform       = &waveform;
 #ifdef CP_WITH_FFTW
 			gui_view.spectrum       = &spectrum;

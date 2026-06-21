@@ -8,6 +8,7 @@
 
 #include "cp_audio.h"
 #include "cp_cat.h"
+#include "cp_operator_state.h"
 
 enum cp_portaudio_status {
 	CP_PORTAUDIO_OK          = 0,
@@ -23,7 +24,8 @@ enum cp_portaudio_status {
 
 int		cp_portaudio_list_devices(void);
 int		cp_portaudio_run(const struct cp_audio_config *,
-		    const struct cp_cat_config *, volatile sig_atomic_t *);
+		    const struct cp_cat_config *,
+		    const struct cp_operator_state *, volatile sig_atomic_t *);
 const char	*cp_portaudio_status_string(int);
 
 #endif

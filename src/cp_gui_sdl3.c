@@ -121,6 +121,7 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	char flags[128];
 	char meters[256];
 	char mode[64];
+	char operator_status[512];
 	char transport[256];
 
 	if (gui == NULL || view == NULL || view->config == NULL ||
@@ -140,6 +141,8 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	    cp_gui_format_agc(view->snapshot, agc, sizeof(agc)) != CP_OK ||
 	    cp_gui_format_flags(view->snapshot->stream_flags, flags,
 	    sizeof(flags)) != CP_OK ||
+	    cp_gui_format_operator_state(view->operator_state,
+	    operator_status, sizeof(operator_status)) != CP_OK ||
 	    cp_gui_format_chain(view->snapshot, chain, sizeof(chain)) !=
 	    CP_OK ||
 	    cp_gui_format_cat(view->cat_snapshot, cat, sizeof(cat)) !=
@@ -176,6 +179,7 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	cp_gui_draw_text(renderer, 492.0f, 128.0f, agc);
 	cp_gui_draw_text(renderer, 492.0f, 150.0f, flags);
 	cp_gui_draw_text(renderer, 492.0f, 172.0f, cat);
+	cp_gui_draw_text(renderer, 492.0f, 194.0f, operator_status);
 
 	cp_gui_draw_panel(renderer, CP_GUI_MARGIN, 276.0f, 928.0f, 92.0f,
 	    "Processing Chain");

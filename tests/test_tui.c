@@ -9,11 +9,13 @@
 #include "cp_audio.h"
 #include "cp_cat.h"
 #include "cp_monitor.h"
+#include "cp_operator_state.h"
 #include "cp_tui.h"
 
 static int	test_cat_status(void);
 static int	test_key_help(void);
 static int	test_mode_state(void);
+static int	test_operator_status(void);
 
 int
 main(void)
@@ -23,6 +25,8 @@ main(void)
 	if (!test_key_help())
 		return 1;
 	if (!test_cat_status())
+		return 1;
+	if (!test_operator_status())
 		return 1;
 
 	return 0;
@@ -185,6 +189,47 @@ test_mode_state(void)
 	}
 	if (strstr(buffer, "AM bank armed") == NULL) {
 		printf("test_tui: armed status mismatch: %s\n", buffer);
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_operator_status(void)
+{
+	struct cp_operator_state state;
+	char buffer[512];
+
+	cp_operator_state_clear(&state);
+	state.config_path = "configs/default.conf";
+	state.profile_path = "profiles/am-safe.profile";
+	state.profile_name = "AM Safe";
+	state.report_enabled = 1;
+	state.report_path = "build/report.json";
+	state.cue_path = "audio/program.wav";
+	state.playlist_index = 1;
+	state.playlist_count = 3;
+
+	if (cp_tui_format_operator_status(&state, buffer,
+	    sizeof(buffer)) != CP_OK) {
+		printf("test_tui: operator status failed\n");
+		return 0;
+	}
+	if (strstr(buffer, "config=configs/default.conf") == NULL ||
+	    strstr(buffer, "profile=profiles/am-safe.profile") == NULL ||
+	    strstr(buffer, "cue=2/3") == NULL ||
+	    strstr(buffer, "report=build/report.json") == NULL) {
+		printf("test_tui: operator status mismatch: %s\n", buffer);
+		return 0;
+	}
+	if (strstr(buffer, "ptt") != NULL ||
+	    strstr(buffer, "transmit") != NULL ||
+	    strstr(buffer, "rig_frequency") != NULL ||
+	    strstr(buffer, "rig_mode") != NULL ||
+	    strstr(buffer, "hamlib") != NULL ||
+	    strstr(buffer, "flrig") != NULL) {
+		printf("test_tui: operator forbidden text: %s\n", buffer);
 		return 0;
 	}
 

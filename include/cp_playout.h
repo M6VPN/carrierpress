@@ -12,6 +12,7 @@
 #include "cp_block.h"
 #include "cp_cat.h"
 #include "cp_monitor.h"
+#include "cp_operator_state.h"
 
 #define CP_PLAYOUT_DEFAULT_BLOCK_FRAMES	512
 #define CP_PLAYOUT_MAX_LINE		4096
@@ -55,6 +56,7 @@ struct cp_playout_config {
 	size_t block_frames;
 	unsigned int meter_interval_ms;
 	volatile sig_atomic_t *stop_requested;
+	const struct cp_operator_state *operator_state;
 	size_t playlist_index;
 	size_t playlist_count;
 };

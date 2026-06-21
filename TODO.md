@@ -263,11 +263,11 @@ implemented until code, docs, and validation are complete.
 
 ## M20 TUI/GUI Operator Polish
 
-- [ ] Display active profile/config state.
-- [ ] Display cue/status context more clearly.
+- [x] Display active profile/config state.
+- [x] Display cue/status context more clearly.
 - [ ] Improve spectrum and level labels.
 - [ ] Improve screenshot/evidence metadata.
-- [ ] Keep CLI usable without TUI/GUI.
+- [x] Keep CLI usable without TUI/GUI.
 
 ## M21 Library/API Examples
 

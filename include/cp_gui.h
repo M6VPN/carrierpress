@@ -24,6 +24,7 @@ struct cp_gui_view {
 	const struct cp_audio_config *config;
 	const struct cp_monitor_snapshot *snapshot;
 	const struct cp_cat_snapshot *cat_snapshot;
+	const struct cp_operator_state *operator_state;
 	const struct cp_waveform_snapshot *waveform;
 #ifdef CP_WITH_FFTW
 	const struct cp_spectrum_snapshot *spectrum;

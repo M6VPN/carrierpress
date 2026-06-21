@@ -129,6 +129,10 @@ Text playout prints concise cue/status lines for file starts, playlist cues,
 stops, and completion. TUI and GUI playout keep cue/status information inside
 the monitor display instead of printing extra text lines.
 
+When TUI or GUI monitoring is enabled, the monitor also shows the active config,
+profile, report, batch, and cue context where those values exist. Use
+`./examples/print-effective-config.sh` for script-friendly resolved settings.
+
 CarrierPress does not play MP3, FLAC, OGG, Opus, or M4A natively in this
 milestone. Convert those files to WAV first:
 

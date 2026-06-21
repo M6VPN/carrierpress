@@ -10,11 +10,13 @@
 #include "cp_cat.h"
 #include "cp_gui_format.h"
 #include "cp_monitor.h"
+#include "cp_operator_state.h"
 
 static int	test_cat_format(void);
 static int	test_chain_format(void);
 static int	test_meter_format(void);
 static int	test_mode_format(void);
+static int	test_operator_format(void);
 static int	test_transport_format(void);
 
 int
@@ -29,6 +31,8 @@ main(void)
 	if (!test_cat_format())
 		return 1;
 	if (!test_transport_format())
+		return 1;
+	if (!test_operator_format())
 		return 1;
 
 	return 0;
@@ -172,6 +176,48 @@ test_mode_format(void)
 	if (cp_gui_format_mode(&snapshot, buffer, sizeof(buffer)) != CP_OK ||
 	    strcmp(buffer, "Mode: SSB") != 0) {
 		printf("test_gui_format: SSB mode mismatch: %s\n", buffer);
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_operator_format(void)
+{
+	struct cp_operator_state state;
+	char buffer[512];
+
+	cp_operator_state_clear(&state);
+	state.config_path = "configs/default.conf";
+	state.profile_path = "profiles/ssb-speech.profile";
+	state.profile_name = "SSB Speech";
+	state.report_enabled = 1;
+	state.report_path = "build/report.json";
+	state.cue_path = "audio/program.wav";
+	state.playlist_index = 2;
+	state.playlist_count = 4;
+	if (cp_gui_format_operator_state(&state, buffer,
+	    sizeof(buffer)) != CP_OK) {
+		printf("test_gui_format: operator format failed\n");
+		return 0;
+	}
+	if (strstr(buffer, "Operator:") == NULL ||
+	    strstr(buffer, "config=configs/default.conf") == NULL ||
+	    strstr(buffer, "profile=profiles/ssb-speech.profile") == NULL ||
+	    strstr(buffer, "cue=3/4") == NULL ||
+	    strstr(buffer, "report=build/report.json") == NULL) {
+		printf("test_gui_format: operator mismatch: %s\n", buffer);
+		return 0;
+	}
+	if (strstr(buffer, "ptt") != NULL ||
+	    strstr(buffer, "transmit") != NULL ||
+	    strstr(buffer, "rig_frequency") != NULL ||
+	    strstr(buffer, "rig_mode") != NULL ||
+	    strstr(buffer, "hamlib") != NULL ||
+	    strstr(buffer, "flrig") != NULL) {
+		printf("test_gui_format: operator forbidden text: %s\n",
+		    buffer);
 		return 0;
 	}
 

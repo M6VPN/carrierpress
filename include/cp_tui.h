@@ -8,6 +8,7 @@
 #include "cp_cat.h"
 #include "cp_control.h"
 #include "cp_monitor.h"
+#include "cp_operator_state.h"
 
 struct cp_tui {
 	int active;
@@ -25,6 +26,7 @@ struct cp_tui_view {
 	const struct cp_audio_config *config;
 	const struct cp_monitor_snapshot *snapshot;
 	const struct cp_cat_snapshot *cat_snapshot;
+	const struct cp_operator_state *operator_state;
 	const char *path;
 	size_t playlist_index;
 	size_t playlist_count;
@@ -41,6 +43,8 @@ int	cp_tui_format_key_help(const struct cp_tui_view *,
 	    enum cp_control_bank, char *, size_t);
 int	cp_tui_format_mode_status(const struct cp_monitor_snapshot *,
 	    enum cp_control_bank, char *, size_t);
+int	cp_tui_format_operator_status(const struct cp_operator_state *,
+	    char *, size_t);
 int	cp_tui_init(struct cp_tui *);
 int	cp_tui_update(struct cp_tui *, const struct cp_audio_config *,
 	    const struct cp_monitor_snapshot *, struct cp_control_command *);

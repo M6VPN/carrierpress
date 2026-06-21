@@ -114,6 +114,13 @@ cp_gui_format_mode(const struct cp_monitor_snapshot *snapshot,
 }
 
 int
+cp_gui_format_operator_state(const struct cp_operator_state *state,
+	char *buffer, size_t buffer_size)
+{
+	return cp_operator_state_format_summary(state, buffer, buffer_size);
+}
+
+int
 cp_gui_format_transport(enum cp_gui_mode mode,
 	const struct cp_audio_config *config, const char *path,
 	size_t playlist_index, size_t playlist_count, int output_device,

@@ -20,6 +20,7 @@
 #endif
 #include "cp_cat.h"
 #include "cp_gui.h"
+#include "cp_operator_state.h"
 #include "cp_playlist_check.h"
 #include "cp_playout.h"
 #include "cp_portaudio.h"
@@ -51,6 +52,9 @@ static int	apply_config_arg(const char *, struct cp_config_file *,
 static int	apply_profile_arg(const char *, const char *,
 		    struct cp_block_config *, struct cp_audio_config *,
 		    struct cp_inspection_state *);
+static void	build_operator_state(struct cp_operator_state *,
+		    const struct cp_inspection_state *, const char *,
+		    const char *, const char *);
 static int	copy_inspection_string(char *, size_t, const char *);
 static void	handle_signal(int);
 static int	parse_am_preset(struct cp_am_config *, const char *);
@@ -69,17 +73,19 @@ static int	run_batch_check(const char *, const char *, int);
 static int	run_batch_process(const char *, const char *, int,
 		    const struct cp_block_config *);
 static int	run_gui_demo(const struct cp_audio_config *,
-		    const struct cp_cat_config *, const char *);
+		    const struct cp_cat_config *,
+		    const struct cp_operator_state *, const char *);
 static int	run_list_devices(void);
 static int	run_live_audio(const struct cp_audio_config *,
-		    const struct cp_cat_config *);
+		    const struct cp_cat_config *,
+		    const struct cp_operator_state *);
 static int	run_playlist_check(const char *);
 static int	run_playout_file(const char *, const struct cp_audio_config *,
 		    const struct cp_block_config *, const struct cp_cat_config *,
-		    volatile sig_atomic_t *);
+		    const struct cp_operator_state *, volatile sig_atomic_t *);
 static int	run_playout_playlist(const char *, const struct cp_audio_config *,
 		    const struct cp_block_config *, const struct cp_cat_config *,
-		    volatile sig_atomic_t *);
+		    const struct cp_operator_state *, volatile sig_atomic_t *);
 static int	run_print_effective_config(const struct cp_audio_config *,
 		    const struct cp_block_config *,
 		    const struct cp_inspection_state *, const char *);
@@ -127,6 +133,7 @@ main(int argc, char *argv[])
 	struct cp_cat_config cat_config;
 	struct cp_config_file config_file;
 	struct cp_inspection_state inspection_state;
+	struct cp_operator_state operator_state;
 	double parsed_double;
 	double report_tolerance;
 	uint64_t parsed_uint64;
@@ -174,6 +181,7 @@ main(int argc, char *argv[])
 	report_tolerance_seen = 0;
 	self_test_mode = 0;
 	memset(&inspection_state, 0, sizeof(inspection_state));
+	cp_operator_state_clear(&operator_state);
 	cp_audio_default_config(&audio_config);
 	cp_block_default_config(&block_config, CP_CHANNELS_MONO);
 	cp_cat_default_config(&cat_config);
@@ -849,6 +857,9 @@ main(int argc, char *argv[])
 		usage(argv[0]);
 		return 1;
 	}
+	build_operator_state(&operator_state, &inspection_state, report_path,
+	    batch_check_path != NULL ? batch_check_path : batch_process_path,
+	    NULL);
 
 	if (print_effective_config)
 		return run_print_effective_config(&audio_config, &block_config,
@@ -866,7 +877,7 @@ main(int argc, char *argv[])
 			return 1;
 		}
 
-		return run_gui_demo(&audio_config, &cat_config,
+		return run_gui_demo(&audio_config, &cat_config, &operator_state,
 		    gui_screenshot_path);
 	}
 
@@ -949,10 +960,12 @@ main(int argc, char *argv[])
 		}
 		if (play_path != NULL)
 			return run_playout_file(play_path, &audio_config,
-			    &block_config, &cat_config, &stop_requested);
+			    &block_config, &cat_config, &operator_state,
+			    &stop_requested);
 
 		return run_playout_playlist(playlist_path, &audio_config,
-		    &block_config, &cat_config, &stop_requested);
+		    &block_config, &cat_config, &operator_state,
+		    &stop_requested);
 	}
 
 	if (input_path != NULL || output_path != NULL || report_path != NULL) {
@@ -979,7 +992,8 @@ main(int argc, char *argv[])
 	}
 
 	if (live_mode)
-		return run_live_audio(&audio_config, &cat_config);
+		return run_live_audio(&audio_config, &cat_config,
+		    &operator_state);
 
 	usage(argv[0]);
 	return 1;
@@ -1069,6 +1083,34 @@ apply_profile_arg(const char *path, const char *config_path,
 	print_profile_error(path, config_path, &error);
 
 	return 0;
+}
+
+static void
+build_operator_state(struct cp_operator_state *state,
+	const struct cp_inspection_state *inspection_state,
+	const char *report_path, const char *batch_path, const char *cue_path)
+{
+	if (state == NULL)
+		return;
+
+	cp_operator_state_clear(state);
+	if (inspection_state != NULL) {
+		if (inspection_state->config_path[0] != '\0')
+			state->config_path = inspection_state->config_path;
+		if (inspection_state->profile_path[0] != '\0')
+			state->profile_path = inspection_state->profile_path;
+		if (inspection_state->profile_name[0] != '\0')
+			state->profile_name = inspection_state->profile_name;
+	}
+	if (report_path != NULL && report_path[0] != '\0') {
+		state->report_path = report_path;
+		state->report_enabled = 1;
+	}
+	if (batch_path != NULL && batch_path[0] != '\0') {
+		state->batch_path = batch_path;
+		state->batch_enabled = 1;
+	}
+	state->cue_path = cue_path;
 }
 
 static int
@@ -1423,7 +1465,9 @@ run_cat_status(const struct cp_cat_config *config)
 
 static int
 run_gui_demo(const struct cp_audio_config *config,
-	const struct cp_cat_config *cat_config, const char *screenshot_path)
+	const struct cp_cat_config *cat_config,
+	const struct cp_operator_state *operator_state,
+	const char *screenshot_path)
 {
 #ifdef CP_WITH_GUI
 	struct cp_cat_snapshot cat_snapshot;
@@ -1517,6 +1561,7 @@ run_gui_demo(const struct cp_audio_config *config,
 		view.config = config;
 		view.snapshot = &snapshot;
 		view.cat_snapshot = &cat_snapshot;
+		view.operator_state = operator_state;
 		view.waveform = &waveform;
 #ifdef CP_WITH_FFTW
 		view.spectrum = &spectrum;
@@ -1544,6 +1589,7 @@ run_gui_demo(const struct cp_audio_config *config,
 #else
 	(void)config;
 	(void)cat_config;
+	(void)operator_state;
 	(void)screenshot_path;
 
 	printf("GUI support not enabled. Rebuild with WITH_GUI=1.\n");
@@ -1573,11 +1619,13 @@ run_list_devices(void)
 
 static int
 run_live_audio(const struct cp_audio_config *config,
-	const struct cp_cat_config *cat_config)
+	const struct cp_cat_config *cat_config,
+	const struct cp_operator_state *operator_state)
 {
 	int status;
 
 	(void)cat_config;
+	(void)operator_state;
 
 	status = cp_audio_validate_config(config);
 	if (status != CP_AUDIO_OK) {
@@ -1618,7 +1666,8 @@ run_live_audio(const struct cp_audio_config *config,
 #endif
 
 #ifdef CP_WITH_PORTAUDIO
-	status = cp_portaudio_run(config, cat_config, &stop_requested);
+	status = cp_portaudio_run(config, cat_config, operator_state,
+	    &stop_requested);
 	if (status != CP_PORTAUDIO_OK) {
 		printf("carrierpress: PortAudio failed: %s\n",
 		    cp_portaudio_status_string(status));
@@ -1750,6 +1799,7 @@ static int
 run_playout_file(const char *path, const struct cp_audio_config *audio_config,
 	const struct cp_block_config *block_config,
 	const struct cp_cat_config *cat_config,
+	const struct cp_operator_state *operator_state,
 	volatile sig_atomic_t *stop_flag)
 {
 #ifdef CP_WITH_PLAYOUT
@@ -1770,6 +1820,7 @@ run_playout_file(const char *path, const struct cp_audio_config *audio_config,
 	config.block_frames = audio_config->block_size;
 	config.meter_interval_ms = audio_config->meter_interval_ms;
 	config.stop_requested = stop_flag;
+	config.operator_state = operator_state;
 
 	status = cp_playout_run_file(path, &config);
 	if (status != CP_PLAYOUT_OK) {
@@ -1784,6 +1835,7 @@ run_playout_file(const char *path, const struct cp_audio_config *audio_config,
 	(void)audio_config;
 	(void)block_config;
 	(void)cat_config;
+	(void)operator_state;
 	(void)stop_flag;
 
 	printf("Playout support not enabled. Rebuild with WITH_SNDFILE=1 "
@@ -1797,6 +1849,7 @@ run_playout_playlist(const char *path,
 	const struct cp_audio_config *audio_config,
 	const struct cp_block_config *block_config,
 	const struct cp_cat_config *cat_config,
+	const struct cp_operator_state *operator_state,
 	volatile sig_atomic_t *stop_flag)
 {
 #ifdef CP_WITH_PLAYOUT
@@ -1817,6 +1870,7 @@ run_playout_playlist(const char *path,
 	config.block_frames = audio_config->block_size;
 	config.meter_interval_ms = audio_config->meter_interval_ms;
 	config.stop_requested = stop_flag;
+	config.operator_state = operator_state;
 
 	status = cp_playout_run_playlist(path, &config);
 	if (status != CP_PLAYOUT_OK) {
@@ -1831,6 +1885,7 @@ run_playout_playlist(const char *path,
 	(void)audio_config;
 	(void)block_config;
 	(void)cat_config;
+	(void)operator_state;
 	(void)stop_flag;
 
 	printf("Playout support not enabled. Rebuild with WITH_SNDFILE=1 "
