@@ -83,6 +83,27 @@ cp_gui_format_chain(const struct cp_monitor_snapshot *snapshot,
 }
 
 int
+cp_gui_format_cue_slots(const char *wav_path, const char *playlist_path,
+	char *buffer, size_t buffer_size)
+{
+	char playlist[80];
+	char wav[80];
+
+	if (buffer == NULL || buffer_size == 0)
+		return CP_ERR_NULL;
+
+	(void)cp_gui_format_truncate(
+	    wav_path == NULL || wav_path[0] == '\0' ? "-" : wav_path, wav,
+	    sizeof(wav), sizeof(wav) - 1);
+	(void)cp_gui_format_truncate(
+	    playlist_path == NULL || playlist_path[0] == '\0' ? "-" :
+	    playlist_path, playlist, sizeof(playlist), sizeof(playlist) - 1);
+
+	return cp_gui_snprintf(buffer, buffer_size,
+	    "Cue: WAV %s | Playlist %s", wav, playlist);
+}
+
+int
 cp_gui_format_flags(unsigned int flags, char *buffer, size_t buffer_size)
 {
 	if (buffer == NULL || buffer_size == 0)

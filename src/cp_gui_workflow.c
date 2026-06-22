@@ -10,12 +10,19 @@
 #include "cp_gui_workflow.h"
 #include "cp_playlist_check.h"
 
+#define CP_GUI_WORKFLOW_DISPLAY_PATH_MAX	72
+#define CP_GUI_WORKFLOW_DISPLAY_REASON_MAX	48
+
 static int	cp_gui_workflow_copy_path(char *, size_t, const char *);
+static int	cp_gui_workflow_display_text(const char *, char *, size_t,
+		    size_t);
 static int	cp_gui_workflow_set_reason(struct cp_gui_workflow_request *,
 		    const char *);
 static int	cp_gui_workflow_snprintf(char *, size_t, const char *, ...);
 static int	cp_gui_workflow_status_format(
 		    const struct cp_gui_workflow_request *, char *, size_t);
+static const char *cp_gui_workflow_status_string(
+		    const struct cp_gui_workflow_request *);
 
 void
 cp_gui_workflow_request_clear(struct cp_gui_workflow_request *request)
@@ -43,31 +50,8 @@ cp_gui_workflow_request_format(
 		return cp_gui_workflow_snprintf(buffer, buffer_size,
 		    "workflow=none");
 	}
-	if (request->validated)
-		return cp_gui_workflow_status_format(request, buffer,
-		    buffer_size);
 
-	switch (request->type) {
-	case CP_GUI_WORKFLOW_REQUEST_LOAD_WAV:
-	case CP_GUI_WORKFLOW_REQUEST_LOAD_PLAYLIST:
-		return cp_gui_workflow_snprintf(buffer, buffer_size,
-		    "workflow=%s path=%s",
-		    cp_gui_workflow_request_type_string(request->type),
-		    request->path);
-	case CP_GUI_WORKFLOW_REQUEST_CUE_PLAYLIST_ITEM:
-		return cp_gui_workflow_snprintf(buffer, buffer_size,
-		    "workflow=%s index=%zu path=%s",
-		    cp_gui_workflow_request_type_string(request->type),
-		    request->playlist_index, request->path);
-	case CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE:
-		return cp_gui_workflow_snprintf(buffer, buffer_size,
-		    "workflow=%s device=%d",
-		    cp_gui_workflow_request_type_string(request->type),
-		    request->device_index);
-	default:
-		return cp_gui_workflow_snprintf(buffer, buffer_size,
-		    "workflow=unknown");
-	}
+	return cp_gui_workflow_status_format(request, buffer, buffer_size);
 }
 
 int
@@ -324,6 +308,38 @@ cp_gui_workflow_copy_path(char *buffer, size_t buffer_size, const char *path)
 }
 
 static int
+cp_gui_workflow_display_text(const char *text, char *buffer,
+	size_t buffer_size, size_t max_chars)
+{
+	size_t copy;
+	size_t length;
+
+	if (text == NULL || buffer == NULL || buffer_size == 0 ||
+	    max_chars == 0)
+		return CP_ERR_NULL;
+
+	length = strlen(text);
+	if (max_chars >= buffer_size)
+		max_chars = buffer_size - 1;
+	if (length <= max_chars) {
+		(void)snprintf(buffer, buffer_size, "%s", text);
+		return CP_OK;
+	}
+	if (max_chars <= 3) {
+		copy = max_chars;
+		(void)memcpy(buffer, text, copy);
+		buffer[copy] = '\0';
+		return CP_ERR_RANGE;
+	}
+
+	copy = max_chars - 3;
+	(void)memcpy(buffer, text, copy);
+	(void)memcpy(buffer + copy, "...", 4);
+
+	return CP_ERR_RANGE;
+}
+
+static int
 cp_gui_workflow_set_reason(struct cp_gui_workflow_request *request,
 	const char *reason)
 {
@@ -366,30 +382,69 @@ cp_gui_workflow_status_format(
 	const struct cp_gui_workflow_request *request, char *buffer,
 	size_t buffer_size)
 {
+	char path[80];
+	char reason[56];
 	const char *status;
 
-	status = request->validation_status == CP_OK ? "ok" : "error";
+	status = cp_gui_workflow_status_string(request);
+	(void)cp_gui_workflow_display_text(
+	    request->path[0] == '\0' ? "-" : request->path, path,
+	    sizeof(path), CP_GUI_WORKFLOW_DISPLAY_PATH_MAX);
+	(void)cp_gui_workflow_display_text(
+	    request->reason[0] == '\0' ? "-" : request->reason, reason,
+	    sizeof(reason), CP_GUI_WORKFLOW_DISPLAY_REASON_MAX);
+
 	switch (request->type) {
 	case CP_GUI_WORKFLOW_REQUEST_LOAD_WAV:
 	case CP_GUI_WORKFLOW_REQUEST_LOAD_PLAYLIST:
+		if (!request->validated) {
+			return cp_gui_workflow_snprintf(buffer, buffer_size,
+			    "workflow=%s status=%s path=%s",
+			    cp_gui_workflow_request_type_string(request->type),
+			    status, path);
+		}
 		return cp_gui_workflow_snprintf(buffer, buffer_size,
 		    "workflow=%s status=%s reason=%s path=%s",
 		    cp_gui_workflow_request_type_string(request->type),
-		    status, request->reason, request->path);
+		    status, reason, path);
 	case CP_GUI_WORKFLOW_REQUEST_CUE_PLAYLIST_ITEM:
+		if (!request->validated) {
+			return cp_gui_workflow_snprintf(buffer, buffer_size,
+			    "workflow=%s status=%s index=%zu path=%s",
+			    cp_gui_workflow_request_type_string(request->type),
+			    status, request->playlist_index, path);
+		}
 		return cp_gui_workflow_snprintf(buffer, buffer_size,
 		    "workflow=%s status=%s reason=%s index=%zu path=%s",
 		    cp_gui_workflow_request_type_string(request->type),
-		    status, request->reason, request->playlist_index,
-		    request->path);
+		    status, reason, request->playlist_index, path);
 	case CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE:
+		if (!request->validated) {
+			return cp_gui_workflow_snprintf(buffer, buffer_size,
+			    "workflow=%s status=%s device=%d",
+			    cp_gui_workflow_request_type_string(request->type),
+			    status, request->device_index);
+		}
 		return cp_gui_workflow_snprintf(buffer, buffer_size,
 		    "workflow=%s status=%s reason=%s device=%d",
 		    cp_gui_workflow_request_type_string(request->type),
-		    status, request->reason, request->device_index);
+		    status, reason, request->device_index);
 	default:
+		if (!request->validated) {
+			return cp_gui_workflow_snprintf(buffer, buffer_size,
+			    "workflow=unknown status=%s", status);
+		}
 		return cp_gui_workflow_snprintf(buffer, buffer_size,
 		    "workflow=unknown status=%s reason=%s", status,
-		    request->reason);
+		    reason);
 	}
+}
+
+static const char *
+cp_gui_workflow_status_string(const struct cp_gui_workflow_request *request)
+{
+	if (!request->validated)
+		return "pending";
+
+	return request->validation_status == CP_OK ? "valid" : "error";
 }

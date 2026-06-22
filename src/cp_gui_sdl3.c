@@ -168,6 +168,7 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	char agc[256];
 	char cat[256];
 	char chain[512];
+	char cue_slots[256];
 	char flags[128];
 	char help[256];
 	char meters[256];
@@ -198,6 +199,9 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	    cp_gui_view_next_enabled(view), help, sizeof(help)) != CP_OK ||
 	    cp_gui_format_operator_state(view->operator_state,
 	    operator_status, sizeof(operator_status)) != CP_OK ||
+	    cp_gui_format_cue_slots(view->cue_wav_path,
+	    view->cue_playlist_path, cue_slots, sizeof(cue_slots)) !=
+	    CP_OK ||
 	    cp_gui_format_workflow(view->workflow_request, workflow,
 	    sizeof(workflow)) != CP_OK ||
 	    cp_gui_format_output_device(view->config, view->output_device,
@@ -247,15 +251,17 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	    "Status");
 	cp_gui_draw_panel_text(renderer, 492.0f, 128.0f, 440.0f, 16.0f,
 	    agc);
-	cp_gui_draw_panel_text(renderer, 492.0f, 150.0f, 440.0f, 16.0f,
+	cp_gui_draw_panel_text(renderer, 492.0f, 146.0f, 440.0f, 16.0f,
 	    flags);
-	cp_gui_draw_panel_text(renderer, 492.0f, 172.0f, 440.0f, 16.0f,
+	cp_gui_draw_panel_text(renderer, 492.0f, 164.0f, 440.0f, 16.0f,
 	    cat);
-	cp_gui_draw_panel_text(renderer, 492.0f, 194.0f, 440.0f, 16.0f,
+	cp_gui_draw_panel_text(renderer, 492.0f, 182.0f, 440.0f, 16.0f,
 	    operator_status);
-	cp_gui_draw_panel_text(renderer, 492.0f, 216.0f, 440.0f, 16.0f,
+	cp_gui_draw_panel_text(renderer, 492.0f, 200.0f, 440.0f, 16.0f,
+	    cue_slots);
+	cp_gui_draw_panel_text(renderer, 492.0f, 218.0f, 440.0f, 16.0f,
 	    workflow);
-	cp_gui_draw_panel_text(renderer, 492.0f, 238.0f, 440.0f, 16.0f,
+	cp_gui_draw_panel_text(renderer, 492.0f, 236.0f, 440.0f, 16.0f,
 	    output_device);
 
 	cp_gui_draw_panel(renderer, CP_GUI_MARGIN, 276.0f, 928.0f, 92.0f,

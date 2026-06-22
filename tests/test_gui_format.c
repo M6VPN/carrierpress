@@ -15,6 +15,7 @@
 static int	test_cat_format(void);
 static int	test_chain_format(void);
 static int	test_control_mapping(void);
+static int	test_cue_slots_format(void);
 static int	test_help_format(void);
 static int	test_meter_format(void);
 static int	test_mode_format(void);
@@ -34,6 +35,8 @@ main(void)
 	if (!test_chain_format())
 		return 1;
 	if (!test_control_mapping())
+		return 1;
+	if (!test_cue_slots_format())
 		return 1;
 	if (!test_cat_format())
 		return 1;
@@ -155,6 +158,52 @@ test_control_mapping(void)
 	    &command) != CP_OK ||
 	    command.type != CP_CONTROL_COMMAND_PLAYOUT_NEXT) {
 		printf("test_gui_format: next key mismatch\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_cue_slots_format(void)
+{
+	char buffer[192];
+	char long_path[160];
+	size_t index;
+
+	if (cp_gui_format_cue_slots("audio/program.wav",
+	    "playlists/show.txt", buffer, sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "Cue: WAV audio/program.wav") == NULL ||
+	    strstr(buffer, "Playlist playlists/show.txt") == NULL) {
+		printf("test_gui_format: cue slots mismatch: %s\n", buffer);
+		return 0;
+	}
+	if (cp_gui_format_cue_slots(NULL, "", buffer, sizeof(buffer)) !=
+	    CP_OK ||
+	    strcmp(buffer, "Cue: WAV - | Playlist -") != 0) {
+		printf("test_gui_format: empty cue slots mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	for (index = 0; index < sizeof(long_path) - 1; index++)
+		long_path[index] = 'p';
+	long_path[sizeof(long_path) - 1] = '\0';
+	if (cp_gui_format_cue_slots(long_path, long_path, buffer,
+	    sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "...") == NULL ||
+	    strlen(buffer) >= sizeof(buffer)) {
+		printf("test_gui_format: long cue slots mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	if (strstr(buffer, "ptt") != NULL ||
+	    strstr(buffer, "transmit") != NULL ||
+	    strstr(buffer, "cat_ptt") != NULL ||
+	    strstr(buffer, "rig_frequency") != NULL ||
+	    strstr(buffer, "rig_mode") != NULL ||
+	    strstr(buffer, "hamlib") != NULL ||
+	    strstr(buffer, "flrig") != NULL) {
+		printf("test_gui_format: cue forbidden text: %s\n", buffer);
 		return 0;
 	}
 
@@ -425,8 +474,8 @@ test_workflow_format(void)
 	if (cp_gui_workflow_request_set_device(&request, 4) != CP_OK ||
 	    cp_gui_format_workflow(&request, buffer, sizeof(buffer)) !=
 	    CP_OK ||
-	    strcmp(buffer, "workflow=select_output_device device=4") !=
-	    0) {
+	    strcmp(buffer,
+	    "workflow=select_output_device status=pending device=4") != 0) {
 		printf("test_gui_format: workflow device mismatch: %s\n",
 		    buffer);
 		return 0;
@@ -435,7 +484,8 @@ test_workflow_format(void)
 	    "audio/program.wav", 7) != CP_OK ||
 	    cp_gui_format_workflow(&request, buffer, sizeof(buffer)) !=
 	    CP_OK ||
-	    strstr(buffer, "workflow=cue_playlist_item index=7") == NULL ||
+	    strstr(buffer,
+	    "workflow=cue_playlist_item status=pending index=7") == NULL ||
 	    strstr(buffer, "audio/program.wav") == NULL) {
 		printf("test_gui_format: workflow cue mismatch: %s\n",
 		    buffer);

@@ -24,6 +24,7 @@ int	cp_gui_format_agc(const struct cp_monitor_snapshot *, char *,
 int	cp_gui_format_cat(const struct cp_cat_snapshot *, char *, size_t);
 int	cp_gui_format_chain(const struct cp_monitor_snapshot *, char *,
 	    size_t);
+int	cp_gui_format_cue_slots(const char *, const char *, char *, size_t);
 int	cp_gui_format_flags(unsigned int, char *, size_t);
 int	cp_gui_format_help(enum cp_control_bank, int, char *, size_t);
 int	cp_gui_format_meters(const struct cp_monitor_snapshot *, char *,

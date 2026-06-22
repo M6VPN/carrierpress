@@ -19,10 +19,13 @@ static int	test_forbidden_text(void);
 static int	test_format_bounds(void);
 static int	test_key_mapping(void);
 static int	test_path_request(void);
+static int	test_rejected_request_display(void);
 static int	test_playlist_item_request(void);
 static int	test_playlist_validation(void);
+static int	test_request_display_bounds(void);
 static int	test_restart_decision(void);
 static int	test_type_strings(void);
+static int	test_valid_request_display(void);
 static int	test_wav_validation(void);
 static int	write_file(const char *, const char *);
 
@@ -41,9 +44,15 @@ main(void)
 		return 1;
 	if (!test_format_bounds())
 		return 1;
+	if (!test_request_display_bounds())
+		return 1;
 	if (!test_wav_validation())
 		return 1;
 	if (!test_playlist_validation())
+		return 1;
+	if (!test_valid_request_display())
+		return 1;
+	if (!test_rejected_request_display())
 		return 1;
 	if (!test_key_mapping())
 		return 1;
@@ -119,7 +128,8 @@ test_device_request(void)
 		return 0;
 	if (cp_gui_workflow_request_format(&request, buffer,
 	    sizeof(buffer)) != CP_OK ||
-	    strcmp(buffer, "workflow=select_output_device device=3") != 0) {
+	    strcmp(buffer,
+	    "workflow=select_output_device status=pending device=3") != 0) {
 		printf("test_gui_workflow: device format mismatch: %s\n",
 		    buffer);
 		return 0;
@@ -279,6 +289,32 @@ test_format_bounds(void)
 }
 
 static int
+test_request_display_bounds(void)
+{
+	struct cp_gui_workflow_request request;
+	char buffer[256];
+	char path[CP_GUI_WORKFLOW_PATH_SIZE];
+	size_t index;
+
+	for (index = 0; index < sizeof(path) - 5; index++)
+		path[index] = 'a';
+	(void)snprintf(path + index, sizeof(path) - index, ".wav");
+	if (cp_gui_workflow_request_set_path(&request,
+	    CP_GUI_WORKFLOW_REQUEST_LOAD_WAV, path) != CP_OK)
+		return 0;
+	if (cp_gui_workflow_request_format(&request, buffer,
+	    sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "...") == NULL ||
+	    strlen(buffer) >= sizeof(buffer)) {
+		printf("test_gui_workflow: long pending display: %s\n",
+		    buffer);
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
 test_playlist_validation(void)
 {
 	struct cp_gui_workflow_request request;
@@ -316,6 +352,7 @@ test_playlist_validation(void)
 	if (cp_gui_workflow_request_format(&request, buffer,
 	    sizeof(buffer)) != CP_OK ||
 	    strstr(buffer, "status=error") == NULL ||
+	    strstr(buffer, "reason=playlist has errors") == NULL ||
 	    strstr(buffer, "workflow=load_playlist") == NULL) {
 		printf("test_gui_workflow: playlist status format failed: %s\n",
 		    buffer);
@@ -358,7 +395,9 @@ test_path_request(void)
 		return 0;
 	if (cp_gui_workflow_request_format(&request, buffer,
 	    sizeof(buffer)) != CP_OK ||
-	    strcmp(buffer, "workflow=load_wav path=audio/program.wav") != 0) {
+	    strcmp(buffer,
+	    "workflow=load_wav status=pending path=audio/program.wav") !=
+	    0) {
 		printf("test_gui_workflow: path format mismatch: %s\n",
 		    buffer);
 		return 0;
@@ -443,9 +482,66 @@ test_playlist_item_request(void)
 	if (cp_gui_workflow_request_format(&request, buffer,
 	    sizeof(buffer)) != CP_OK ||
 	    strcmp(buffer,
-	    "workflow=cue_playlist_item index=2 path=audio/program.wav") !=
-	    0) {
+	    "workflow=cue_playlist_item status=pending index=2 "
+	    "path=audio/program.wav") != 0) {
 		printf("test_gui_workflow: cue format mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_rejected_request_display(void)
+{
+	struct cp_gui_workflow_request request;
+	char buffer[192];
+
+	if (cp_gui_workflow_request_set_path(&request,
+	    CP_GUI_WORKFLOW_REQUEST_LOAD_WAV, "audio/music.mp3") != CP_OK ||
+	    cp_gui_workflow_request_validate(&request) != CP_ERR_RANGE ||
+	    cp_gui_workflow_request_format(&request, buffer,
+	    sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "workflow=load_wav") == NULL ||
+	    strstr(buffer, "status=error") == NULL ||
+	    strstr(buffer, "reason=unsupported format") == NULL ||
+	    strstr(buffer, "path=audio/music.mp3") == NULL) {
+		printf("test_gui_workflow: rejected display mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+
+	(void)memset(request.reason, 'r', sizeof(request.reason) - 1);
+	request.reason[sizeof(request.reason) - 1] = '\0';
+	if (cp_gui_workflow_request_format(&request, buffer,
+	    sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "...") == NULL ||
+	    strlen(buffer) >= sizeof(buffer)) {
+		printf("test_gui_workflow: rejected long reason: %s\n",
+		    buffer);
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_valid_request_display(void)
+{
+	struct cp_gui_workflow_request request;
+	char buffer[160];
+
+	if (cp_gui_workflow_request_set_path(&request,
+	    CP_GUI_WORKFLOW_REQUEST_LOAD_WAV, "audio/program.wav") != CP_OK ||
+	    cp_gui_workflow_request_validate(&request) != CP_OK ||
+	    cp_gui_workflow_request_format(&request, buffer,
+	    sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "workflow=load_wav") == NULL ||
+	    strstr(buffer, "status=valid") == NULL ||
+	    strstr(buffer, "reason=ok") == NULL ||
+	    strstr(buffer, "path=audio/program.wav") == NULL) {
+		printf("test_gui_workflow: valid display mismatch: %s\n",
 		    buffer);
 		return 0;
 	}

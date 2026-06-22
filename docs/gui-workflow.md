@@ -30,10 +30,11 @@ Example formatted states:
 
 ```text
 workflow=none
-workflow=load_wav path=audio/program.wav
-workflow=load_playlist path=playlists/show.txt
-workflow=cue_playlist_item index=2 path=audio/program.wav
-workflow=select_output_device device=3
+workflow=load_wav status=pending path=audio/program.wav
+workflow=load_playlist status=pending path=playlists/show.txt
+workflow=cue_playlist_item status=pending index=2 path=audio/program.wav
+workflow=select_output_device status=pending device=3
+Cue: WAV audio/program.wav | Playlist playlists/show.txt
 output_device=current:3 requested:4 backend=auto device=default
 ```
 
@@ -41,11 +42,33 @@ When a request is consumed and validated by the host loop, the status is shown
 in the same bounded format:
 
 ```text
-workflow=load_wav status=ok reason=ok path=audio/program.wav
+workflow=load_wav status=valid reason=ok path=audio/program.wav
 workflow=load_wav status=error reason=unsupported format: convert to WAV first path=audio/music.mp3
-workflow=load_playlist status=ok reason=ok path=playlists/show.txt
-workflow=select_output_device status=ok reason=deferred output device request device=4
+workflow=load_playlist status=valid reason=ok path=playlists/show.txt
+workflow=select_output_device status=valid reason=deferred output device request device=4
 ```
+
+## GUI Request Status Display
+
+The GUI status panel shows the configured WAV cue slot, configured playlist
+cue slot, last workflow request, request status, target path or device, and
+validation reason when one exists.
+
+Request status values are:
+
+- `pending`: the GUI recorded the request, but the host loop has not validated
+  or applied it yet.
+- `valid`: the host loop accepted the request for deferred application.
+- `error`: the host loop rejected the request.
+
+Rejected cue and device requests remain visible as the last workflow request
+with their reason and target path or device. CarrierPress does not retry
+rejected GUI requests automatically. Paths and reasons are truncated before
+drawing, and the SDL panel draw path clips text to the containing panel.
+
+Full output-device enumeration is not implemented in this slice. The GUI shows
+the current configured output device, any requested output device, backend, and
+configured device name. PortAudio device-list display is future optional work.
 
 ## Deferred Application
 

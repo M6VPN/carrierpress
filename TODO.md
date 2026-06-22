@@ -350,11 +350,17 @@ implemented until code, docs, and validation are complete.
 
 ## M26 GUI File and Device Workflow Polish
 
-- [ ] Improve queued WAV/playlist display.
-- [ ] Improve pending request status display.
-- [ ] Improve rejected request error display.
+- [x] Improve queued WAV/playlist display.
+- [x] Improve pending request status display.
+- [x] Improve rejected request error display.
 - [ ] Display output-device choices where enumeration is available.
-- [ ] Keep GUI text restrained to panels.
+- [x] Keep GUI text restrained to panels.
+
+## M26B GUI Output Device Choice Display
+
+- [ ] Display PortAudio output-device choices where enumeration is available.
+- [ ] Keep enumeration optional and outside real-time callbacks.
+- [ ] Keep sndio named-device selection documented separately.
 
 ## M27 Batch and Report Evidence Bundles
 

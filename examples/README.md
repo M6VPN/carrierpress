@@ -190,14 +190,16 @@ The screenshot example writes `build/gui-demo.bmp` and
 
 The current GUI is a monitor and safe-control demo. Preconfigured WAV and
 playlist cue slots can be requested from the GUI with `l` and `p`, then
-validated outside SDL callbacks. Deferred output-device selection requests can
-be created with `o` and `O`. In live PortAudio GUI mode, those requests are
-consumed by the host loop and applied by restarting the stream outside SDL and
-audio callbacks. If the requested device cannot open or start, CarrierPress
-tries once to fall back to the previous output device. GUI WAV playout uses the
-same deferred request pattern and reopens the blocking PortAudio output stream
-between processed blocks. Future file dialogs and sndio switching are
-documented in `docs/gui-workflow.md` and
+validated outside SDL callbacks. The GUI status panel shows queued cue paths,
+the latest request, and pending, valid, or error status with bounded text.
+Deferred output-device selection requests can be created with `o` and `O`. In
+live PortAudio GUI mode, those requests are consumed by the host loop and
+applied by restarting the stream outside SDL and audio callbacks. If the
+requested device cannot open or start, CarrierPress tries once to fall back to
+the previous output device. GUI WAV playout uses the same deferred request
+pattern and reopens the blocking PortAudio output stream between processed
+blocks. Future file dialogs and sndio switching are documented in
+`docs/gui-workflow.md` and
 `docs/sndio-gui-device-workflow.md`.
 
 ## Read-only CAT
