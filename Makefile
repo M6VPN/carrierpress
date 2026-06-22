@@ -69,6 +69,7 @@ CORE_SRCS = \
 	src/cp_report_tool.c \
 	src/cp_restoration.c \
 	src/cp_resampler.c \
+	src/cp_selector.c \
 	src/cp_ssb.c \
 	src/cp_transmit_control.c \
 	src/cp_waveform.c
@@ -110,6 +111,7 @@ TEST_SRCS = \
 	tests/test_report_tool.c \
 	tests/test_restoration.c \
 	tests/test_resampler.c \
+	tests/test_selector.c \
 	tests/test_ssb.c \
 	tests/test_transmit_control.c \
 	tests/test_version.c \
@@ -257,6 +259,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_report_tool \
 	$(TEST_BIN_DIR)/test_restoration \
 	$(TEST_BIN_DIR)/test_resampler \
+	$(TEST_BIN_DIR)/test_selector \
 	$(TEST_BIN_DIR)/test_ssb \
 	$(TEST_BIN_DIR)/test_transmit_control \
 	$(TEST_BIN_DIR)/test_version \
@@ -621,6 +624,10 @@ $(TEST_BIN_DIR)/test_resampler: $(TEST_OBJ_DIR)/tests/test_resampler.o $(TEST_CO
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_resampler.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_selector: $(TEST_OBJ_DIR)/tests/test_selector.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_selector.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_restoration: $(TEST_OBJ_DIR)/tests/test_restoration.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_restoration.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -714,6 +721,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_report_tool
 	./$(TEST_BIN_DIR)/test_restoration
 	./$(TEST_BIN_DIR)/test_resampler
+	./$(TEST_BIN_DIR)/test_selector
 	./$(TEST_BIN_DIR)/test_ssb
 	./$(TEST_BIN_DIR)/test_transmit_control
 	./$(TEST_BIN_DIR)/test_version
@@ -894,7 +902,7 @@ clean:
 	rm -f tests/test_professional_check
 	rm -f tests/test_quality_report
 	rm -f tests/test_report_tool
-	rm -f tests/test_resampler tests/test_restoration tests/test_spectrum tests/test_ssb
+	rm -f tests/test_resampler tests/test_restoration tests/test_selector tests/test_spectrum tests/test_ssb
 	rm -f tests/test_transmit_control
 	rm -f tests/test_waveform
 	rm -f tests/test_playout tests/test_tui tests/test_validation tests/test_wav

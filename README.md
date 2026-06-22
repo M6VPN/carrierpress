@@ -190,6 +190,13 @@ wrappers are documented in [`examples/README.md`](examples/README.md). The
 local safe operator demo is `./examples/operator-safe-demo.sh`. Manual release
 commands remain documented in
 [`docs/release-procedure.md`](docs/release-procedure.md).
+The product roadmap is documented in
+[`docs/roadmap-product.md`](docs/roadmap-product.md). The first product
+foundation adds bounded selector state for future output-device, audio-file,
+and playlist selection; selector workflow notes are in
+[`docs/selector-workflow.md`](docs/selector-workflow.md). TX operator controls
+remain future, guarded, and mock-only unless a later safety milestone selects
+more work.
 
 Build with optional WAV support:
 
@@ -1624,6 +1631,10 @@ The v0.5 planning roadmap is documented in
 hardening, maintainability, operator workflow polish, and optional-feature
 boundaries. T5 remains mock-only safety-gate scaffolding, and no hardware PTT
 backend exists.
+The product roadmap is documented in
+[`docs/roadmap-product.md`](docs/roadmap-product.md). It tracks DSP product
+polish, professional TUI/GUI layout work, interactive selectors, mock-only TX
+operator-control planning, and future hardware TX as a separate safety track.
 
 ## License
 

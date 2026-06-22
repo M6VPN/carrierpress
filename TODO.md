@@ -546,9 +546,71 @@ implemented until code, docs, and validation are complete.
 
 ## M35 Future Optional Feature Research
 
-- [ ] Review optional decoder architecture without adding decoder libraries.
-- [ ] Review future transmit backend requirements without adding hardware
+- [x] Review optional decoder architecture without adding decoder libraries.
+- [x] Review future transmit backend requirements without adding hardware
       backend.
-- [ ] Keep base build WAV/PCM-native.
-- [ ] Keep hardware transmit backend deferred unless a separate safety milestone
+- [x] Keep base build WAV/PCM-native.
+- [x] Keep hardware transmit backend deferred unless a separate safety milestone
       is selected.
+
+## V6 Product Roadmap Pivot
+
+- [x] Add enthusiast product roadmap.
+- [x] Define DSP polish milestone.
+- [x] Define TUI/GUI layout polish milestone.
+- [x] Define interactive selector milestone.
+- [x] Define mock-only TX operator-control milestone.
+- [x] Keep hardware TX backend deferred to a separate safety milestone.
+
+## P36 DSP Product Polish
+
+- [ ] Review AM/SSB preset descriptions and defaults.
+- [ ] Add listening/regression notes for DSP changes.
+- [ ] Improve DSP preset UX without compliance claims.
+- [ ] Keep DSP changes measurable and tested.
+
+## P37 TUI and GUI Layout Polish
+
+- [ ] Review dashboard layout hierarchy.
+- [ ] Improve TUI/GUI panel grouping and labels.
+- [ ] Improve meter/status readability.
+- [ ] Keep GUI/TUI strings bounded and restrained.
+
+## P38 Interactive File and Device Selectors
+
+- [x] Add shared selector model for UI/TUI.
+- [ ] Add output-device selector workflow.
+- [ ] Add audio-file cue/load selector workflow.
+- [ ] Add playlist selector workflow.
+- [x] Keep selector paths bounded and safe.
+
+## P38A Selector Foundation
+
+- [x] Add shared selector model.
+- [x] Add selector tests.
+- [x] Add bounded selector formatting.
+- [x] Document selector workflow direction.
+- [x] Keep selectors dependency-light and hardware-free.
+
+## T6 Mock TX Operator Controls
+
+- [ ] Add guarded mock-only TX status panel.
+- [ ] Add guarded mock-only runtime arm/disarm controls.
+- [ ] Add guarded mock-only TX request and emergency RX/drop controls.
+- [ ] Keep ordinary builds free of TX controls.
+- [ ] Keep hardware backend absent.
+
+## T7 Future Hardware TX Backend
+
+- [ ] Keep deferred until explicitly selected.
+- [ ] Require separate safety design before implementation.
+- [ ] Require receive-only and dummy-load validation evidence.
+- [ ] Keep CAT write/control outside callbacks.
+- [ ] Keep frequency/mode automation out of scope unless separately designed.
+
+## P39 Enthusiast Onboarding
+
+- [ ] Add quick-start guide.
+- [ ] Improve safe demo flows.
+- [ ] Document recommended enthusiast validation commands.
+- [ ] Keep optional dependency setup manual and explicit.

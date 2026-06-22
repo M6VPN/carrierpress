@@ -29,6 +29,12 @@ v0.5 should build on that boundary without changing audio processing behavior,
 moving release publication into project scripts, or turning optional research
 tracks into default features. Release publication remains manual and local.
 
+The product-facing roadmap pivot is documented in
+[`roadmap-product.md`](roadmap-product.md). It keeps the v0.5 safety boundary
+while planning DSP product polish, professional TUI/GUI layout work,
+interactive selectors, mock-only TX operator controls, and any future hardware
+TX backend as a separate safety track.
+
 ## A. M30 Repository and CI Hygiene
 
 v0.5 should reduce validation friction after the v0.4.1 safety-gate work.

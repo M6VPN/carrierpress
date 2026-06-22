@@ -72,6 +72,12 @@ and the first output-capable choices. The host loop collects this list outside
 GUI callbacks and passes preformatted text to the GUI. sndio remains a
 named-device workflow and is documented separately.
 
+The shared selector foundation is documented in
+[`selector-workflow.md`](selector-workflow.md). It defines bounded selection
+state for future output-device, audio-file, and playlist lists. The foundation
+does not add native file dialogs, directory scanning, device opening, stream
+restart behavior, or compressed-audio decoding.
+
 ## Deferred Application
 
 GUI event and render callbacks must not apply workflow changes directly.
@@ -208,6 +214,10 @@ restart and fallback pattern to GUI WAV playout between processed blocks.
 M25A evaluates sndio and keeps sndio GUI output-device restart deferred until a
 named-device request model, restart-result boundary, and OpenBSD manual
 validation evidence are available.
+
+P38 selector work will build on the shared selector model for TUI and GUI list
+navigation. Output-device choices should still be collected outside callbacks,
+and file or playlist choices should still be validated before application.
 
 Any GUI TRANSMIT or CAT control toggle is T5-only work. It must require the T5
 safety gates: compile-time opt-in, runtime arming, mock-only tests first,

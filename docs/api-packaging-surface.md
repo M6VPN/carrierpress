@@ -19,6 +19,11 @@ snapshots.
 config files, batch planning, and report helpers. It must not require optional
 host backends.
 
+`cp_selector.h` is the dependency-light selector foundation for future
+output-device, audio-file, and playlist choice lists. It does not scan files,
+enumerate devices, open devices, process audio, decode compressed files, or
+control transmit state.
+
 `carrierpress.h` is the broad compatibility umbrella. It remains installed for
 existing source code and includes more public headers than most new
 applications need. New code should prefer `carrierpress_core.h` or

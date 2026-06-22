@@ -36,6 +36,7 @@
 #include "cp_profile.h"
 #include "cp_restoration.h"
 #include "cp_resampler.h"
+#include "cp_selector.h"
 #include "cp_sndio.h"
 #include "cp_ssb.h"
 #include "cp_types.h"

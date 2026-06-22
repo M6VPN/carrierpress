@@ -61,6 +61,20 @@ These APIs are intended for command-line helpers, validation tools, and batch
 workflows. They are stable enough for scripts and examples, but field additions
 or stricter validation may appear in v0.x releases.
 
+## Selector Foundation
+
+`cp_selector.h` is a dependency-light foundation for future TUI and GUI
+output-device, audio-file, and playlist selection. It stores bounded labels and
+values, tracks a selected enabled item, and formats compact status text. It
+does not scan directories, open file dialogs, enumerate devices, open audio
+devices, process audio, decode compressed files, arm transmit control, or send
+CAT write/control commands.
+
+Selector workflow direction is documented in
+[`selector-workflow.md`](selector-workflow.md). The selector header is included
+by the broad `carrierpress.h` compatibility umbrella, but not by
+`carrierpress_core.h` or `carrierpress_tooling.h`.
+
 ## T5 Transmit-Control Stub
 
 `cp_transmit_control.h` is a T5 experimental safety boundary, not an

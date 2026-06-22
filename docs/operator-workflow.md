@@ -68,6 +68,12 @@ Safe GUI controls include:
 - queued WAV and playlist request keys
 - deferred output-device request keys
 
+Future interactive selectors are documented in
+[`selector-workflow.md`](selector-workflow.md). The current selector foundation
+is a shared bounded state model for later TUI and GUI output-device, audio-file,
+and playlist selection. It does not scan directories, open file dialogs,
+enumerate devices, open audio devices, or change audio behavior.
+
 GUI text must remain bounded and clipped inside panels. Long paths, request
 reasons, output-device names, and help strings are truncated before drawing.
 

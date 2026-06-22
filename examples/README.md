@@ -30,7 +30,9 @@ or need optional libraries. The table below summarizes the expected boundary.
 Examples must not install packages, use `sudo`, create tags, push tags,
 publish releases, upload artifacts, key a radio, or send CAT write/control
 commands. Operator workflow boundaries are documented in
-`docs/operator-workflow.md`.
+`docs/operator-workflow.md`. Future selector workflows are documented in
+`docs/selector-workflow.md`; the current selector foundation is a shared state
+model and not a file dialog, device opener, or full interactive UI.
 
 ## Base Examples
 
