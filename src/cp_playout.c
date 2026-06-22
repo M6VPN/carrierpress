@@ -29,8 +29,14 @@
 #include "cp_tui.h"
 #endif
 
+#define CP_PLAYOUT_GUI_DEVICE_CHOICES	32
+
 static size_t	cp_playout_interval_frames(double, unsigned int);
 static int	cp_playout_append_path(struct cp_playlist *, const char *);
+#ifdef CP_WITH_GUI
+static size_t	cp_playout_collect_output_choices(
+		    struct cp_audio_device_candidate *, size_t);
+#endif
 static char	*cp_playout_dup_range(const char *, size_t);
 static void	cp_playout_error_clear(struct cp_playlist_error *);
 static void	cp_playout_error_set(struct cp_playlist_error *, size_t,
@@ -385,7 +391,11 @@ cp_playout_run_file_with_result(const char *path,
 	struct cp_gui_view gui_view;
 	struct cp_gui_workflow_request workflow_request;
 	struct cp_gui_workflow_request pending_workflow;
+	struct cp_audio_device_candidate device_choices[
+	    CP_PLAYOUT_GUI_DEVICE_CHOICES];
 	struct cp_waveform_snapshot waveform;
+	char output_choices[256];
+	size_t device_choice_count;
 #endif
 #ifdef CP_WITH_FFTW
 	struct cp_spectrum_analyzer spectrum_analyzer;
@@ -703,6 +713,13 @@ cp_playout_run_file_with_result(const char *path,
 			    output_device);
 		}
 	}
+#ifdef CP_WITH_GUI
+	device_choice_count = 0;
+	if (audio_config.gui_enabled) {
+		device_choice_count = cp_playout_collect_output_choices(
+		    device_choices, CP_PLAYOUT_GUI_DEVICE_CHOICES);
+	}
+#endif
 
 	result = CP_PLAYOUT_OK;
 	meter_frames = cp_playout_interval_frames(output_rate,
@@ -804,6 +821,12 @@ cp_playout_run_file_with_result(const char *path,
 		if (audio_config.gui_enabled) {
 			(void)cp_cat_snapshot_update(&config->cat_config,
 			    &cat_snapshot);
+			(void)cp_gui_format_output_choices(device_choices,
+			    device_choice_count, (int)output_device,
+			    workflow_request.type ==
+			    CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE,
+			    workflow_request.device_index, output_choices,
+			    sizeof(output_choices));
 			memset(&gui_view, 0, sizeof(gui_view));
 			gui_view.mode           = CP_GUI_MODE_PLAYOUT;
 			gui_view.config         = &audio_config;
@@ -819,6 +842,7 @@ cp_playout_run_file_with_result(const char *path,
 			    audio_config.gui_cue_wav_path;
 			gui_view.cue_playlist_path =
 			    audio_config.gui_cue_playlist_path;
+			gui_view.output_choices = output_choices;
 			gui_view.path           = path;
 			gui_view.playlist_index = config->playlist_index;
 			gui_view.playlist_count = config->playlist_count;
@@ -1155,6 +1179,49 @@ cp_playout_append_path(struct cp_playlist *playlist, const char *path)
 	playlist->paths[playlist->count++] = copy;
 	return CP_PLAYOUT_OK;
 }
+
+#ifdef CP_WITH_GUI
+static size_t
+cp_playout_collect_output_choices(struct cp_audio_device_candidate *choices,
+	size_t choice_count)
+{
+	const PaDeviceInfo *info;
+	const PaHostApiInfo *host_info;
+	PaDeviceIndex default_output;
+	PaDeviceIndex device;
+	PaDeviceIndex devices;
+	size_t used;
+
+	if (choices == NULL || choice_count == 0)
+		return 0;
+
+	devices = Pa_GetDeviceCount();
+	if (devices < 0)
+		return 0;
+
+	default_output = Pa_GetDefaultOutputDevice();
+	used = 0;
+	for (device = 0; device < devices && used < choice_count; device++) {
+		info = Pa_GetDeviceInfo(device);
+		if (info == NULL || info->maxOutputChannels <= 0)
+			continue;
+
+		host_info = Pa_GetHostApiInfo(info->hostApi);
+		choices[used].index = device;
+		choices[used].name = info->name == NULL ? "" : info->name;
+		choices[used].host_api = host_info == NULL ||
+		    host_info->name == NULL ? "" : host_info->name;
+		choices[used].max_input_channels = info->maxInputChannels;
+		choices[used].max_output_channels = info->maxOutputChannels;
+		choices[used].default_sample_rate = info->defaultSampleRate;
+		choices[used].default_input = 0;
+		choices[used].default_output = device == default_output;
+		used++;
+	}
+
+	return used;
+}
+#endif
 
 static char *
 cp_playout_dup_range(const char *text, size_t length)

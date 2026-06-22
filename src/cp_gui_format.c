@@ -11,6 +11,7 @@
 #include "cp_gui_format.h"
 
 static const char	*cp_gui_onoff(unsigned int);
+static void		cp_gui_append_text(char *, size_t, const char *);
 static int		cp_gui_snprintf(char *, size_t, const char *, ...);
 
 int
@@ -182,6 +183,71 @@ cp_gui_format_operator_state(const struct cp_operator_state *state,
 }
 
 int
+cp_gui_format_output_choices(
+	const struct cp_audio_device_candidate *choices, size_t count,
+	int current_device, int requested_set, int requested_device,
+	char *buffer, size_t buffer_size)
+{
+	char full[512];
+	char item[96];
+	char name[40];
+	size_t index;
+	int default_device;
+	int shown;
+
+	if (buffer == NULL || buffer_size == 0)
+		return CP_ERR_NULL;
+	if (choices == NULL || count == 0)
+		return cp_gui_snprintf(buffer, buffer_size,
+		    "outputs: enumeration unavailable");
+
+	default_device = CP_AUDIO_DEFAULT_DEVICE;
+	for (index = 0; index < count; index++) {
+		if (choices[index].max_output_channels > 0 &&
+		    choices[index].default_output) {
+			default_device = choices[index].index;
+			break;
+		}
+	}
+
+	if (requested_set) {
+		(void)snprintf(full, sizeof(full),
+		    "outputs: current=%d requested=%d default=%d choices:",
+		    current_device, requested_device, default_device);
+	} else {
+		(void)snprintf(full, sizeof(full),
+		    "outputs: current=%d requested=- default=%d choices:",
+		    current_device, default_device);
+	}
+	shown = 0;
+	for (index = 0; index < count && shown < 4; index++) {
+		if (choices[index].max_output_channels <= 0)
+			continue;
+		(void)cp_gui_format_truncate(
+		    choices[index].name == NULL || choices[index].name[0] ==
+		    '\0' ? "unnamed" : choices[index].name, name,
+		    sizeof(name), 28);
+		(void)snprintf(item, sizeof(item), "%s%d%s %s",
+		    shown == 0 ? " " : ", ", choices[index].index,
+		    choices[index].default_output ? " default" : "", name);
+		cp_gui_append_text(full, sizeof(full), item);
+		shown++;
+	}
+	if (shown == 0)
+		cp_gui_append_text(full, sizeof(full), " -");
+	else if (index < count)
+		cp_gui_append_text(full, sizeof(full), ", ...");
+
+	if (buffer_size == 1) {
+		buffer[0] = '\0';
+		return CP_OK;
+	}
+	(void)cp_gui_format_truncate(full, buffer, buffer_size,
+	    buffer_size - 1);
+	return CP_OK;
+}
+
+int
 cp_gui_format_output_device(const struct cp_audio_config *config,
 	int current_device, const struct cp_gui_workflow_request *request,
 	char *buffer, size_t buffer_size)
@@ -285,6 +351,22 @@ static const char *
 cp_gui_onoff(unsigned int enabled)
 {
 	return enabled ? "on" : "off";
+}
+
+static void
+cp_gui_append_text(char *buffer, size_t buffer_size, const char *text)
+{
+	size_t used;
+
+	if (buffer == NULL || buffer_size == 0 || text == NULL)
+		return;
+
+	used = strlen(buffer);
+	if (used >= buffer_size - 1)
+		return;
+
+	(void)snprintf(buffer + used, buffer_size - used, "%s", text);
+	buffer[buffer_size - 1] = '\0';
 }
 
 static int

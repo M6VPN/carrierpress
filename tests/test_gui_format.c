@@ -20,6 +20,7 @@ static int	test_help_format(void);
 static int	test_meter_format(void);
 static int	test_mode_format(void);
 static int	test_operator_format(void);
+static int	test_output_choices_format(void);
 static int	test_output_device_format(void);
 static int	test_truncate_format(void);
 static int	test_transport_format(void);
@@ -45,6 +46,8 @@ main(void)
 	if (!test_transport_format())
 		return 1;
 	if (!test_operator_format())
+		return 1;
+	if (!test_output_choices_format())
 		return 1;
 	if (!test_output_device_format())
 		return 1;
@@ -354,6 +357,90 @@ test_operator_format(void)
 	    strstr(buffer, "hamlib") != NULL ||
 	    strstr(buffer, "flrig") != NULL) {
 		printf("test_gui_format: operator forbidden text: %s\n",
+		    buffer);
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_output_choices_format(void)
+{
+	struct cp_audio_device_candidate choices[5];
+	char buffer[256];
+	char long_name[120];
+	size_t index;
+
+	memset(choices, 0, sizeof(choices));
+	if (cp_gui_format_output_choices(NULL, 0, 2, 0, 0, buffer,
+	    sizeof(buffer)) != CP_OK ||
+	    strcmp(buffer, "outputs: enumeration unavailable") != 0) {
+		printf("test_gui_format: no choices mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+
+	choices[0].index = 1;
+	choices[0].name = "Built-in";
+	choices[0].host_api = "pulse";
+	choices[0].max_output_channels = 2;
+	choices[0].default_output = 1;
+	if (cp_gui_format_output_choices(choices, 1, 1, 0, 0, buffer,
+	    sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "current=1 requested=- default=1") == NULL ||
+	    strstr(buffer, "1 default Built-in") == NULL) {
+		printf("test_gui_format: one choice mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+
+	choices[1].index = 2;
+	choices[1].name = "USB Audio";
+	choices[1].host_api = "alsa";
+	choices[1].max_output_channels = 2;
+	choices[2].index = 3;
+	choices[2].name = "input only";
+	choices[2].host_api = "alsa";
+	choices[2].max_input_channels = 2;
+	choices[3].index = 4;
+	choices[3].name = "pulse";
+	choices[3].host_api = "pulse";
+	choices[3].max_output_channels = 2;
+	if (cp_gui_format_output_choices(choices, 4, 2, 1, 4, buffer,
+	    sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "current=2 requested=4 default=1") == NULL ||
+	    strstr(buffer, "2 USB Audio") == NULL ||
+	    strstr(buffer, "4 pulse") == NULL ||
+	    strstr(buffer, "input only") != NULL) {
+		printf("test_gui_format: multiple choice mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+
+	for (index = 0; index < sizeof(long_name) - 1; index++)
+		long_name[index] = 'd';
+	long_name[sizeof(long_name) - 1] = '\0';
+	choices[4].index = 5;
+	choices[4].name = long_name;
+	choices[4].host_api = "alsa";
+	choices[4].max_output_channels = 2;
+	if (cp_gui_format_output_choices(choices, 5, 2, 1, 5, buffer,
+	    sizeof(buffer)) != CP_OK ||
+	    strlen(buffer) >= sizeof(buffer) ||
+	    strstr(buffer, "...") == NULL) {
+		printf("test_gui_format: long choice mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	if (strstr(buffer, "ptt") != NULL ||
+	    strstr(buffer, "transmit") != NULL ||
+	    strstr(buffer, "cat_ptt") != NULL ||
+	    strstr(buffer, "rig_frequency") != NULL ||
+	    strstr(buffer, "rig_mode") != NULL ||
+	    strstr(buffer, "hamlib") != NULL ||
+	    strstr(buffer, "flrig") != NULL) {
+		printf("test_gui_format: choices forbidden text: %s\n",
 		    buffer);
 		return 0;
 	}

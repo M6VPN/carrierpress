@@ -290,7 +290,12 @@ cp_portaudio_run_with_result(const struct cp_audio_config *config,
 	struct cp_gui_view gui_view;
 	struct cp_gui_workflow_request workflow_request;
 	struct cp_gui_workflow_request pending_workflow;
+	struct cp_audio_device_candidate *device_choices;
 	struct cp_waveform_snapshot waveform;
+	PaDeviceIndex device_choice_count;
+	char output_choices[256];
+	int requested_output_device;
+	int restart_needed;
 #endif
 #ifdef CP_WITH_FFTW
 	struct cp_spectrum_analyzer spectrum_analyzer;
@@ -300,8 +305,8 @@ cp_portaudio_run_with_result(const struct cp_audio_config *config,
 #endif
 	int status;
 #ifdef CP_WITH_GUI
-	int requested_output_device;
-	int restart_needed;
+	device_choices = NULL;
+	device_choice_count = 0;
 #endif
 
 	if (result != NULL) {
@@ -453,6 +458,14 @@ cp_portaudio_run_with_result(const struct cp_audio_config *config,
 		    "rate=%0.0f backend=%s. press Ctrl-C to stop.\n",
 		    input_device, output_device, stream_rate,
 		    cp_audio_backend_string(config->backend));
+#ifdef CP_WITH_GUI
+	if (config->gui_enabled &&
+	    cp_pa_build_candidates(&device_choices,
+	    &device_choice_count) != CP_PORTAUDIO_OK) {
+		device_choices = NULL;
+		device_choice_count = 0;
+	}
+#endif
 	while (!*stop_requested && Pa_IsStreamActive(stream) == 1) {
 		Pa_Sleep((config->tui_enabled || config->gui_enabled) ?
 		    CP_PA_SLEEP_MS :
@@ -492,6 +505,12 @@ cp_portaudio_run_with_result(const struct cp_audio_config *config,
 		if (config->gui_enabled) {
 			(void)cp_cat_snapshot_update(cat_config,
 			    &cat_snapshot);
+			(void)cp_gui_format_output_choices(device_choices,
+			    (size_t)device_choice_count, (int)output_device,
+			    workflow_request.type ==
+			    CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE,
+			    workflow_request.device_index, output_choices,
+			    sizeof(output_choices));
 			memset(&gui_view, 0, sizeof(gui_view));
 			gui_view.mode          = CP_GUI_MODE_LIVE;
 			gui_view.config        = config;
@@ -506,6 +525,7 @@ cp_portaudio_run_with_result(const struct cp_audio_config *config,
 			gui_view.cue_wav_path = config->gui_cue_wav_path;
 			gui_view.cue_playlist_path =
 			    config->gui_cue_playlist_path;
+			gui_view.output_choices = output_choices;
 			gui_view.output_device = (int)output_device;
 			if (cp_gui_update(&gui, &gui_view) != CP_OK ||
 			    cp_gui_should_stop(&gui))
@@ -560,6 +580,7 @@ cp_portaudio_run_with_result(const struct cp_audio_config *config,
 #endif
 #ifdef CP_WITH_GUI
 	cp_gui_close(&gui);
+	free(device_choices);
 #endif
 #ifdef CP_WITH_FFTW
 	if (spectrum_ready)

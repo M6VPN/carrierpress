@@ -66,9 +66,11 @@ with their reason and target path or device. CarrierPress does not retry
 rejected GUI requests automatically. Paths and reasons are truncated before
 drawing, and the SDL panel draw path clips text to the containing panel.
 
-Full output-device enumeration is not implemented in this slice. The GUI shows
-the current configured output device, any requested output device, backend, and
-configured device name. PortAudio device-list display is future optional work.
+Where PortAudio enumeration is available, the GUI also shows a compact output
+choice line with the current device, requested device, default output device,
+and the first output-capable choices. The host loop collects this list outside
+GUI callbacks and passes preformatted text to the GUI. sndio remains a
+named-device workflow and is documented separately.
 
 ## Deferred Application
 
@@ -132,8 +134,9 @@ practical:
 
 M23C adds GUI output-device selection state as a deferred request. The GUI can
 display the current configured output device, requested output device, selected
-backend string, and configured device name. It does not enumerate hardware
-devices in the base build.
+backend string, configured device name, and a compact PortAudio output-choice
+list where enumeration is available. It does not enumerate hardware devices in
+the base build.
 
 The GUI keys are:
 
@@ -149,6 +152,9 @@ Output-device request rules:
 - Non-negative output device indices are accepted for deferred selection.
 - Invalid negative device indices are rejected.
 - Hardware existence is not checked in the base build.
+- PortAudio output-device choices are collected by the host loop when
+  PortAudio enumeration is available. GUI rendering only displays the bounded
+  choice string.
 - CLI-only output-device selection is preserved.
 - In the live PortAudio GUI path, a changed output-device request makes the
   current stream loop exit cleanly. The outer host loop then starts a fresh

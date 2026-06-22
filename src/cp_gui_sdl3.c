@@ -174,6 +174,7 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	char meters[256];
 	char mode[64];
 	char operator_status[512];
+	char output_choices[256];
 	char output_device[256];
 	char transport[256];
 	char workflow[256];
@@ -212,6 +213,19 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	    cp_gui_format_cat(view->cat_snapshot, cat, sizeof(cat)) !=
 	    CP_OK)
 		return CP_ERR_RANGE;
+	if (view->output_choices != NULL && view->output_choices[0] != '\0') {
+		(void)cp_gui_format_truncate(view->output_choices,
+		    output_choices, sizeof(output_choices),
+		    sizeof(output_choices) - 1);
+	} else {
+#ifdef CP_WITH_PORTAUDIO
+		(void)snprintf(output_choices, sizeof(output_choices),
+		    "outputs: enumeration unavailable");
+#else
+		(void)snprintf(output_choices, sizeof(output_choices),
+		    "outputs: PortAudio not enabled");
+#endif
+	}
 
 	renderer = (SDL_Renderer *)gui->renderer;
 	(void)SDL_SetRenderDrawColor(renderer, 8, 12, 16, 255);
@@ -249,20 +263,22 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 
 	cp_gui_draw_panel(renderer, 480.0f, 104.0f, 464.0f, 152.0f,
 	    "Status");
-	cp_gui_draw_panel_text(renderer, 492.0f, 128.0f, 440.0f, 16.0f,
+	cp_gui_draw_panel_text(renderer, 492.0f, 124.0f, 440.0f, 16.0f,
 	    agc);
-	cp_gui_draw_panel_text(renderer, 492.0f, 146.0f, 440.0f, 16.0f,
+	cp_gui_draw_panel_text(renderer, 492.0f, 140.0f, 440.0f, 16.0f,
 	    flags);
-	cp_gui_draw_panel_text(renderer, 492.0f, 164.0f, 440.0f, 16.0f,
+	cp_gui_draw_panel_text(renderer, 492.0f, 156.0f, 440.0f, 16.0f,
 	    cat);
-	cp_gui_draw_panel_text(renderer, 492.0f, 182.0f, 440.0f, 16.0f,
+	cp_gui_draw_panel_text(renderer, 492.0f, 172.0f, 440.0f, 16.0f,
 	    operator_status);
-	cp_gui_draw_panel_text(renderer, 492.0f, 200.0f, 440.0f, 16.0f,
+	cp_gui_draw_panel_text(renderer, 492.0f, 188.0f, 440.0f, 16.0f,
 	    cue_slots);
-	cp_gui_draw_panel_text(renderer, 492.0f, 218.0f, 440.0f, 16.0f,
+	cp_gui_draw_panel_text(renderer, 492.0f, 204.0f, 440.0f, 16.0f,
 	    workflow);
-	cp_gui_draw_panel_text(renderer, 492.0f, 236.0f, 440.0f, 16.0f,
+	cp_gui_draw_panel_text(renderer, 492.0f, 220.0f, 440.0f, 16.0f,
 	    output_device);
+	cp_gui_draw_panel_text(renderer, 492.0f, 236.0f, 440.0f, 16.0f,
+	    output_choices);
 
 	cp_gui_draw_panel(renderer, CP_GUI_MARGIN, 276.0f, 928.0f, 92.0f,
 	    "Processing Chain");

@@ -198,7 +198,9 @@ applied by restarting the stream outside SDL and audio callbacks. If the
 requested device cannot open or start, CarrierPress tries once to fall back to
 the previous output device. GUI WAV playout uses the same deferred request
 pattern and reopens the blocking PortAudio output stream between processed
-blocks. Future file dialogs and sndio switching are documented in
+blocks. Where PortAudio enumeration is available, the GUI status panel shows a
+compact output-choice line. Future file dialogs and sndio switching are
+documented in
 `docs/gui-workflow.md` and
 `docs/sndio-gui-device-workflow.md`.
 

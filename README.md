@@ -220,8 +220,9 @@ In live PortAudio GUI mode and GUI WAV playout, `o` and `O` create a deferred
 output-device request that is consumed by the host loop and applied by
 restarting the stream outside SDL and audio callbacks. If the requested device
 cannot open or start, CarrierPress tries once to fall back to the previous
-output device. sndio GUI output-device restart is deferred because sndio uses
-named devices, not PortAudio numeric device indices. See
+output device. Where PortAudio enumeration is available, the GUI status panel
+shows a compact output-choice line. sndio GUI output-device restart is deferred
+because sndio uses named devices, not PortAudio numeric device indices. See
 [`docs/sndio-gui-device-workflow.md`](docs/sndio-gui-device-workflow.md):
 
 ```sh
