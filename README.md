@@ -157,10 +157,11 @@ asset guidance are documented in
 [`docs/release-notes-v0.2.0.md`](docs/release-notes-v0.2.0.md),
 [`docs/release-notes-v0.3.0.md`](docs/release-notes-v0.3.0.md),
 [`docs/release-notes-v0.4.0.md`](docs/release-notes-v0.4.0.md),
+[`docs/release-notes-v0.4.1.md`](docs/release-notes-v0.4.1.md),
 [`docs/release-procedure.md`](docs/release-procedure.md), and
 [`docs/release-assets-v0.1.md`](docs/release-assets-v0.1.md).
 The current release notes are in
-[`docs/release-notes-v0.4.0.md`](docs/release-notes-v0.4.0.md). Safe example
+[`docs/release-notes-v0.4.1.md`](docs/release-notes-v0.4.1.md). Safe example
 wrappers are documented in [`examples/README.md`](examples/README.md). Manual
 release commands remain documented in
 [`docs/release-procedure.md`](docs/release-procedure.md).
@@ -509,7 +510,7 @@ The guarded mock path does not add PTT, CAT write/control, hardware backends,
 GUI TRANSMIT controls, TUI TRANSMIT controls, CLI transmit options, or
 station-control behavior. T5D adds mock-only emergency RX/drop tests in that
 guarded state machine. T5E adds static callback and path isolation audit
-coverage for the guarded mock namespace.
+coverage through `make transmit-control-safety-audit`.
 
 Build the read-only hamlib CAT backend:
 
@@ -1574,8 +1575,8 @@ workflow parity, safer playout and device operations, report automation, API
 and packaging hardening, and optional decoder research without adding decoder
 libraries to the base build.
 
-The v0.4.0 release notes are in
-[`docs/release-notes-v0.4.0.md`](docs/release-notes-v0.4.0.md).
+The v0.4.1 release notes are in
+[`docs/release-notes-v0.4.1.md`](docs/release-notes-v0.4.1.md).
 
 ## License
 

@@ -19,13 +19,13 @@ make dist-check
 Verify the checksum with GNU coreutils:
 
 ```sh
-sha256sum -c build/dist/carrierpress-0.4.0.tar.gz.sha256
+sha256sum -c build/dist/carrierpress-0.4.1.tar.gz.sha256
 ```
 
 On OpenBSD or systems without `sha256sum`, use the platform checksum tool:
 
 ```sh
-sha256 build/dist/carrierpress-0.4.0.tar.gz
+sha256 build/dist/carrierpress-0.4.1.tar.gz
 ```
 
 The archive workflow is local and manual. It does not create tags, push tags,

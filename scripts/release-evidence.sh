@@ -45,6 +45,11 @@ else
 	printf 'not present; run: make -s quality-json > build/quality-report.json\n'
 fi
 
+printf '\ntransmit-control safety evidence:\n'
+printf 'audit: make transmit-control-safety-audit\n'
+printf 'guarded mock validation, serial only: make WITH_TRANSMIT_CONTROL=1 test\n'
+printf 'mock wrapper, serial only because it runs make clean: make transmit-control-mock-test\n'
+
 printf '\nsource archive evidence:\n'
 if [ -d build/dist ]; then
 	find build/dist -type f -print | sort

@@ -447,3 +447,13 @@ implemented until code, docs, and validation are complete.
 - [x] Document serial validation for targets that run `make clean`.
 - [x] Keep hardware PTT/CAT write backends absent.
 - [x] Keep GUI/TUI/CLI/profile/config/report/batch transmit paths absent.
+
+## R10 v0.4.1 Release Prep
+
+- [x] Bump project version to 0.4.1.
+- [x] Add v0.4.1 release notes.
+- [x] Update manual v0.4.1 release procedure.
+- [x] Update release checklist for T5 safety-gate validation.
+- [x] Update release evidence helper for transmit-control safety audit.
+- [x] Keep T5 hardware backend absent.
+- [x] Keep release publication manual and local.

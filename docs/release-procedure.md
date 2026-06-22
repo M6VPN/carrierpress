@@ -39,6 +39,85 @@ LD_LIBRARY_PATH="$HAMLIB_LOCAL/src/.libs:${LD_LIBRARY_PATH:-}" \
 	make WITH_HAMLIB=1 test
 ```
 
+## v0.4.1 Release
+
+`v0.4.1` is the patch release for T5A through T5E safety-gate scaffolding after
+v0.4.0. It packages mock-only transmit-control safety infrastructure and audit
+coverage. It does not add hardware PTT, CAT write/control, hamlib or flrig PTT
+calls, GUI/TUI transmit controls, or operational transmit support.
+
+Before tagging:
+
+```sh
+make clean
+make
+make test
+make -j test
+make validate
+make quality
+make quality-json
+make professional-check
+make public-header-smoke
+make example-libcarrierpress
+./build/examples/libcarrierpress-minimal
+make transmit-control-safety-audit
+make release-check
+./carrierpress --version
+git status --short
+```
+
+Confirm GitHub Actions CI is green for the same commit. Confirm
+`./carrierpress --version` prints `CarrierPress 0.4.1`.
+
+Guarded mock validation must be run serially:
+
+```sh
+make clean
+make WITH_TRANSMIT_CONTROL=1
+make WITH_TRANSMIT_CONTROL=1 test
+make transmit-control-safety-audit
+make transmit-control-mock-test
+```
+
+Do not run `make transmit-control-mock-test` concurrently with other make
+targets because it runs `make clean` internally. Do not run clean-mutating
+targets alongside `make -j test`. Serial reruns are the expected validation for
+clean-mutating targets.
+
+`make dist-check` creates an archive from committed `HEAD`. Commit the intended
+R10 release-prep changes before treating the archive as the release source. Do
+not move the existing `v0.4.0` tag.
+
+After committing R10, create and verify the local release archive:
+
+```sh
+make clean
+make dist-check
+sha256sum -c build/dist/carrierpress-0.4.1.tar.gz.sha256
+tar -xOf build/dist/carrierpress-0.4.1.tar.gz carrierpress-0.4.1/include/cp_version.h | grep '0.4.1'
+```
+
+Create and publish the tag only by explicit local operator action:
+
+```sh
+git tag -a v0.4.1 -m "CarrierPress v0.4.1"
+git push origin v0.4.1
+```
+
+Create the GitHub release manually:
+
+```sh
+gh release create v0.4.1 \
+	--title "CarrierPress v0.4.1" \
+	--notes-file docs/release-notes-v0.4.1.md \
+	build/dist/carrierpress-0.4.1.tar.gz \
+	build/dist/carrierpress-0.4.1.tar.gz.sha256
+gh release view v0.4.1
+```
+
+No project script creates tags, pushes tags, uploads artifacts, or publishes
+GitHub releases.
+
 ## v0.4.0 Release
 
 `v0.4.0` is the release for the v0.4 workflow-polish milestones M24 through

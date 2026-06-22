@@ -54,6 +54,34 @@ operation.
 GitHub Actions CI must also be green before a release tag is created. CI
 coverage is documented in `docs/ci.md`.
 
+## v0.4.1 Release Checks
+
+Use this section when preparing `v0.4.1`, the patch release for T5 safety-gate
+scaffolding after v0.4.0.
+
+- Confirm `./carrierpress --version` prints `CarrierPress 0.4.1`.
+- Confirm staged install pkg-config metadata reports `Version: 0.4.1`.
+- Confirm `docs/release-notes-v0.4.1.md` is the release body.
+- Confirm ordinary build tests pass.
+- Confirm guarded mock build tests pass with `WITH_TRANSMIT_CONTROL=1`.
+- Confirm `make transmit-control-safety-audit` passes.
+- Confirm `make transmit-control-mock-test` passes when run serially.
+- Confirm ordinary builds keep transmit control unavailable.
+- Confirm guarded builds remain mock-only.
+- Confirm no hardware transmit backend exists.
+- Confirm no hamlib or flrig PTT calls exist.
+- Confirm no CAT write/control backend exists.
+- Confirm no GUI, TUI, CLI, profile, config, report, batch, or playlist
+  transmit path exists.
+- Confirm receive-only and dummy-load checklist boundaries are reviewed.
+- Confirm `make dist-check` creates and verifies the source tarball checksum.
+- Confirm GitHub Actions CI is green before tagging.
+- Confirm no release docs or package metadata claim RF generation, transmitter
+  compliance, licence compliance, regulatory approval, legal bandwidth, or
+  broadcast quality.
+- Confirm release publication remains manual and local per
+  `docs/release-procedure.md`.
+
 ## v0.4.0 Release Checks
 
 Use this section when preparing `v0.4.0`, the release for v0.4 workflow-polish

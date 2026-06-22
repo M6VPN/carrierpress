@@ -72,7 +72,8 @@ remains isolated from ordinary runtime paths.
 
 Do not include `cp_transmit_control.h` through `carrierpress_core.h` or
 `carrierpress_tooling.h`. Include it directly only when testing the guarded T5
-stub boundary.
+stub boundary. It is not an operational PTT API, and no hardware backend
+exists.
 
 ## Compatibility Umbrella
 
