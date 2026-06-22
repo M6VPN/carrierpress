@@ -65,7 +65,8 @@ operational station-control API. Ordinary builds report the namespace
 unavailable. `WITH_TRANSMIT_CONTROL=1` compiles a guarded mock-only
 runtime-arming state machine for tests; it does not add PTT, CAT
 write/control, GUI TRANSMIT controls, TUI TRANSMIT controls, hardware
-backends, or emergency RX/drop behavior.
+backends, or station-control behavior. The guarded mock namespace includes
+`cp_tx_control_emergency_rx()` as a local state-machine safety override only.
 
 Do not include `cp_transmit_control.h` through `carrierpress_core.h` or
 `carrierpress_tooling.h`. Include it directly only when testing the guarded T5

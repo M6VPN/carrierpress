@@ -507,7 +507,8 @@ CAT status.
 machine for tests. Ordinary builds still report transmit control unavailable.
 The guarded mock path does not add PTT, CAT write/control, hardware backends,
 GUI TRANSMIT controls, TUI TRANSMIT controls, CLI transmit options, or
-emergency RX/drop behavior.
+station-control behavior. T5D adds mock-only emergency RX/drop tests in that
+guarded state machine.
 
 Build the read-only hamlib CAT backend:
 

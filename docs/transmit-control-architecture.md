@@ -31,9 +31,9 @@ Backend calls must stay outside:
 - profile or config parsing
 - batch processing
 
-## Current T5C Namespace
+## Current T5D Namespace
 
-T5B added `cp_transmit_control` as a disabled API namespace. T5C extends that
+T5B added `cp_transmit_control` as a disabled API namespace. T5C extended that
 namespace with a mock-only runtime-arming state machine. Ordinary builds keep
 `cp_tx_control_available()` false and initialize the control state as
 `disabled`.
@@ -42,6 +42,13 @@ With `WITH_TRANSMIT_CONTROL=1`, the scaffold reports that the guarded namespace
 was compiled. The guarded mock object starts `disarmed`, must be armed in
 memory at runtime, and can move through mock `tx_requested` and `tx_active`
 states only inside the local state machine.
+
+T5D adds `cp_tx_control_emergency_rx()`. In the guarded mock build, emergency
+RX/drop is an immediate safety override that clears runtime arming and returns
+the mock object to `disarmed` from `armed_rx`, `tx_requested`, `tx_active`, or
+`rx_requested`. It does not require `cp_tx_control_mock_step()` to leave a mock
+TX state. A later transmit request is rejected until the mock object is armed
+again.
 
 No backend exists. The guarded mock state machine does not call CAT, hamlib,
 flrig, serial, GPIO, VOX, or any other hardware-control path.
@@ -58,8 +65,9 @@ A future state machine should start in RX/off state and keep states explicit:
 - `rx_requested`
 - `fault`
 
-Emergency RX/drop must override all other states. Fault handling must prefer
-RX/off where possible, report failures clearly, and avoid endless retries.
+Emergency RX/drop overrides all non-fault mock states by clearing arming and
+returning to `disarmed`. Fault handling remains conservative and reports an
+invalid-state error without entering TX.
 
 ## Build and Runtime Gates
 
@@ -70,8 +78,9 @@ T5C adds runtime arming for the mock object only. Config files and profiles
 must not arm transmit. Reports, batch files, playlists, and GUI workflow
 requests must not arm transmit.
 
-Emergency RX/drop behavior remains future T5D work. The T5C `request_rx` path
-is an ordinary mock state transition, not the final emergency-drop mechanism.
+`cp_tx_control_request_rx()` remains an ordinary mock state-machine request
+that may pass through `rx_requested`. `cp_tx_control_emergency_rx()` is the
+immediate mock safety override that clears arming and lands in `disarmed`.
 
 ## Backend Scope
 

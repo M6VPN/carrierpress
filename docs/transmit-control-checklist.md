@@ -48,7 +48,21 @@ future T5 safety-gated work only. It is not permission to test on air.
 - Confirm no hardware backend exists.
 - Confirm no GUI, TUI, CLI, profile, config, batch, report, or playlist path
   can arm transmit.
-- Confirm emergency RX/drop remains future work until T5D.
+- Confirm emergency RX/drop is tested separately by the T5D checklist.
+
+## T5D Mock Emergency RX/Drop Checklist
+
+- Confirm ordinary builds keep emergency RX/drop disabled.
+- Confirm `WITH_TRANSMIT_CONTROL=1` exposes mock emergency RX/drop only.
+- Confirm emergency RX/drop from `tx_requested` returns directly to
+  `disarmed`.
+- Confirm emergency RX/drop from `tx_active` returns directly to `disarmed`.
+- Confirm emergency RX/drop from `rx_requested` returns directly to
+  `disarmed`.
+- Confirm emergency RX/drop clears runtime arming.
+- Confirm emergency RX/drop does not require a mock state-machine step.
+- Confirm transmit requests are rejected after emergency until re-armed.
+- Confirm emergency RX/drop does not call any backend.
 
 ## Runtime-arming Checklist
 

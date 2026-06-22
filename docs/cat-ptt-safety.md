@@ -92,15 +92,16 @@ evidence exists.
 - T5A: safety-gate design and test plan.
 - T5B: compile-time guard and disabled-by-default API stubs.
 - T5C: mock-only runtime-arming transmit-control state-machine tests.
-- T5D: emergency RX/drop semantics.
+- T5D: mock-only emergency RX/drop semantics.
 - T5E: manual receive-only and dummy-load validation checklist.
 - T5F: optional hardware backend after all previous gates pass.
 
 T5A is documentation and safety planning only. T5B adds a compile-time guard
 and disabled API stubs only. T5C adds a mock-only runtime-arming state machine
-only. T5F is not part of T5A, T5B, or T5C.
+only. T5D adds mock-only emergency RX/drop only. T5F is not part of T5A, T5B,
+T5C, or T5D.
 
-## Current T5C Boundary
+## Current T5D Boundary
 
 The `cp_transmit_control` namespace is a mock-only boundary for future work. In
 an ordinary build, `cp_tx_control_available()` returns unavailable and requests
@@ -108,10 +109,15 @@ return disabled. With `WITH_TRANSMIT_CONTROL=1`, the guarded mock state machine
 starts disarmed and rejects transmit requests until the control object is armed
 in memory.
 
-T5C does not add a hardware backend, emergency RX/drop behavior, GUI controls,
-TUI controls, CLI options, profile keys, config keys, report fields, or batch
-fields. The guarded mock `tx_requested` and `tx_active` states are local test
-state only and cannot key a radio.
+T5D adds `cp_tx_control_emergency_rx()` as an immediate mock-only safety
+override. It clears mock runtime arming and returns to `disarmed` without
+calling CAT, PTT, hamlib, flrig, serial, GPIO, VOX, or other hardware-control
+paths.
+
+T5D does not add a hardware backend, GUI controls, TUI controls, CLI options,
+profile keys, config keys, report fields, or batch fields. The guarded mock
+`tx_requested` and `tx_active` states are local test state only and cannot key a
+radio.
 
 ## Future Architecture
 

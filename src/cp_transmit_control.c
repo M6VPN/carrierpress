@@ -59,6 +59,31 @@ cp_tx_control_disarm(struct cp_tx_control *control)
 	}
 }
 
+int
+cp_tx_control_emergency_rx(struct cp_tx_control *control)
+{
+	if (control == NULL)
+		return CP_TX_ERR_NULL;
+	if (!cp_tx_control_available())
+		return CP_TX_ERR_DISABLED;
+
+	switch (control->state) {
+	case CP_TX_STATE_DISARMED:
+		return CP_TX_OK;
+	case CP_TX_STATE_ARMED_RX:
+	case CP_TX_STATE_TX_REQUESTED:
+	case CP_TX_STATE_TX_ACTIVE:
+	case CP_TX_STATE_RX_REQUESTED:
+		control->state = CP_TX_STATE_DISARMED;
+		return CP_TX_OK;
+	case CP_TX_STATE_DISABLED:
+		return CP_TX_ERR_DISABLED;
+	case CP_TX_STATE_FAULT:
+	default:
+		return CP_TX_ERR_INVALID_STATE;
+	}
+}
+
 void
 cp_tx_control_init(struct cp_tx_control *control)
 {

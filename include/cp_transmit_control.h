@@ -31,6 +31,7 @@ struct cp_tx_control {
 int			cp_tx_control_available(void);
 int			cp_tx_control_arm(struct cp_tx_control *);
 int			cp_tx_control_disarm(struct cp_tx_control *);
+int			cp_tx_control_emergency_rx(struct cp_tx_control *);
 void			cp_tx_control_init(struct cp_tx_control *);
 int			cp_tx_control_is_armed(
 			    const struct cp_tx_control *);

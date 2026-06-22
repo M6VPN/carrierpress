@@ -10,6 +10,7 @@
 
 static int	text_has_backend_name(const char *);
 static int	test_availability(void);
+static int	test_guarded_emergency_rx(void);
 static int	test_guarded_state_machine(void);
 static int	test_initial_state(void);
 static int	test_null_inputs(void);
@@ -28,6 +29,8 @@ main(void)
 	if (!test_ordinary_calls_disabled())
 		return 1;
 	if (!test_guarded_state_machine())
+		return 1;
+	if (!test_guarded_emergency_rx())
 		return 1;
 	if (!test_strings())
 		return 1;
@@ -117,6 +120,10 @@ test_null_inputs(void)
 		printf("test_transmit_control: null disarm accepted\n");
 		return 0;
 	}
+	if (cp_tx_control_emergency_rx(NULL) != CP_TX_ERR_NULL) {
+		printf("test_transmit_control: null emergency accepted\n");
+		return 0;
+	}
 	if (cp_tx_control_mock_step(NULL) != CP_TX_ERR_NULL) {
 		printf("test_transmit_control: null mock step accepted\n");
 		return 0;
@@ -146,6 +153,7 @@ test_ordinary_calls_disabled(void)
 	cp_tx_control_init(&control);
 	if (cp_tx_control_arm(&control) != CP_TX_ERR_DISABLED ||
 	    cp_tx_control_disarm(&control) != CP_TX_ERR_DISABLED ||
+	    cp_tx_control_emergency_rx(&control) != CP_TX_ERR_DISABLED ||
 	    cp_tx_control_request_transmit(&control) != CP_TX_ERR_DISABLED ||
 	    cp_tx_control_request_rx(&control) != CP_TX_ERR_DISABLED ||
 	    cp_tx_control_mock_step(&control) != CP_TX_ERR_DISABLED) {
@@ -156,6 +164,68 @@ test_ordinary_calls_disabled(void)
 	    cp_tx_control_is_armed(&control) ||
 	    cp_tx_control_is_tx_active(&control)) {
 		printf("test_transmit_control: ordinary call changed state\n");
+		return 0;
+	}
+#endif
+
+	return 1;
+}
+
+static int
+test_guarded_emergency_rx(void)
+{
+#ifdef CP_WITH_TRANSMIT_CONTROL
+	struct cp_tx_control control;
+
+	cp_tx_control_init(&control);
+	if (cp_tx_control_emergency_rx(&control) != CP_TX_OK ||
+	    control.state != CP_TX_STATE_DISARMED ||
+	    cp_tx_control_is_armed(&control) ||
+	    cp_tx_control_is_tx_active(&control)) {
+		printf("test_transmit_control: disarmed emergency failed\n");
+		return 0;
+	}
+	if (cp_tx_control_arm(&control) != CP_TX_OK ||
+	    cp_tx_control_emergency_rx(&control) != CP_TX_OK ||
+	    control.state != CP_TX_STATE_DISARMED ||
+	    cp_tx_control_is_armed(&control) ||
+	    cp_tx_control_is_tx_active(&control)) {
+		printf("test_transmit_control: armed emergency failed\n");
+		return 0;
+	}
+	if (cp_tx_control_arm(&control) != CP_TX_OK ||
+	    cp_tx_control_request_transmit(&control) != CP_TX_OK ||
+	    cp_tx_control_emergency_rx(&control) != CP_TX_OK ||
+	    control.state != CP_TX_STATE_DISARMED ||
+	    cp_tx_control_request_transmit(&control) != CP_TX_ERR_DISARMED) {
+		printf("test_transmit_control: requested emergency failed\n");
+		return 0;
+	}
+	if (cp_tx_control_arm(&control) != CP_TX_OK ||
+	    cp_tx_control_request_transmit(&control) != CP_TX_OK ||
+	    cp_tx_control_mock_step(&control) != CP_TX_OK ||
+	    control.state != CP_TX_STATE_TX_ACTIVE ||
+	    cp_tx_control_emergency_rx(&control) != CP_TX_OK ||
+	    control.state != CP_TX_STATE_DISARMED ||
+	    cp_tx_control_is_armed(&control) ||
+	    cp_tx_control_is_tx_active(&control)) {
+		printf("test_transmit_control: active emergency failed\n");
+		return 0;
+	}
+	if (cp_tx_control_arm(&control) != CP_TX_OK ||
+	    cp_tx_control_request_transmit(&control) != CP_TX_OK ||
+	    cp_tx_control_request_rx(&control) != CP_TX_OK ||
+	    control.state != CP_TX_STATE_RX_REQUESTED ||
+	    cp_tx_control_emergency_rx(&control) != CP_TX_OK ||
+	    control.state != CP_TX_STATE_DISARMED ||
+	    cp_tx_control_request_transmit(&control) != CP_TX_ERR_DISARMED) {
+		printf("test_transmit_control: rx emergency failed\n");
+		return 0;
+	}
+	control.state = CP_TX_STATE_FAULT;
+	if (cp_tx_control_emergency_rx(&control) != CP_TX_ERR_INVALID_STATE ||
+	    cp_tx_control_is_tx_active(&control)) {
+		printf("test_transmit_control: fault emergency failed\n");
 		return 0;
 	}
 #endif
