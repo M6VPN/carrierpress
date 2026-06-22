@@ -499,10 +499,19 @@ implemented until code, docs, and validation are complete.
 
 ## M32 Operator Workflow Polish
 
-- [ ] Review GUI/TUI/help consistency.
-- [ ] Review examples index and safe demo scripts.
-- [ ] Keep TRANSMIT/PTT absent from ordinary operator workflow.
-- [ ] Keep GUI/TUI text restrained and safe.
+- [x] Review GUI/TUI/help consistency.
+- [x] Review examples index and safe demo scripts.
+- [x] Keep TRANSMIT/PTT absent from ordinary operator workflow.
+- [x] Keep GUI/TUI text restrained and safe.
+
+## M32A Operator Workflow Polish
+
+- [x] Add operator workflow guide.
+- [x] Review CLI/GUI/TUI help wording for consistency.
+- [x] Refresh examples index and safe demo notes.
+- [x] Keep ordinary operator workflow free of active TRANSMIT/PTT controls.
+- [x] Keep GUI/TUI text bounded and restrained.
+- [x] Add non-mutating operator workflow safety audit.
 
 ## M33 Report and Evidence Workflow Polish
 

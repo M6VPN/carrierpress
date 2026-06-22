@@ -123,6 +123,14 @@ test_key_help(void)
 		printf("test_tui: playlist key help mismatch: %s\n", buffer);
 		return 0;
 	}
+	if (strstr(buffer, "ptt") != NULL ||
+	    strstr(buffer, "transmit") != NULL ||
+	    strstr(buffer, "hamlib") != NULL ||
+	    strstr(buffer, "flrig") != NULL) {
+		printf("test_tui: key help exposes unsafe control term: %s\n",
+		    buffer);
+		return 0;
+	}
 
 	return 1;
 }

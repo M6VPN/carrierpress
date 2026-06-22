@@ -21,6 +21,7 @@ make public-header-smoke
 make example-libcarrierpress
 ./build/examples/libcarrierpress-minimal
 make transmit-control-safety-audit
+make operator-workflow-safety-audit
 ```
 
 Base validation must not require libsndfile, PortAudio, sndio, SDL3, FFTW,
@@ -30,6 +31,10 @@ audio hardware.
 The base build cannot transmit. It has no hardware PTT backend, CAT
 write/control backend, hamlib or flrig PTT call, active TRANSMIT UI, or
 profile/config/report/batch/playlist transmit arming path.
+
+`make operator-workflow-safety-audit` checks ordinary operator-facing source
+and examples for active transmit controls, release publication, package
+installation, and backend control calls.
 
 ## Guarded Mock Transmit-Control Matrix
 

@@ -6,11 +6,35 @@ or send CAT write/control commands.
 
 Run examples from the repository root after building `./carrierpress`.
 
+## Example Safety Index
+
+Most examples are local inspection wrappers. Some write files under `build/`
+or need optional libraries. The table below summarizes the expected boundary.
+
+| Area | Mutates build output | Optional dependencies | Serial-only | Hardware access |
+| ---- | -------------------- | --------------------- | ----------- | --------------- |
+| Base validation and config/profile examples | no | no | no | no |
+| `operator-safe-demo.sh` | no | no | no | no |
+| Library and public-header smoke examples | writes `build/examples` | no | no | no |
+| WAV processing and batch processing | writes requested outputs | libsndfile | no | no |
+| Playout examples | no by default | libsndfile and PortAudio | no | output audio device |
+| GUI examples | may write `build/gui-demo.bmp` | SDL3, optional FFTW | no | GUI display |
+| sndio smoke helper | no | sndio for manual commands | no | manual only |
+| Read-only CAT examples | no | flrig or hamlib where selected | no | read-only status only |
+| Release and evidence helpers | no | no | no | no |
+| Guarded mock transmit-control validation | writes build outputs | no | yes for mock wrapper | no |
+
+Examples must not install packages, use `sudo`, create tags, push tags,
+publish releases, upload artifacts, key a radio, or send CAT write/control
+commands. Operator workflow boundaries are documented in
+`docs/operator-workflow.md`.
+
 ## Base Examples
 
 ```sh
 make
 ./examples/self-test.sh
+./examples/operator-safe-demo.sh
 ./examples/validate-profile.sh
 ./examples/validate-config.sh
 ./examples/print-effective-config.sh
@@ -36,6 +60,11 @@ devices.
 dependency test matrix. Release evidence is reported by
 `scripts/release-evidence.sh`; it does not tag, push, publish, install
 packages, or run transmit actions.
+
+`operator-safe-demo.sh` runs local inspection, playlist checking, validation
+help, test matrix help, and the transmit-control safety audit. It does not run
+`make clean`, open audio devices, require optional dependencies, access
+hardware, or publish anything.
 
 ## Library Example
 

@@ -56,6 +56,7 @@ fi
 
 printf '\ntransmit-control safety evidence:\n'
 printf 'audit: make transmit-control-safety-audit\n'
+printf 'operator workflow audit: make operator-workflow-safety-audit\n'
 printf 'ordinary audit evidence: run make transmit-control-safety-audit\n'
 printf 'guarded mock validation, serial only: make WITH_TRANSMIT_CONTROL=1 test\n'
 printf 'mock wrapper, serial only because it runs make clean: make transmit-control-mock-test\n'

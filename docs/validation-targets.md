@@ -33,12 +33,18 @@ outputs when those prerequisites are absent.
 - `make example-libcarrierpress`
 - `make pkg-config-smoke`
 - `make transmit-control-safety-audit`
+- `make operator-workflow-safety-audit`
 - `make validation-help`
 - `make test-matrix-help`
 
 `make transmit-control-safety-audit` is intended to be mutation-safe. It scans
 source paths and prints a pass or failure result. It does not build, clean,
 publish, install packages, or access hardware.
+
+`make operator-workflow-safety-audit` is intended to be mutation-safe. It scans
+operator-facing source and examples for active transmit controls, package
+installation, release publication, and backend control calls. It does not
+build, clean, publish, install packages, or access hardware.
 
 ## Build-output Targets
 
@@ -104,6 +110,7 @@ make public-header-smoke
 make example-libcarrierpress
 ./build/examples/libcarrierpress-minimal
 make transmit-control-safety-audit
+make operator-workflow-safety-audit
 make release-check
 ```
 

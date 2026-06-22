@@ -217,3 +217,6 @@ workflow or polish milestones. The future-only boundary is documented in
 [`cat-ptt-safety.md`](cat-ptt-safety.md),
 [`transmit-control-architecture.md`](transmit-control-architecture.md), and
 [`transmit-control-checklist.md`](transmit-control-checklist.md).
+
+Ordinary CLI, TUI, GUI, CAT status, and example workflow boundaries are
+summarized in [`operator-workflow.md`](operator-workflow.md).

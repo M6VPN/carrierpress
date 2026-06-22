@@ -159,12 +159,20 @@ Print the ordinary, guarded mock, and optional dependency test matrix:
 make test-matrix-help
 ```
 
+Run the operator workflow safety audit:
+
+```sh
+make operator-workflow-safety-audit
+```
+
 Release validation and manual tag checks are documented in
 [`docs/release-checklist.md`](docs/release-checklist.md).
 Validation target scheduling is documented in
 [`docs/validation-targets.md`](docs/validation-targets.md).
 The build and test matrix is documented in
 [`docs/test-matrix.md`](docs/test-matrix.md).
+Ordinary CLI, TUI, GUI, CAT status, and example workflows are documented in
+[`docs/operator-workflow.md`](docs/operator-workflow.md).
 GitHub Actions CI coverage is documented in [`docs/ci.md`](docs/ci.md).
 Release notes, the manual GitHub release procedure, and optional local release
 asset guidance are documented in
@@ -178,8 +186,9 @@ asset guidance are documented in
 [`docs/release-assets-v0.1.md`](docs/release-assets-v0.1.md).
 The current release notes are in
 [`docs/release-notes-v0.4.1.md`](docs/release-notes-v0.4.1.md). Safe example
-wrappers are documented in [`examples/README.md`](examples/README.md). Manual
-release commands remain documented in
+wrappers are documented in [`examples/README.md`](examples/README.md). The
+local safe operator demo is `./examples/operator-safe-demo.sh`. Manual release
+commands remain documented in
 [`docs/release-procedure.md`](docs/release-procedure.md).
 
 Build with optional WAV support:

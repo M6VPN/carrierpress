@@ -391,6 +391,7 @@ validation-help:
 	@printf '  make example-libcarrierpress\n'
 	@printf '  ./build/examples/libcarrierpress-minimal\n'
 	@printf '  make transmit-control-safety-audit\n'
+	@printf '  make operator-workflow-safety-audit\n'
 	@printf '  make release-check\n'
 	@printf '\nGuarded mock validation, run serially:\n'
 	@printf '  make clean\n'
@@ -429,6 +430,7 @@ test-matrix-help:
 	@printf '  make example-libcarrierpress\n'
 	@printf '  ./build/examples/libcarrierpress-minimal\n'
 	@printf '  make transmit-control-safety-audit\n'
+	@printf '  make operator-workflow-safety-audit\n'
 	@printf '\nGuarded mock transmit-control validation, run serially:\n'
 	@printf '  make clean\n'
 	@printf '  make WITH_TRANSMIT_CONTROL=1\n'
@@ -450,6 +452,9 @@ test-matrix-help:
 
 transmit-control-safety-audit:
 	sh scripts/transmit-control-safety-audit.sh
+
+operator-workflow-safety-audit:
+	sh scripts/operator-workflow-safety-audit.sh
 
 # Runs make clean internally; run serially, not concurrently with other make jobs.
 transmit-control-mock-test:
@@ -874,4 +879,4 @@ clean:
 	rm -f tests/playlist_check.txt tests/playlist_too_long.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check example-libcarrierpress feature-summary install install-manifest install-smoke pkg-config-smoke professional-check public-compat-header-smoke public-core-header-smoke public-header-smoke public-tooling-header-smoke quality quality-json release-check test test-matrix-help transmit-control-mock-test transmit-control-safety-audit uninstall validate validation-help
+.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check example-libcarrierpress feature-summary install install-manifest install-smoke operator-workflow-safety-audit pkg-config-smoke professional-check public-compat-header-smoke public-core-header-smoke public-header-smoke public-tooling-header-smoke quality quality-json release-check test test-matrix-help transmit-control-mock-test transmit-control-safety-audit uninstall validate validation-help
