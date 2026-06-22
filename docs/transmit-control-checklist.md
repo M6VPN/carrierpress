@@ -36,6 +36,20 @@ future T5 safety-gated work only. It is not permission to test on air.
 - Prove backend failure enters a fault state and does not retry forever.
 - Prove no GUI/TUI key maps to active transmit in ordinary builds.
 
+## T5C Mock State-Machine Checklist
+
+- Confirm ordinary builds report transmit-control unavailable.
+- Confirm ordinary state-changing calls return disabled.
+- Confirm `WITH_TRANSMIT_CONTROL=1` starts the mock object disarmed.
+- Confirm disarmed transmit requests are rejected.
+- Confirm runtime arming moves only to `armed_rx`.
+- Confirm mock transmit requests move only through mock state-machine states.
+- Confirm mock RX requests return to `armed_rx`.
+- Confirm no hardware backend exists.
+- Confirm no GUI, TUI, CLI, profile, config, batch, report, or playlist path
+  can arm transmit.
+- Confirm emergency RX/drop remains future work until T5D.
+
 ## Runtime-arming Checklist
 
 - Require an explicit runtime arming command after process start.

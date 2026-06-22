@@ -376,6 +376,10 @@ pkg-config-smoke: $(BUILD_DIR)/carrierpress.pc
 	grep '^Cflags: -I$${includedir}/carrierpress$$' $(BUILD_DIR)/carrierpress.pc
 	! grep -E 'sndfile|portaudio|sndio|SDL|sdl|fftw|hamlib|ncurses|flrig' $(BUILD_DIR)/carrierpress.pc
 
+transmit-control-mock-test:
+	$(MAKE) clean
+	$(MAKE) WITH_TRANSMIT_CONTROL=1 test
+
 $(BUILD_DIR)/carrierpress.pc: carrierpress.pc.in
 	@mkdir -p $(BUILD_DIR)
 	sed -e 's|@PREFIX@|$(PREFIX)|g' \
@@ -700,7 +704,7 @@ feature-summary:
 	@printf '  sndio: %s%s\n' "$$([ "$(WITH_SNDIO)" = 1 ] && printf enabled || printf disabled)" "$$([ "$(WITH_SNDIO)" = 1 ] && printf ' (deferred Linux path)' || printf '')"
 	@printf '  hamlib CAT: %s%s\n' "$$([ "$(WITH_HAMLIB)" = 1 ] && printf enabled || printf disabled)" "$$([ "$(WITH_HAMLIB)" = 1 ] && printf ' (read-only)' || printf ' (manual WITH_HAMLIB=1)')"
 	@printf '  flrig CAT: %s%s\n' "$$([ "$(WITH_FLRIG)" = 1 ] && printf enabled || printf disabled)" "$$([ "$(WITH_FLRIG)" = 1 ] && printf ' (read-only XML-RPC)' || printf ' (manual WITH_FLRIG=1)')"
-	@printf '  transmit control: %s%s\n' "$$([ "$(WITH_TRANSMIT_CONTROL)" = 1 ] && printf guarded || printf disabled)" "$$([ "$(WITH_TRANSMIT_CONTROL)" = 1 ] && printf ' (scaffold only)' || printf ' (T5 gated)')"
+	@printf '  transmit control: %s%s\n' "$$([ "$(WITH_TRANSMIT_CONTROL)" = 1 ] && printf guarded || printf disabled)" "$$([ "$(WITH_TRANSMIT_CONTROL)" = 1 ] && printf ' (mock only)' || printf ' (T5 gated)')"
 
 check-sndfile:
 	@mkdir -p $(BUILD_DIR)
@@ -788,4 +792,4 @@ clean:
 	rm -f tests/playlist_check.txt tests/playlist_too_long.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check example-libcarrierpress feature-summary install install-manifest install-smoke pkg-config-smoke professional-check public-compat-header-smoke public-core-header-smoke public-header-smoke public-tooling-header-smoke quality quality-json release-check test uninstall validate
+.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check example-libcarrierpress feature-summary install install-manifest install-smoke pkg-config-smoke professional-check public-compat-header-smoke public-core-header-smoke public-header-smoke public-tooling-header-smoke quality quality-json release-check test transmit-control-mock-test uninstall validate

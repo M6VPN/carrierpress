@@ -87,8 +87,8 @@ implemented until code, docs, and validation are complete.
 ## T5 Optional PTT Control - Deferred
 
 - [x] Implement an explicit compile-time PTT-control gate.
-- [ ] Implement a runtime arming gate.
-- [ ] Implement mock-only PTT state-machine tests.
+- [x] Implement a runtime arming gate.
+- [x] Implement mock-only PTT state-machine tests.
 - [ ] Implement emergency RX/drop command.
 - [ ] Add a manual dummy-load hardware test checklist.
 - [ ] Add flrig PTT control only after mock tests pass.
@@ -399,8 +399,8 @@ implemented until code, docs, and validation are complete.
 
 - [x] Keep TRANSMIT/PTT out of ordinary GUI workflow.
 - [x] Require compile-time opt-in before any transmit-control build.
-- [ ] Require runtime arming before any transmit-control action.
-- [ ] Add mock-only transmit-control tests before hardware backend work.
+- [x] Require runtime arming before any transmit-control action.
+- [x] Add mock-only transmit-control tests before hardware backend work.
 - [ ] Add emergency RX/drop handling.
 - [ ] Keep CAT control out of real-time callbacks.
 - [ ] Require manual dummy-load or receive-only validation checklist.
@@ -420,3 +420,12 @@ implemented until code, docs, and validation are complete.
 - [x] Add tests proving ordinary builds cannot transmit.
 - [x] Keep hardware PTT/CAT write backends absent.
 - [x] Keep GUI/TUI TRANSMIT controls absent.
+
+## T5C Mock Runtime-Arming State Machine
+
+- [x] Add mock-only runtime arming state machine.
+- [x] Keep ordinary builds disabled.
+- [x] Add guarded `WITH_TRANSMIT_CONTROL=1` mock tests.
+- [x] Keep hardware PTT/CAT write backends absent.
+- [x] Keep GUI/TUI TRANSMIT controls absent.
+- [x] Keep config/profile/batch/report paths unable to arm transmit.

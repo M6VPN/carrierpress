@@ -31,15 +31,20 @@ Backend calls must stay outside:
 - profile or config parsing
 - batch processing
 
-## Current T5B Namespace
+## Current T5C Namespace
 
-T5B adds `cp_transmit_control` as a disabled API namespace for later mock-only
-state-machine work. Ordinary builds keep `cp_tx_control_available()` false and
-initialize the control state as `disabled`.
+T5B added `cp_transmit_control` as a disabled API namespace. T5C extends that
+namespace with a mock-only runtime-arming state machine. Ordinary builds keep
+`cp_tx_control_available()` false and initialize the control state as
+`disabled`.
 
 With `WITH_TRANSMIT_CONTROL=1`, the scaffold reports that the guarded namespace
-was compiled, but it still has no backend and no transmit-capable transition.
-The current request placeholder returns unsupported and leaves state disabled.
+was compiled. The guarded mock object starts `disarmed`, must be armed in
+memory at runtime, and can move through mock `tx_requested` and `tx_active`
+states only inside the local state machine.
+
+No backend exists. The guarded mock state machine does not call CAT, hamlib,
+flrig, serial, GPIO, VOX, or any other hardware-control path.
 
 ## State Machine
 
@@ -61,9 +66,12 @@ RX/off where possible, report failures clearly, and avoid endless retries.
 Future CAT write/control backends must be compile-time gated. Ordinary builds
 must keep CAT read-only.
 
-Runtime arming must be required before any transmit-control action. Config
-files and profiles must not arm transmit. Reports, batch files, playlists, and
-GUI workflow requests must not arm transmit.
+T5C adds runtime arming for the mock object only. Config files and profiles
+must not arm transmit. Reports, batch files, playlists, and GUI workflow
+requests must not arm transmit.
+
+Emergency RX/drop behavior remains future T5D work. The T5C `request_rx` path
+is an ordinary mock state transition, not the final emergency-drop mechanism.
 
 ## Backend Scope
 

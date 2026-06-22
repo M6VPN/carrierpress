@@ -91,25 +91,27 @@ evidence exists.
 
 - T5A: safety-gate design and test plan.
 - T5B: compile-time guard and disabled-by-default API stubs.
-- T5C: mock-only transmit-control state-machine tests.
-- T5D: runtime arming model and emergency RX/drop semantics.
+- T5C: mock-only runtime-arming transmit-control state-machine tests.
+- T5D: emergency RX/drop semantics.
 - T5E: manual receive-only and dummy-load validation checklist.
 - T5F: optional hardware backend after all previous gates pass.
 
 T5A is documentation and safety planning only. T5B adds a compile-time guard
-and disabled API stubs only. T5F is not part of T5A or T5B.
+and disabled API stubs only. T5C adds a mock-only runtime-arming state machine
+only. T5F is not part of T5A, T5B, or T5C.
 
-## Current T5B Boundary
+## Current T5C Boundary
 
-The `cp_transmit_control` namespace is an inert boundary for future work. In an
-ordinary build, `cp_tx_control_available()` returns unavailable and requests
-return disabled. With `WITH_TRANSMIT_CONTROL=1`, the guarded scaffold can
-compile, but requests still return unsupported and no state can enter TX.
+The `cp_transmit_control` namespace is a mock-only boundary for future work. In
+an ordinary build, `cp_tx_control_available()` returns unavailable and requests
+return disabled. With `WITH_TRANSMIT_CONTROL=1`, the guarded mock state machine
+starts disarmed and rejects transmit requests until the control object is armed
+in memory.
 
-T5B does not add a hardware backend, runtime arming, emergency RX/drop behavior,
-GUI controls, TUI controls, CLI options, profile keys, config keys, report
-fields, or batch fields. The next implementation step is mock-only state-machine
-testing, not hardware control.
+T5C does not add a hardware backend, emergency RX/drop behavior, GUI controls,
+TUI controls, CLI options, profile keys, config keys, report fields, or batch
+fields. The guarded mock `tx_requested` and `tx_active` states are local test
+state only and cannot key a radio.
 
 ## Future Architecture
 

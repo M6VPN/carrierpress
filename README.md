@@ -503,9 +503,11 @@ before any transmitter control is allowed. T5 documents future safety gates
 only. Ordinary CarrierPress remains baseband audio processing with read-only
 CAT status.
 
-`WITH_TRANSMIT_CONTROL=1` currently builds disabled T5 scaffolding only. It
-does not add PTT, CAT write/control, hardware backends, GUI TRANSMIT controls,
-runtime arming, or emergency RX/drop behavior.
+`WITH_TRANSMIT_CONTROL=1` currently builds a mock-only runtime-arming state
+machine for tests. Ordinary builds still report transmit control unavailable.
+The guarded mock path does not add PTT, CAT write/control, hardware backends,
+GUI TRANSMIT controls, TUI TRANSMIT controls, CLI transmit options, or
+emergency RX/drop behavior.
 
 Build the read-only hamlib CAT backend:
 
