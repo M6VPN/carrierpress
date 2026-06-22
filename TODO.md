@@ -579,7 +579,7 @@ implemented until code, docs, and validation are complete.
 ## P38 Interactive File and Device Selectors
 
 - [x] Add shared selector model for UI/TUI.
-- [ ] Add output-device selector workflow.
+- [x] Add output-device selector workflow.
 - [ ] Add audio-file cue/load selector workflow.
 - [ ] Add playlist selector workflow.
 - [x] Keep selector paths bounded and safe.
@@ -591,6 +591,14 @@ implemented until code, docs, and validation are complete.
 - [x] Add bounded selector formatting.
 - [x] Document selector workflow direction.
 - [x] Keep selectors dependency-light and hardware-free.
+
+## P38B Output-Device Selector Workflow
+
+- [x] Map output-device candidates into shared selector model.
+- [x] Display output-device selector state in operator UI surfaces where available.
+- [x] Keep PortAudio enumeration optional.
+- [x] Keep sndio named-device workflow separate.
+- [x] Keep device changes outside callbacks and real-time paths.
 
 ## T6 Mock TX Operator Controls
 

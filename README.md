@@ -192,8 +192,9 @@ commands remain documented in
 [`docs/release-procedure.md`](docs/release-procedure.md).
 The product roadmap is documented in
 [`docs/roadmap-product.md`](docs/roadmap-product.md). The first product
-foundation adds bounded selector state for future output-device, audio-file,
-and playlist selection; selector workflow notes are in
+foundation adds bounded selector state. Output-device selector display now uses
+that model where backend choices are already available; audio-file and playlist
+selectors remain future work. Selector workflow notes are in
 [`docs/selector-workflow.md`](docs/selector-workflow.md). TX operator controls
 remain future, guarded, and mock-only unless a later safety milestone selects
 more work.

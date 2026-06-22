@@ -466,7 +466,12 @@ cp_tui_draw_details(int rows, int cols, const struct cp_tui_view *view)
 	if (cp_tui_format_cat_status(view->cat_snapshot, cat_text,
 	    sizeof(cat_text)) != CP_OK)
 		cat_text[0] = '\0';
-	cp_tui_draw_text(22, 2, cols, "%s", cat_text);
+	if (view->output_choices != NULL && view->output_choices[0] != '\0') {
+		cp_tui_draw_text(22, 2, cols, "%s | %s", cat_text,
+		    view->output_choices);
+	} else {
+		cp_tui_draw_text(22, 2, cols, "%s", cat_text);
+	}
 }
 
 static void

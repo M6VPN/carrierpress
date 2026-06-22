@@ -18,6 +18,31 @@ The shared selector model supports:
 Each item has a bounded label, bounded value, and enabled flag. Disabled items
 can be displayed but cannot be selected.
 
+## Output-Device Selector
+
+P38B adds an output-device selector workflow foundation. Backend code that
+already has output-device candidates can map them into `cp_selector` with
+`cp_selector_load_output_devices()`. The helper does not enumerate devices,
+open streams, close streams, or restart audio. It only turns collected
+`cp_audio_device_candidate` entries into bounded selector labels and numeric
+device-index values.
+
+Output-capable devices are shown as enabled selector items. Input-only
+candidates are ignored. Labels mark the current, requested, and default output
+device where that state is known. Example lines:
+
+```text
+selector=output_device selected=2/3 label="USB Audio [current]" value="2"
+> 2 USB Audio [current]
+  4 Headphones [requested]
+  1 Built-in Audio [default]
+```
+
+PortAudio live and playout paths can display the selector where enumeration is
+already available. Device changes still use the existing deferred workflow
+request and restart paths. sndio stays a named-device workflow and does not use
+numeric output-device enumeration.
+
 ## Navigation Rules
 
 Selectors are bounded and fixed-size:
@@ -43,8 +68,6 @@ selector=playlist selected=2/2 label="Show" value="playlists/show.txt"
 Future TUI and GUI selector work should reuse `cp_selector` for display and
 navigation state:
 
-- output-device selectors should consume backend enumeration collected outside
-  callbacks
 - audio-file selectors should start with explicit candidate lists or recent
   paths
 - playlist selectors should use existing playlist validation before applying a

@@ -15,6 +15,7 @@
 #include "cp_cat.h"
 #include "cp_control.h"
 #include "cp_declipper.h"
+#include "cp_gui_format.h"
 #ifdef CP_WITH_GUI
 #include "cp_gui.h"
 #endif
@@ -290,12 +291,14 @@ cp_portaudio_run_with_result(const struct cp_audio_config *config,
 	struct cp_gui_view gui_view;
 	struct cp_gui_workflow_request workflow_request;
 	struct cp_gui_workflow_request pending_workflow;
-	struct cp_audio_device_candidate *device_choices;
 	struct cp_waveform_snapshot waveform;
-	PaDeviceIndex device_choice_count;
-	char output_choices[256];
 	int requested_output_device;
 	int restart_needed;
+#endif
+#if defined(CP_WITH_TUI) || defined(CP_WITH_GUI)
+	struct cp_audio_device_candidate *device_choices;
+	PaDeviceIndex device_choice_count;
+	char output_choices[256];
 #endif
 #ifdef CP_WITH_FFTW
 	struct cp_spectrum_analyzer spectrum_analyzer;
@@ -304,7 +307,7 @@ cp_portaudio_run_with_result(const struct cp_audio_config *config,
 	int spectrum_ready;
 #endif
 	int status;
-#ifdef CP_WITH_GUI
+#if defined(CP_WITH_TUI) || defined(CP_WITH_GUI)
 	device_choices = NULL;
 	device_choice_count = 0;
 #endif
@@ -458,8 +461,8 @@ cp_portaudio_run_with_result(const struct cp_audio_config *config,
 		    "rate=%0.0f backend=%s. press Ctrl-C to stop.\n",
 		    input_device, output_device, stream_rate,
 		    cp_audio_backend_string(config->backend));
-#ifdef CP_WITH_GUI
-	if (config->gui_enabled &&
+#if defined(CP_WITH_TUI) || defined(CP_WITH_GUI)
+	if ((config->tui_enabled || config->gui_enabled) &&
 	    cp_pa_build_candidates(&device_choices,
 	    &device_choice_count) != CP_PORTAUDIO_OK) {
 		device_choices = NULL;
@@ -493,6 +496,10 @@ cp_portaudio_run_with_result(const struct cp_audio_config *config,
 			tui_view.cat_snapshot  = &cat_snapshot;
 			tui_view.operator_state = operator_state;
 			tui_view.output_device = (int)output_device;
+			(void)cp_gui_format_output_choices(device_choices,
+			    (size_t)device_choice_count, (int)output_device,
+			    0, 0, output_choices, sizeof(output_choices));
+			tui_view.output_choices = output_choices;
 			if (cp_tui_update_view(&tui, &tui_view, &command))
 				*stop_requested = 1;
 			if (command.type != CP_CONTROL_COMMAND_NONE &&
@@ -580,6 +587,8 @@ cp_portaudio_run_with_result(const struct cp_audio_config *config,
 #endif
 #ifdef CP_WITH_GUI
 	cp_gui_close(&gui);
+#endif
+#if defined(CP_WITH_TUI) || defined(CP_WITH_GUI)
 	free(device_choices);
 #endif
 #ifdef CP_WITH_FFTW

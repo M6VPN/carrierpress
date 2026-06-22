@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "cp_audio.h"
 #include "cp_selector.h"
 
 static int	test_disabled_items(void);
@@ -14,6 +15,7 @@ static int	test_forbidden_text(void);
 static int	test_format_kinds(void);
 static int	test_long_text_bounds(void);
 static int	test_next_prev(void);
+static int	test_output_device_selector(void);
 
 int
 main(void)
@@ -27,6 +29,8 @@ main(void)
 	if (!test_long_text_bounds())
 		return 1;
 	if (!test_format_kinds())
+		return 1;
+	if (!test_output_device_selector())
 		return 1;
 	if (!test_forbidden_text())
 		return 1;
@@ -78,6 +82,80 @@ test_empty_selector(void)
 		printf("test_selector: empty format mismatch: %s\n", buffer);
 		return 0;
 	}
+
+	return 1;
+}
+
+static int
+test_output_device_selector(void)
+{
+	struct cp_audio_device_candidate choices[5];
+	struct cp_selector selector;
+	char buffer[256];
+	char menu[128];
+	char long_name[180];
+	size_t index;
+
+	memset(choices, 0, sizeof(choices));
+	if (cp_selector_load_output_devices(&selector, NULL, 0, 2, 0, 0) !=
+	    CP_OK || selector.kind != CP_SELECTOR_OUTPUT_DEVICE ||
+	    selector.count != 0)
+		return 0;
+	if (cp_selector_load_output_devices(NULL, choices, 0, 2, 0, 0) !=
+	    CP_ERR_NULL)
+		return 0;
+
+	choices[0].index = 0;
+	choices[0].name = "input only";
+	choices[0].max_input_channels = 2;
+	choices[1].index = 1;
+	choices[1].name = "Built-in Audio";
+	choices[1].max_output_channels = 2;
+	choices[1].default_output = 1;
+	choices[2].index = 2;
+	choices[2].name = "USB Audio";
+	choices[2].max_output_channels = 2;
+	choices[3].index = 4;
+	choices[3].name = "Headphones";
+	choices[3].max_output_channels = 2;
+	if (cp_selector_load_output_devices(&selector, choices, 4, 2, 1,
+	    4) != CP_OK)
+		return 0;
+	if (selector.count != 3 || selector.selected != 2)
+		return 0;
+	if (strstr(selector.items[0].label, "default") == NULL ||
+	    strstr(selector.items[1].label, "current") == NULL ||
+	    strstr(selector.items[2].label, "requested") == NULL)
+		return 0;
+	if (strcmp(selector.items[1].value, "2") != 0 ||
+	    strcmp(selector.items[2].value, "4") != 0)
+		return 0;
+	if (cp_selector_format_line(&selector, buffer, sizeof(buffer)) !=
+	    CP_OK ||
+	    strstr(buffer, "selector=output_device") == NULL ||
+	    strstr(buffer, "selected=3/3") == NULL ||
+	    strstr(buffer, "Headphones") == NULL)
+		return 0;
+	if (cp_selector_format_menu_item(&selector, 2, menu,
+	    sizeof(menu)) != CP_OK ||
+	    strstr(menu, "> 4 Headphones") == NULL ||
+	    strstr(menu, "requested") == NULL)
+		return 0;
+	if (cp_selector_format_menu_item(&selector, 8, menu,
+	    sizeof(menu)) != CP_ERR_RANGE)
+		return 0;
+
+	for (index = 0; index < sizeof(long_name) - 1; index++)
+		long_name[index] = 'x';
+	long_name[sizeof(long_name) - 1] = '\0';
+	choices[4].index = 9;
+	choices[4].name = long_name;
+	choices[4].max_output_channels = 2;
+	if (cp_selector_load_output_devices(&selector, choices + 4, 1, 9,
+	    0, 0) != CP_OK ||
+	    strlen(selector.items[0].label) >= CP_SELECTOR_LABEL_MAX ||
+	    strstr(selector.items[0].label, "...") == NULL)
+		return 0;
 
 	return 1;
 }

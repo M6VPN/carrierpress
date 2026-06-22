@@ -7,12 +7,21 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "cp_audio.h"
 #include "cp_selector.h"
 
 static int	cp_selector_copy_text(char *, size_t, const char *);
+static int	cp_selector_format_output_label(
+		    const struct cp_audio_device_candidate *, int, int, int,
+		    char *, size_t);
+static int	cp_selector_format_output_value(
+		    const struct cp_audio_device_candidate *, char *, size_t);
 static int	cp_selector_has_enabled(const struct cp_selector *);
+static int	cp_selector_marker_append(char *, size_t, const char *);
 static int	cp_selector_move(struct cp_selector *, int);
 static int	cp_selector_snprintf(char *, size_t, const char *, ...);
+static void	cp_selector_truncate_text(char *, size_t, const char *,
+		    size_t);
 
 int
 cp_selector_add(struct cp_selector *selector, const char *label,
@@ -76,6 +85,23 @@ cp_selector_format_line(const struct cp_selector *selector, char *buffer,
 	    item->enabled ? "" : " disabled");
 }
 
+int
+cp_selector_format_menu_item(const struct cp_selector *selector, size_t index,
+	char *buffer, size_t buffer_size)
+{
+	const struct cp_selector_item *item;
+
+	if (selector == NULL || buffer == NULL || buffer_size == 0)
+		return CP_ERR_NULL;
+	if (index >= selector->count)
+		return CP_ERR_RANGE;
+
+	item = &selector->items[index];
+	return cp_selector_snprintf(buffer, buffer_size, "%c %s %s%s",
+	    index == selector->selected ? '>' : ' ', item->value,
+	    item->label, item->enabled ? "" : " disabled");
+}
+
 void
 cp_selector_init(struct cp_selector *selector, enum cp_selector_kind kind)
 {
@@ -103,6 +129,76 @@ cp_selector_kind_string(enum cp_selector_kind kind)
 }
 
 int
+cp_selector_load_output_devices(struct cp_selector *selector,
+	const struct cp_audio_device_candidate *candidates, size_t count,
+	int current_device, int requested_set, int requested_device)
+{
+	char label[CP_SELECTOR_LABEL_MAX];
+	char value[CP_SELECTOR_VALUE_MAX];
+	size_t default_index;
+	size_t index;
+	size_t loaded_index;
+	size_t selected_current;
+	size_t selected_requested;
+	int status;
+
+	if (selector == NULL)
+		return CP_ERR_NULL;
+	if (candidates == NULL && count > 0)
+		return CP_ERR_NULL;
+
+	cp_selector_init(selector, CP_SELECTOR_OUTPUT_DEVICE);
+	default_index = (size_t)-1;
+	selected_current = (size_t)-1;
+	selected_requested = (size_t)-1;
+
+	for (index = 0; index < count; index++) {
+		if (candidates[index].max_output_channels <= 0)
+			continue;
+		if (selector->count >= CP_SELECTOR_ITEMS_MAX)
+			break;
+		status = cp_selector_format_output_label(&candidates[index],
+		    current_device, requested_set, requested_device, label,
+		    sizeof(label));
+		if (status != CP_OK)
+			return status;
+		status = cp_selector_format_output_value(&candidates[index],
+		    value, sizeof(value));
+		if (status != CP_OK)
+			return status;
+		status = cp_selector_add(selector, label, value, 1);
+		if (status != CP_OK)
+			return status;
+
+		loaded_index = selector->count - 1;
+		if (candidates[index].default_output)
+			default_index = loaded_index;
+		if (candidates[index].index == current_device)
+			selected_current = loaded_index;
+		if (requested_set &&
+		    candidates[index].index == requested_device)
+			selected_requested = loaded_index;
+	}
+
+	if (selector->count == 0)
+		return CP_OK;
+	if (requested_set && requested_device == CP_AUDIO_DEFAULT_DEVICE &&
+	    default_index != (size_t)-1)
+		selected_requested = default_index;
+	if (current_device == CP_AUDIO_DEFAULT_DEVICE &&
+	    default_index != (size_t)-1)
+		selected_current = default_index;
+	if (selected_requested != (size_t)-1)
+		selector->selected = selected_requested;
+	else if (selected_current != (size_t)-1)
+		selector->selected = selected_current;
+	else if (default_index != (size_t)-1)
+		selector->selected = default_index;
+
+	return CP_OK;
+}
+
+int
 cp_selector_next(struct cp_selector *selector)
 {
 	return cp_selector_move(selector, 1);
@@ -124,6 +220,57 @@ cp_selector_select(struct cp_selector *selector, size_t index)
 
 	selector->selected = index;
 	return CP_OK;
+}
+
+static int
+cp_selector_format_output_label(
+	const struct cp_audio_device_candidate *candidate, int current_device,
+	int requested_set, int requested_device, char *buffer,
+	size_t buffer_size)
+{
+	char markers[64];
+	char name[56];
+
+	if (candidate == NULL || buffer == NULL || buffer_size == 0)
+		return CP_ERR_NULL;
+
+	cp_selector_truncate_text(name, sizeof(name),
+	    candidate->name == NULL || candidate->name[0] == '\0' ?
+	    "unnamed" : candidate->name, sizeof(name) - 1);
+	markers[0] = '\0';
+	if (candidate->index == current_device ||
+	    (current_device == CP_AUDIO_DEFAULT_DEVICE &&
+	    candidate->default_output))
+		cp_selector_marker_append(markers, sizeof(markers),
+		    "current");
+	if (requested_set && (candidate->index == requested_device ||
+	    (requested_device == CP_AUDIO_DEFAULT_DEVICE &&
+	    candidate->default_output)))
+		cp_selector_marker_append(markers, sizeof(markers),
+		    "requested");
+	if (candidate->default_output)
+		cp_selector_marker_append(markers, sizeof(markers),
+		    "default");
+
+	if (markers[0] != '\0') {
+		return cp_selector_snprintf(buffer, buffer_size, "%s [%s]",
+		    name, markers);
+	}
+
+	return cp_selector_snprintf(buffer, buffer_size, "%s (%d out)",
+	    name, candidate->max_output_channels);
+}
+
+static int
+cp_selector_format_output_value(
+	const struct cp_audio_device_candidate *candidate, char *buffer,
+	size_t buffer_size)
+{
+	if (candidate == NULL || buffer == NULL || buffer_size == 0)
+		return CP_ERR_NULL;
+
+	return cp_selector_snprintf(buffer, buffer_size, "%d",
+	    candidate->index);
 }
 
 static int
@@ -149,6 +296,27 @@ cp_selector_has_enabled(const struct cp_selector *selector)
 	}
 
 	return 0;
+}
+
+static int
+cp_selector_marker_append(char *buffer, size_t buffer_size, const char *marker)
+{
+	size_t length;
+
+	if (buffer == NULL || marker == NULL || buffer_size == 0)
+		return CP_ERR_NULL;
+
+	length = strlen(buffer);
+	if (length > 0 && length + 1 < buffer_size) {
+		buffer[length] = ' ';
+		buffer[length + 1] = '\0';
+		length++;
+	}
+	if (length < buffer_size - 1)
+		(void)snprintf(buffer + length, buffer_size - length, "%s",
+		    marker);
+
+	return CP_OK;
 }
 
 static int
@@ -196,4 +364,35 @@ cp_selector_snprintf(char *buffer, size_t buffer_size, const char *format, ...)
 	buffer[buffer_size - 1] = '\0';
 
 	return CP_OK;
+}
+
+static void
+cp_selector_truncate_text(char *buffer, size_t buffer_size, const char *text,
+	size_t max_chars)
+{
+	size_t copy;
+	size_t length;
+
+	if (buffer == NULL || buffer_size == 0)
+		return;
+	if (text == NULL)
+		text = "";
+	if (max_chars >= buffer_size)
+		max_chars = buffer_size - 1;
+
+	length = strlen(text);
+	if (length <= max_chars) {
+		(void)snprintf(buffer, buffer_size, "%s", text);
+		return;
+	}
+	if (max_chars <= 3) {
+		copy = max_chars;
+		(void)memcpy(buffer, text, copy);
+		buffer[copy] = '\0';
+		return;
+	}
+
+	copy = max_chars - 3;
+	(void)memcpy(buffer, text, copy);
+	(void)memcpy(buffer + copy, "...", 4);
 }

@@ -66,17 +66,18 @@ with their reason and target path or device. CarrierPress does not retry
 rejected GUI requests automatically. Paths and reasons are truncated before
 drawing, and the SDL panel draw path clips text to the containing panel.
 
-Where PortAudio enumeration is available, the GUI also shows a compact output
-choice line with the current device, requested device, default output device,
-and the first output-capable choices. The host loop collects this list outside
-GUI callbacks and passes preformatted text to the GUI. sndio remains a
-named-device workflow and is documented separately.
+Where PortAudio enumeration is available, the GUI also shows a compact
+selector-backed output choice line with the current device, requested device,
+default output device, and the first output-capable choices. The host loop
+collects this list outside GUI callbacks and passes preformatted text to the
+GUI. sndio remains a named-device workflow and is documented separately.
 
-The shared selector foundation is documented in
-[`selector-workflow.md`](selector-workflow.md). It defines bounded selection
-state for future output-device, audio-file, and playlist lists. The foundation
-does not add native file dialogs, directory scanning, device opening, stream
-restart behavior, or compressed-audio decoding.
+The shared selector workflow is documented in
+[`selector-workflow.md`](selector-workflow.md). Output-device choices now use
+the selector model where candidates are already collected. Audio-file and
+playlist selectors remain future work. The selector path does not add native
+file dialogs, directory scanning, device opening, stream restart behavior, or
+compressed-audio decoding.
 
 ## Deferred Application
 
@@ -215,9 +216,10 @@ M25A evaluates sndio and keeps sndio GUI output-device restart deferred until a
 named-device request model, restart-result boundary, and OpenBSD manual
 validation evidence are available.
 
-P38 selector work will build on the shared selector model for TUI and GUI list
-navigation. Output-device choices should still be collected outside callbacks,
-and file or playlist choices should still be validated before application.
+P38 output-device selector work builds on the shared selector model for TUI and
+GUI display. Output-device choices are still collected outside callbacks, and
+file or playlist selector choices should still be validated before application
+when those later workflows are selected.
 
 Any GUI TRANSMIT or CAT control toggle is T5-only work. It must require the T5
 safety gates: compile-time opt-in, runtime arming, mock-only tests first,

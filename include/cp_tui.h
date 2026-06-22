@@ -27,6 +27,7 @@ struct cp_tui_view {
 	const struct cp_monitor_snapshot *snapshot;
 	const struct cp_cat_snapshot *cat_snapshot;
 	const struct cp_operator_state *operator_state;
+	const char *output_choices;
 	const char *path;
 	size_t playlist_index;
 	size_t playlist_count;

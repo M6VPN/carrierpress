@@ -8,6 +8,8 @@
 
 #include "cp_types.h"
 
+struct cp_audio_device_candidate;
+
 #define CP_SELECTOR_LABEL_MAX	96
 #define CP_SELECTOR_VALUE_MAX	256
 #define CP_SELECTOR_ITEMS_MAX	32
@@ -37,9 +39,16 @@ const struct cp_selector_item
 			*cp_selector_current(const struct cp_selector *);
 int			 cp_selector_format_line(const struct cp_selector *,
 			    char *, size_t);
+int			 cp_selector_format_menu_item(
+			    const struct cp_selector *, size_t, char *,
+			    size_t);
 void			 cp_selector_init(struct cp_selector *,
 			    enum cp_selector_kind);
 const char		*cp_selector_kind_string(enum cp_selector_kind);
+int			 cp_selector_load_output_devices(
+			    struct cp_selector *,
+			    const struct cp_audio_device_candidate *, size_t,
+			    int, int, int);
 int			 cp_selector_next(struct cp_selector *);
 int			 cp_selector_prev(struct cp_selector *);
 int			 cp_selector_select(struct cp_selector *, size_t);

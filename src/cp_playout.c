@@ -16,6 +16,7 @@
 #include "cp_cat.h"
 #include "cp_control.h"
 #include "cp_declipper.h"
+#include "cp_gui_format.h"
 #ifdef CP_WITH_GUI
 #include "cp_gui.h"
 #endif
@@ -29,11 +30,11 @@
 #include "cp_tui.h"
 #endif
 
-#define CP_PLAYOUT_GUI_DEVICE_CHOICES	32
+#define CP_PLAYOUT_DEVICE_CHOICES	32
 
 static size_t	cp_playout_interval_frames(double, unsigned int);
 static int	cp_playout_append_path(struct cp_playlist *, const char *);
-#ifdef CP_WITH_GUI
+#if defined(CP_WITH_TUI) || defined(CP_WITH_GUI)
 static size_t	cp_playout_collect_output_choices(
 		    struct cp_audio_device_candidate *, size_t);
 #endif
@@ -391,9 +392,11 @@ cp_playout_run_file_with_result(const char *path,
 	struct cp_gui_view gui_view;
 	struct cp_gui_workflow_request workflow_request;
 	struct cp_gui_workflow_request pending_workflow;
-	struct cp_audio_device_candidate device_choices[
-	    CP_PLAYOUT_GUI_DEVICE_CHOICES];
 	struct cp_waveform_snapshot waveform;
+#endif
+#if defined(CP_WITH_TUI) || defined(CP_WITH_GUI)
+	struct cp_audio_device_candidate device_choices[
+	    CP_PLAYOUT_DEVICE_CHOICES];
 	char output_choices[256];
 	size_t device_choice_count;
 #endif
@@ -713,11 +716,11 @@ cp_playout_run_file_with_result(const char *path,
 			    output_device);
 		}
 	}
-#ifdef CP_WITH_GUI
+#if defined(CP_WITH_TUI) || defined(CP_WITH_GUI)
 	device_choice_count = 0;
-	if (audio_config.gui_enabled) {
+	if (audio_config.tui_enabled || audio_config.gui_enabled) {
 		device_choice_count = cp_playout_collect_output_choices(
-		    device_choices, CP_PLAYOUT_GUI_DEVICE_CHOICES);
+		    device_choices, CP_PLAYOUT_DEVICE_CHOICES);
 	}
 #endif
 
@@ -798,6 +801,10 @@ cp_playout_run_file_with_result(const char *path,
 			tui_view.next_enabled   = config->playlist_count >
 			    config->playlist_index + 1;
 			tui_view.output_device  = (int)output_device;
+			(void)cp_gui_format_output_choices(device_choices,
+			    device_choice_count, (int)output_device, 0, 0,
+			    output_choices, sizeof(output_choices));
+			tui_view.output_choices = output_choices;
 			if (cp_tui_update_view(&tui, &tui_view, &command)) {
 				if (config->stop_requested != NULL)
 					*config->stop_requested = 1;
@@ -1180,7 +1187,7 @@ cp_playout_append_path(struct cp_playlist *playlist, const char *path)
 	return CP_PLAYOUT_OK;
 }
 
-#ifdef CP_WITH_GUI
+#if defined(CP_WITH_TUI) || defined(CP_WITH_GUI)
 static size_t
 cp_playout_collect_output_choices(struct cp_audio_device_candidate *choices,
 	size_t choice_count)

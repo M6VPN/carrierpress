@@ -9,6 +9,7 @@
 
 #include "cp_agc.h"
 #include "cp_gui_format.h"
+#include "cp_selector.h"
 
 static const char	*cp_gui_onoff(unsigned int);
 static void		cp_gui_append_text(char *, size_t, const char *);
@@ -190,10 +191,9 @@ cp_gui_format_output_choices(
 {
 	char full[512];
 	char item[96];
-	char name[40];
 	size_t index;
-	int default_device;
 	int shown;
+	struct cp_selector selector;
 
 	if (buffer == NULL || buffer_size == 0)
 		return CP_ERR_NULL;
@@ -201,41 +201,25 @@ cp_gui_format_output_choices(
 		return cp_gui_snprintf(buffer, buffer_size,
 		    "outputs: enumeration unavailable");
 
-	default_device = CP_AUDIO_DEFAULT_DEVICE;
-	for (index = 0; index < count; index++) {
-		if (choices[index].max_output_channels > 0 &&
-		    choices[index].default_output) {
-			default_device = choices[index].index;
-			break;
-		}
-	}
-
-	if (requested_set) {
-		(void)snprintf(full, sizeof(full),
-		    "outputs: current=%d requested=%d default=%d choices:",
-		    current_device, requested_device, default_device);
-	} else {
-		(void)snprintf(full, sizeof(full),
-		    "outputs: current=%d requested=- default=%d choices:",
-		    current_device, default_device);
-	}
+	if (cp_selector_load_output_devices(&selector, choices, count,
+	    current_device, requested_set, requested_device) != CP_OK)
+		return CP_ERR_RANGE;
+	if (cp_selector_format_line(&selector, full, sizeof(full)) != CP_OK)
+		return CP_ERR_RANGE;
+	cp_gui_append_text(full, sizeof(full), " choices:");
 	shown = 0;
-	for (index = 0; index < count && shown < 4; index++) {
-		if (choices[index].max_output_channels <= 0)
+	for (index = 0; index < selector.count && shown < 4; index++) {
+		if (cp_selector_format_menu_item(&selector, index, item,
+		    sizeof(item)) != CP_OK)
 			continue;
-		(void)cp_gui_format_truncate(
-		    choices[index].name == NULL || choices[index].name[0] ==
-		    '\0' ? "unnamed" : choices[index].name, name,
-		    sizeof(name), 28);
-		(void)snprintf(item, sizeof(item), "%s%d%s %s",
-		    shown == 0 ? " " : ", ", choices[index].index,
-		    choices[index].default_output ? " default" : "", name);
+		cp_gui_append_text(full, sizeof(full), shown == 0 ?
+		    " " : ", ");
 		cp_gui_append_text(full, sizeof(full), item);
 		shown++;
 	}
 	if (shown == 0)
 		cp_gui_append_text(full, sizeof(full), " -");
-	else if (index < count)
+	else if (index < selector.count)
 		cp_gui_append_text(full, sizeof(full), ", ...");
 
 	if (buffer_size == 1) {

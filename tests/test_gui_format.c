@@ -388,8 +388,10 @@ test_output_choices_format(void)
 	choices[0].default_output = 1;
 	if (cp_gui_format_output_choices(choices, 1, 1, 0, 0, buffer,
 	    sizeof(buffer)) != CP_OK ||
-	    strstr(buffer, "current=1 requested=- default=1") == NULL ||
-	    strstr(buffer, "1 default Built-in") == NULL) {
+	    strstr(buffer, "selector=output_device") == NULL ||
+	    strstr(buffer, "Built-in") == NULL ||
+	    strstr(buffer, "current") == NULL ||
+	    strstr(buffer, "default") == NULL) {
 		printf("test_gui_format: one choice mismatch: %s\n",
 		    buffer);
 		return 0;
@@ -409,9 +411,10 @@ test_output_choices_format(void)
 	choices[3].max_output_channels = 2;
 	if (cp_gui_format_output_choices(choices, 4, 2, 1, 4, buffer,
 	    sizeof(buffer)) != CP_OK ||
-	    strstr(buffer, "current=2 requested=4 default=1") == NULL ||
+	    strstr(buffer, "selected=3/3") == NULL ||
 	    strstr(buffer, "2 USB Audio") == NULL ||
 	    strstr(buffer, "4 pulse") == NULL ||
+	    strstr(buffer, "requested") == NULL ||
 	    strstr(buffer, "input only") != NULL) {
 		printf("test_gui_format: multiple choice mismatch: %s\n",
 		    buffer);
