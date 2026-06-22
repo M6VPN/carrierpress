@@ -90,10 +90,10 @@ implemented until code, docs, and validation are complete.
 - [x] Implement a runtime arming gate.
 - [x] Implement mock-only PTT state-machine tests.
 - [x] Implement emergency RX/drop command.
-- [ ] Add a manual dummy-load hardware test checklist.
+- [x] Add a manual dummy-load hardware test checklist.
 - [ ] Add flrig PTT control only after mock tests pass.
 - [ ] Add hamlib PTT control only after mock tests pass.
-- [ ] Keep all PTT commands out of real-time callbacks.
+- [x] Keep all PTT commands out of real-time callbacks.
 
 ## R1 v0.1 Release Hardening
 
@@ -402,8 +402,8 @@ implemented until code, docs, and validation are complete.
 - [x] Require runtime arming before any transmit-control action.
 - [x] Add mock-only transmit-control tests before hardware backend work.
 - [x] Add emergency RX/drop handling.
-- [ ] Keep CAT control out of real-time callbacks.
-- [ ] Require manual dummy-load or receive-only validation checklist.
+- [x] Keep CAT control out of real-time callbacks.
+- [x] Require manual dummy-load or receive-only validation checklist.
 
 ## T5A Safety-Gate Design
 
@@ -438,3 +438,12 @@ implemented until code, docs, and validation are complete.
 - [x] Add guarded tests for emergency RX/drop.
 - [x] Keep hardware PTT/CAT write backends absent.
 - [x] Keep GUI/TUI TRANSMIT controls absent.
+
+## T5E Callback Isolation and Validation Closeout
+
+- [x] Add static transmit-control callback/path isolation audit.
+- [x] Add Makefile target for transmit-control safety audit.
+- [x] Document receive-only and dummy-load validation boundaries.
+- [x] Document serial validation for targets that run `make clean`.
+- [x] Keep hardware PTT/CAT write backends absent.
+- [x] Keep GUI/TUI/CLI/profile/config/report/batch transmit paths absent.

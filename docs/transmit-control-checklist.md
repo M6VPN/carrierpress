@@ -64,6 +64,23 @@ future T5 safety-gated work only. It is not permission to test on air.
 - Confirm transmit requests are rejected after emergency until re-armed.
 - Confirm emergency RX/drop does not call any backend.
 
+## T5E Callback-Isolation and Validation Closeout Checklist
+
+- Confirm `make transmit-control-safety-audit` passes in ordinary builds.
+- Confirm `make transmit-control-safety-audit` passes in guarded mock builds.
+- Confirm transmit-control calls appear only in the guarded namespace and its
+  dedicated tests.
+- Confirm no transmit-control call is made from DSP, live audio, playout, GUI,
+  TUI, report, profile, config, batch, playlist, or main CLI paths.
+- Confirm no CAT write/control call is made from callbacks.
+- Confirm GUI and TUI still have no active transmit controls.
+- Confirm profile, config, batch, report, and playlist paths cannot arm
+  transmit.
+- Confirm no hardware backend exists.
+- Confirm no on-air testing is implied by the checklist.
+- Run targets that execute `make clean`, including
+  `make transmit-control-mock-test`, serially.
+
 ## Runtime-arming Checklist
 
 - Require an explicit runtime arming command after process start.
@@ -75,21 +92,27 @@ future T5 safety-gated work only. It is not permission to test on air.
 ## Receive-only Validation Checklist
 
 - Use a mock or receive-only setup first.
+- Treat this section as manual evidence only, not proof of compliance or
+  permission for on-air testing.
 - Verify CAT readback still works with transmit control disabled.
 - Verify emergency RX/drop is callable in the mock path.
 - Verify no audio level, cue event, playlist item, batch item, or report event
   can request transmit.
 - Verify GUI and TUI remain usable without active transmit controls.
+- Keep any future hardware backend work in a separate milestone.
 
 ## Dummy-load-only Validation Checklist
 
 - Use only a dummy load or receive-only equivalent.
+- Treat this section as manual evidence only, not proof of compliance or
+  permission for on-air testing.
 - Keep the operator present locally.
 - Confirm the selected rig, path, host, port, frequency, mode, and power chain
   outside CarrierPress.
 - Confirm emergency RX/drop behavior before any transmit assertion.
 - Confirm failure paths return to RX/off or report a clear fault.
 - Stop if readback does not match expected rig state.
+- Keep any future hardware backend work in a separate milestone.
 
 ## Emergency Stop and RX Checklist
 

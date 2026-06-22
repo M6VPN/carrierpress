@@ -93,15 +93,15 @@ evidence exists.
 - T5B: compile-time guard and disabled-by-default API stubs.
 - T5C: mock-only runtime-arming transmit-control state-machine tests.
 - T5D: mock-only emergency RX/drop semantics.
-- T5E: manual receive-only and dummy-load validation checklist.
+- T5E: callback isolation audit and manual validation checklist closeout.
 - T5F: optional hardware backend after all previous gates pass.
 
 T5A is documentation and safety planning only. T5B adds a compile-time guard
 and disabled API stubs only. T5C adds a mock-only runtime-arming state machine
 only. T5D adds mock-only emergency RX/drop only. T5F is not part of T5A, T5B,
-T5C, or T5D.
+T5C, T5D, or T5E.
 
-## Current T5D Boundary
+## Current T5E Boundary
 
 The `cp_transmit_control` namespace is a mock-only boundary for future work. In
 an ordinary build, `cp_tx_control_available()` returns unavailable and requests
@@ -114,10 +114,18 @@ override. It clears mock runtime arming and returns to `disarmed` without
 calling CAT, PTT, hamlib, flrig, serial, GPIO, VOX, or other hardware-control
 paths.
 
-T5D does not add a hardware backend, GUI controls, TUI controls, CLI options,
+T5E adds static callback and path isolation audit coverage. The audit checks
+that transmit-control calls remain out of real-time callback paths, GUI/TUI
+paths, profile/config parsing, report generation, batch processing, playout,
+and main CLI workflow paths.
+
+T5E does not add a hardware backend, GUI controls, TUI controls, CLI options,
 profile keys, config keys, report fields, or batch fields. The guarded mock
 `tx_requested` and `tx_active` states are local test state only and cannot key a
 radio.
+
+No CAT write/control backend exists. Read-only CAT status remains separate from
+the guarded mock transmit-control namespace.
 
 ## Future Architecture
 

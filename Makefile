@@ -376,6 +376,10 @@ pkg-config-smoke: $(BUILD_DIR)/carrierpress.pc
 	grep '^Cflags: -I$${includedir}/carrierpress$$' $(BUILD_DIR)/carrierpress.pc
 	! grep -E 'sndfile|portaudio|sndio|SDL|sdl|fftw|hamlib|ncurses|flrig' $(BUILD_DIR)/carrierpress.pc
 
+transmit-control-safety-audit:
+	sh scripts/transmit-control-safety-audit.sh
+
+# Runs make clean internally; run serially, not concurrently with other make jobs.
 transmit-control-mock-test:
 	$(MAKE) clean
 	$(MAKE) WITH_TRANSMIT_CONTROL=1 test
@@ -645,6 +649,7 @@ quality-json: $(QUALITY_BINS)
 
 professional-check: $(PROFESSIONAL_BINS)
 	./$(TEST_BIN_DIR)/test_professional_check
+	sh scripts/transmit-control-safety-audit.sh
 
 release-check:
 	./scripts/release-check.sh
@@ -792,4 +797,4 @@ clean:
 	rm -f tests/playlist_check.txt tests/playlist_too_long.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check example-libcarrierpress feature-summary install install-manifest install-smoke pkg-config-smoke professional-check public-compat-header-smoke public-core-header-smoke public-header-smoke public-tooling-header-smoke quality quality-json release-check test transmit-control-mock-test uninstall validate
+.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check example-libcarrierpress feature-summary install install-manifest install-smoke pkg-config-smoke professional-check public-compat-header-smoke public-core-header-smoke public-header-smoke public-tooling-header-smoke quality quality-json release-check test transmit-control-mock-test transmit-control-safety-audit uninstall validate

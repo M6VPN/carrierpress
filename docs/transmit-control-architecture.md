@@ -31,6 +31,27 @@ Backend calls must stay outside:
 - profile or config parsing
 - batch processing
 
+## Callback Isolation
+
+T5E adds a static callback and path isolation audit. The audit fails if
+transmit-control calls appear outside the guarded transmit-control namespace
+and its dedicated tests.
+
+The audit target enforces that transmit-control calls are not made from:
+
+- DSP block processing
+- live audio callbacks
+- playout callbacks
+- GUI render or event callbacks
+- report generation
+- profile or config parsing
+- batch processing
+- main CLI workflow paths
+
+No hardware backend exists. The guarded mock state machine remains separate
+from audio processing, CAT readback, GUI/TUI controls, profile/config parsing,
+report generation, batch processing, and playout.
+
 ## Current T5D Namespace
 
 T5B added `cp_transmit_control` as a disabled API namespace. T5C extended that

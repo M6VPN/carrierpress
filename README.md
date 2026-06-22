@@ -508,7 +508,8 @@ machine for tests. Ordinary builds still report transmit control unavailable.
 The guarded mock path does not add PTT, CAT write/control, hardware backends,
 GUI TRANSMIT controls, TUI TRANSMIT controls, CLI transmit options, or
 station-control behavior. T5D adds mock-only emergency RX/drop tests in that
-guarded state machine.
+guarded state machine. T5E adds static callback and path isolation audit
+coverage for the guarded mock namespace.
 
 Build the read-only hamlib CAT backend:
 
