@@ -17,6 +17,13 @@ compliance tool, or licence-compliance tool.
 
 ## Required Base Validation
 
+Target scheduling, parallel-safe target guidance, and serial-only target notes
+are documented in `docs/validation-targets.md`. The short local guide is:
+
+```sh
+make validation-help
+```
+
 Run the default release validation profile:
 
 ```sh
@@ -35,6 +42,9 @@ make quality
 make professional-check
 make autodetect
 ```
+
+`make release-check` runs `make clean`, so run it serially. Do not run
+clean-mutating targets concurrently with `make -j test` or other build targets.
 
 These checks must pass before a release tag. They use deterministic fixtures and
 do not prove broadcast-processor quality, RF compliance, transmitter safety, or
@@ -66,6 +76,9 @@ scaffolding after v0.4.0.
 - Confirm guarded mock build tests pass with `WITH_TRANSMIT_CONTROL=1`.
 - Confirm `make transmit-control-safety-audit` passes.
 - Confirm `make transmit-control-mock-test` passes when run serially.
+- Confirm `make validation-help` prints the current target classes.
+- Confirm `docs/validation-targets.md` matches the release procedure.
+- Confirm `scripts/release-evidence.sh` remains a non-mutating reporter.
 - Confirm ordinary builds keep transmit control unavailable.
 - Confirm guarded builds remain mock-only.
 - Confirm no hardware transmit backend exists.

@@ -68,6 +68,9 @@ future T5 safety-gated work only. It is not permission to test on air.
 
 - Confirm `make transmit-control-safety-audit` passes in ordinary builds.
 - Confirm `make transmit-control-safety-audit` passes in guarded mock builds.
+- Confirm `docs/validation-targets.md` lists guarded mock validation as
+  serial-only.
+- Confirm `make validation-help` prints the guarded mock serial warning.
 - Confirm transmit-control calls appear only in the guarded namespace and its
   dedicated tests.
 - Confirm no transmit-control call is made from DSP, live audio, playout, GUI,

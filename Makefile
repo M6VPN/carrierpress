@@ -376,6 +376,43 @@ pkg-config-smoke: $(BUILD_DIR)/carrierpress.pc
 	grep '^Cflags: -I$${includedir}/carrierpress$$' $(BUILD_DIR)/carrierpress.pc
 	! grep -E 'sndfile|portaudio|sndio|SDL|sdl|fftw|hamlib|ncurses|flrig' $(BUILD_DIR)/carrierpress.pc
 
+validation-help:
+	@printf 'CarrierPress validation targets\n'
+	@printf '\nOrdinary validation sequence:\n'
+	@printf '  make clean\n'
+	@printf '  make\n'
+	@printf '  make test\n'
+	@printf '  make -j test\n'
+	@printf '  make validate\n'
+	@printf '  make quality\n'
+	@printf '  make quality-json\n'
+	@printf '  make professional-check\n'
+	@printf '  make public-header-smoke\n'
+	@printf '  make example-libcarrierpress\n'
+	@printf '  ./build/examples/libcarrierpress-minimal\n'
+	@printf '  make transmit-control-safety-audit\n'
+	@printf '  make release-check\n'
+	@printf '\nGuarded mock validation, run serially:\n'
+	@printf '  make clean\n'
+	@printf '  make WITH_TRANSMIT_CONTROL=1\n'
+	@printf '  make WITH_TRANSMIT_CONTROL=1 test\n'
+	@printf '  make transmit-control-safety-audit\n'
+	@printf '  make transmit-control-mock-test\n'
+	@printf '\nSerial-only clean-mutating targets:\n'
+	@printf '  make clean\n'
+	@printf '  make release-check\n'
+	@printf '  make transmit-control-mock-test\n'
+	@printf '  make install-smoke\n'
+	@printf '  make install-manifest\n'
+	@printf '  make dist\n'
+	@printf '  make dist-check\n'
+	@printf '\nRelease archive sequence, after commit:\n'
+	@printf '  make clean\n'
+	@printf '  make dist-check\n'
+	@printf '  sha256sum -c build/dist/carrierpress-*.tar.gz.sha256\n'
+	@printf '\nDo not run clean-mutating targets concurrently with build or test targets.\n'
+	@printf 'Release publication remains manual.\n'
+
 transmit-control-safety-audit:
 	sh scripts/transmit-control-safety-audit.sh
 
@@ -673,6 +710,7 @@ uninstall:
 	rm -f $(DESTDIR)$(MANDIR)/man1/carrierpress.1
 	rm -rf $(DESTDIR)$(INCLUDEDIR)/carrierpress
 
+# Rewrites build/stage; run serially, not concurrently with install checks.
 install-smoke:
 	rm -rf $(BUILD_DIR)/stage
 	$(MAKE) all
@@ -685,14 +723,17 @@ install-smoke:
 	test -f $(BUILD_DIR)/stage/usr/include/carrierpress/carrierpress_core.h
 	test -f $(BUILD_DIR)/stage/usr/include/carrierpress/carrierpress_tooling.h
 
+# Depends on install-smoke and rewrites build/stage; run serially.
 install-manifest: install-smoke
 	find $(BUILD_DIR)/stage -type f | sort
 
+# Rewrites build/dist artifacts from committed HEAD; run serially.
 dist:
 	mkdir -p $(DIST_DIR)
 	git archive --format=tar.gz --prefix=$(DIST_NAME)/ HEAD > $(DIST_TARBALL)
 	sha256sum $(DIST_TARBALL) > $(DIST_TARBALL).sha256
 
+# Depends on dist and rewrites build/dist artifacts; run after committing release prep.
 dist-check: dist
 	test -s $(DIST_TARBALL)
 	test -s $(DIST_TARBALL).sha256
@@ -768,6 +809,7 @@ $(TEST_OBJ_DIR)/tests/%.o: tests/%.c $(HEADERS) | $(BACKEND_ORDER)
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
+# Removes build artifacts; run serially, not concurrently with other make jobs.
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -f carrierpress libcarrierpress.a src/*.o tests/*.o
@@ -797,4 +839,4 @@ clean:
 	rm -f tests/playlist_check.txt tests/playlist_too_long.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check example-libcarrierpress feature-summary install install-manifest install-smoke pkg-config-smoke professional-check public-compat-header-smoke public-core-header-smoke public-header-smoke public-tooling-header-smoke quality quality-json release-check test transmit-control-mock-test transmit-control-safety-audit uninstall validate
+.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check example-libcarrierpress feature-summary install install-manifest install-smoke pkg-config-smoke professional-check public-compat-header-smoke public-core-header-smoke public-header-smoke public-tooling-header-smoke quality quality-json release-check test transmit-control-mock-test transmit-control-safety-audit uninstall validate validation-help

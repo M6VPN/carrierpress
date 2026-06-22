@@ -7,6 +7,13 @@ releases.
 
 ## Required Validation
 
+Validation target scheduling is documented in
+`docs/validation-targets.md`. For a local command summary, run:
+
+```sh
+make validation-help
+```
+
 Run the release profile from a clean working tree:
 
 ```sh
@@ -49,6 +56,7 @@ calls, GUI/TUI transmit controls, or operational transmit support.
 Before tagging:
 
 ```sh
+make validation-help
 make clean
 make
 make test
@@ -62,6 +70,7 @@ make example-libcarrierpress
 ./build/examples/libcarrierpress-minimal
 make transmit-control-safety-audit
 make release-check
+sh scripts/release-evidence.sh
 ./carrierpress --version
 git status --short
 ```
@@ -82,7 +91,8 @@ make transmit-control-mock-test
 Do not run `make transmit-control-mock-test` concurrently with other make
 targets because it runs `make clean` internally. Do not run clean-mutating
 targets alongside `make -j test`. Serial reruns are the expected validation for
-clean-mutating targets.
+clean-mutating targets. The serial and non-cleaning target classes are listed
+in `docs/validation-targets.md`.
 
 `make dist-check` creates an archive from committed `HEAD`. Commit the intended
 R10 release-prep changes before treating the archive as the release source. Do

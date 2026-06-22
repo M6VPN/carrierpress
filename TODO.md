@@ -468,10 +468,19 @@ implemented until code, docs, and validation are complete.
 
 ## M30 Repository and CI Hygiene
 
-- [ ] Review validation targets after v0.4.1.
-- [ ] Document serial-only clean-mutating targets.
-- [ ] Improve local release evidence consistency.
-- [ ] Keep validation scripts mutation-safe unless explicitly documented.
+- [x] Review validation targets after v0.4.1.
+- [x] Document serial-only clean-mutating targets.
+- [x] Improve local release evidence consistency.
+- [x] Keep validation scripts mutation-safe unless explicitly documented.
+
+## M30A Validation Target Hygiene
+
+- [x] Add validation target guide.
+- [x] Add non-mutating validation help target.
+- [x] Document serial-only clean-mutating targets.
+- [x] Refresh release evidence helper without adding publishing actions.
+- [x] Keep validation/release scripts free of tag, push, release, sudo,
+      package-install, and transmit actions.
 
 ## M31 Test Matrix Hardening
 

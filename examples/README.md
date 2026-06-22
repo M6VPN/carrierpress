@@ -16,6 +16,7 @@ make
 ./examples/print-effective-config.sh
 ./examples/profile-self-test.sh
 ./examples/cat-mock-status.sh
+make validation-help
 ./examples/release-check-local.sh
 ```
 
@@ -28,6 +29,10 @@ checks AM and SSB command-line profile overrides.
 `validate-profile.sh`, `validate-config.sh`, and
 `print-effective-config.sh` inspect profile/config files without opening audio
 devices.
+
+`make validation-help` prints the local validation target classes. Release
+evidence is reported by `scripts/release-evidence.sh`; it does not tag, push,
+publish, install packages, or run transmit actions.
 
 ## Library Example
 

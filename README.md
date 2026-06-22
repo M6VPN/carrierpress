@@ -147,8 +147,16 @@ Run the release validation profile:
 make release-check
 ```
 
+Print the local validation target guide:
+
+```sh
+make validation-help
+```
+
 Release validation and manual tag checks are documented in
 [`docs/release-checklist.md`](docs/release-checklist.md).
+Validation target scheduling is documented in
+[`docs/validation-targets.md`](docs/validation-targets.md).
 GitHub Actions CI coverage is documented in [`docs/ci.md`](docs/ci.md).
 Release notes, the manual GitHub release procedure, and optional local release
 asset guidance are documented in
