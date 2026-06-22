@@ -14,6 +14,9 @@ licence compliance, legal bandwidth, regulatory approval, or broadcast quality.
 - sndio is optional and must be selected explicitly.
 - The base build does not require sndio headers or libraries.
 - OpenBSD hardware validation is manual for now.
+- GUI output-device restart is PortAudio-first. sndio GUI device workflow
+  constraints are documented in
+  [`sndio-gui-device-workflow.md`](sndio-gui-device-workflow.md).
 - CAT status remains read-only and PTT control is not implemented.
 
 ## Build Notes
@@ -56,6 +59,10 @@ sndio uses named devices. Use `--device NAME` for sndio selection:
 `--input-device N` and `--output-device N` are PortAudio-oriented numeric
 options. Do not use them as the primary sndio controls.
 
+GUI output-device switching currently uses the PortAudio numeric-device model.
+sndio GUI output-device restart remains deferred until a named-device request
+model, restart-result API, and OpenBSD manual validation evidence are added.
+
 ## Manual Validation Checklist
 
 Run the base validation first:
@@ -81,6 +88,8 @@ Then validate the optional sndio path:
 - Confirm mono and stereo settings behave as expected.
 - Confirm TUI display remains readable if `WITH_TUI=1` is also built.
 - Confirm Linux PortAudio commands remain documented and unchanged.
+- Confirm GUI output-device restart remains documented as PortAudio-first unless
+  a future sndio-specific restart path is selected.
 
 Suggested live commands:
 

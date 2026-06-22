@@ -170,7 +170,8 @@ does not open a live stream or change system audio settings:
 ```
 
 Build with `WITH_SNDIO=1` before trying the printed live-audio commands. See
-`docs/openbsd-sndio.md` for the full manual checklist.
+`docs/openbsd-sndio.md` for the full manual checklist and
+`docs/sndio-gui-device-workflow.md` for the GUI device workflow evaluation.
 
 ## GUI Demo
 
@@ -196,7 +197,8 @@ audio callbacks. If the requested device cannot open or start, CarrierPress
 tries once to fall back to the previous output device. GUI WAV playout uses the
 same deferred request pattern and reopens the blocking PortAudio output stream
 between processed blocks. Future file dialogs and sndio switching are
-documented in `docs/gui-workflow.md`.
+documented in `docs/gui-workflow.md` and
+`docs/sndio-gui-device-workflow.md`.
 
 ## Read-only CAT
 

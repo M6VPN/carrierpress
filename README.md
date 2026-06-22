@@ -218,7 +218,9 @@ cue slots with `l` and `p`. In live PortAudio GUI mode and GUI WAV playout,
 `o` and `O` create a deferred output-device request that is consumed by the
 host loop and applied by restarting the stream outside SDL and audio callbacks.
 If the requested device cannot open or start, CarrierPress tries once to fall
-back to the previous output device:
+back to the previous output device. sndio GUI output-device restart is deferred
+because sndio uses named devices, not PortAudio numeric device indices. See
+[`docs/sndio-gui-device-workflow.md`](docs/sndio-gui-device-workflow.md):
 
 ```sh
 ./carrierpress --gui-demo --gui-cue-wav audio/program.wav --gui-cue-playlist playlist.txt
@@ -917,7 +919,9 @@ Choose a backend policy:
 
 On OpenBSD or systems using sndio, build with `WITH_SNDIO=1` and select sndio
 explicitly. See [docs/openbsd-sndio.md](docs/openbsd-sndio.md) for OpenBSD
-build notes and the manual sndio validation checklist:
+build notes and the manual sndio validation checklist. See
+[docs/sndio-gui-device-workflow.md](docs/sndio-gui-device-workflow.md) for the
+GUI device workflow evaluation:
 
 ```sh
 ./carrierpress --live --audio-backend sndio
@@ -1222,7 +1226,9 @@ Run the safe local smoke helper:
 ```
 
 Then follow the checklist in [docs/openbsd-sndio.md](docs/openbsd-sndio.md).
-The sndio backend uses named devices:
+The sndio backend uses named devices. GUI output-device restart remains
+PortAudio-first and is evaluated in
+[docs/sndio-gui-device-workflow.md](docs/sndio-gui-device-workflow.md):
 
 ```sh
 ./carrierpress --live --audio-backend sndio --device default

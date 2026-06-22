@@ -314,6 +314,7 @@ implemented until code, docs, and validation are complete.
 ## Deferred GUI Output Device Follow-up
 
 - [ ] Add sndio GUI output-device restart if selected.
+- [ ] Add manual OpenBSD validation evidence for sndio GUI restart.
 
 ## R8 v0.3.0 Release Prep
 
@@ -341,11 +342,11 @@ implemented until code, docs, and validation are complete.
 
 ## M25 sndio GUI Device Workflow Evaluation
 
-- [ ] Document sndio GUI output-device constraints.
-- [ ] Add sndio GUI output-device restart only if technically safe.
-- [ ] Keep sndio optional.
-- [ ] Keep Linux PortAudio path unchanged.
-- [ ] Keep OpenBSD/sndio validation manual unless CI support appears.
+- [x] Document sndio GUI output-device constraints.
+- [x] Evaluate sndio GUI output-device restart safety.
+- [x] Keep sndio optional.
+- [x] Keep Linux PortAudio path unchanged.
+- [x] Keep OpenBSD/sndio validation manual unless CI support appears.
 
 ## M26 GUI File and Device Workflow Polish
 

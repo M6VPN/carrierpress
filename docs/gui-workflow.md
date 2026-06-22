@@ -143,8 +143,10 @@ Output-device request rules:
   are preserved. If the requested device cannot be opened or started,
   CarrierPress tries once to fall back to the previous output device that was
   already running.
-- sndio output-device switching remains future work unless selected in a later
-  slice.
+- sndio output-device switching remains deferred. sndio uses named devices
+  through `--device NAME`, while the current GUI output-device request is a
+  PortAudio-oriented numeric-device request. The sndio evaluation is documented
+  in [`sndio-gui-device-workflow.md`](sndio-gui-device-workflow.md).
 
 ## Current GUI Controls
 
@@ -174,7 +176,9 @@ GUI path by stopping and reopening audio streams outside callbacks. M23C2B adds
 a single fallback attempt to the previous live PortAudio output device when a
 requested device cannot be opened or started. M24A extends the same deferred
 restart and fallback pattern to GUI WAV playout between processed blocks.
-sndio switching remains future work.
+M25A evaluates sndio and keeps sndio GUI output-device restart deferred until a
+named-device request model, restart-result boundary, and OpenBSD manual
+validation evidence are available.
 
 Any GUI TRANSMIT or CAT control toggle is T5-only work. It must require the T5
 safety gates: compile-time opt-in, runtime arming, mock-only tests first,
