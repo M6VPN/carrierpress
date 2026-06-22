@@ -8,6 +8,10 @@ CarrierPress does not call `ffmpeg` itself and does not add codec libraries for
 this workflow. Conversion quality, codec licensing, and source-file handling
 remain outside CarrierPress.
 
+Possible future optional decoder approaches are documented in
+[`optional-decoder-architecture.md`](optional-decoder-architecture.md). The
+external conversion workflow remains the default.
+
 ## Target WAV Format
 
 Use a simple PCM WAV target:

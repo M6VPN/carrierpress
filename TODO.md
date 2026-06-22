@@ -379,10 +379,10 @@ implemented until code, docs, and validation are complete.
 
 ## M29 Optional Decoder Architecture Research
 
-- [ ] Document optional decoder interface options.
-- [ ] Keep compressed audio formats external by default.
-- [ ] Do not add decoder libraries unless selected later.
-- [ ] Keep base build WAV/PCM-native.
+- [x] Document optional decoder interface options.
+- [x] Keep compressed audio formats external by default.
+- [x] Do not add decoder libraries unless selected later.
+- [x] Keep base build WAV/PCM-native.
 
 ## T5 Deferred TRANSMIT/PTT Safety Gate
 

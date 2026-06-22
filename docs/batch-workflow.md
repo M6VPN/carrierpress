@@ -161,6 +161,9 @@ engineering regression review and local evidence bundles only.
 CarrierPress stays WAV/PCM-native for this workflow. Convert compressed files
 with an external tool before adding them to a batch list. See
 [`external-decode-workflow.md`](external-decode-workflow.md) for examples.
+Future optional decoder research is documented in
+[`optional-decoder-architecture.md`](optional-decoder-architecture.md), but
+batch mode remains WAV-only by default.
 
 ## Safety Boundary
 

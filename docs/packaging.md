@@ -54,6 +54,7 @@ make WITH_FLRIG=1
 
 Optional features must stay optional. A base package should not require
 libsndfile, PortAudio, sndio, ncurses, SDL3, FFTW, hamlib, or flrig.
+It should also stay free of optional decoder libraries.
 
 Packagers may split optional host interfaces into separate packages, but the
 base package should remain usable for the dependency-light CLI and DSP tests.
@@ -92,7 +93,7 @@ make pkg-config-smoke
 ```
 
 This check rejects libsndfile, PortAudio, sndio, ncurses, SDL3, FFTW, hamlib,
-and flrig references in the base pkg-config metadata.
+flrig, and decoder references in the base pkg-config metadata.
 
 ## Man Page
 

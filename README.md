@@ -893,7 +893,9 @@ Convert them to WAV with an external tool before using `--play` or
 `--playlist`.
 
 See [docs/external-decode-workflow.md](docs/external-decode-workflow.md) for
-the full workflow. Basic examples:
+the full workflow and
+[docs/optional-decoder-architecture.md](docs/optional-decoder-architecture.md)
+for future optional decoder research. Basic examples:
 
 ```sh
 ffmpeg -i input.mp3 -ar 48000 -ac 2 output.wav

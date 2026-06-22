@@ -77,6 +77,8 @@ Libs: -L${libdir} -lcarrierpress -lm
 ```
 
 Optional dependencies must not leak into the base pkg-config file.
+Optional decoder dependencies must also stay out of base package metadata and
+base pkg-config output unless a later explicit decoder package is selected.
 
 ## Public Headers
 
@@ -106,7 +108,8 @@ Maintainers may choose split packages. These names are examples only:
 - `carrierpress-cat-readonly`: optional hamlib/flrig read-only CAT support.
 
 Optional features must remain optional. A base package should not require
-libsndfile, PortAudio, sndio, ncurses, SDL3, FFTW, hamlib, or flrig.
+libsndfile, PortAudio, sndio, ncurses, SDL3, FFTW, hamlib, flrig, or decoder
+libraries.
 
 ## Safety and Policy Checks
 
