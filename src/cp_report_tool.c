@@ -36,6 +36,8 @@ struct cp_report_tool_doc {
 	char output[CP_REPORT_TOOL_VALUE_SIZE];
 	char batch_list[CP_REPORT_TOOL_VALUE_SIZE];
 	char output_dir[CP_REPORT_TOOL_VALUE_SIZE];
+	char profile_path[CP_REPORT_TOOL_VALUE_SIZE];
+	char profile_name[CP_REPORT_TOOL_VALUE_SIZE];
 	long sample_rate_hz;
 	long frames;
 	long channels;
@@ -321,6 +323,7 @@ cp_report_tool_compare_batch_summary(const struct cp_report_tool_doc *base,
 	size_t changed_items;
 	size_t index;
 	size_t summary_changes;
+	const char *reason;
 
 	if (base == NULL || new_doc == NULL || out == NULL)
 		return CP_REPORT_TOOL_ERR_NULL;
@@ -331,6 +334,7 @@ cp_report_tool_compare_batch_summary(const struct cp_report_tool_doc *base,
 	skipped_delta = new_doc->skipped - base->skipped;
 	summary_changes = 0;
 	changed_items = 0;
+	reason = "none";
 
 	if (strcmp(base->status, new_doc->status) != 0 ||
 	    strcmp(base->batch_list, new_doc->batch_list) != 0 ||
@@ -367,6 +371,10 @@ cp_report_tool_compare_batch_summary(const struct cp_report_tool_doc *base,
 		    base->item_count - new_doc->item_count :
 		    new_doc->item_count - base->item_count;
 	}
+	if (changed_items > 0)
+		reason = "batch_items_changed";
+	else if (summary_changes > 0)
+		reason = "batch_fields_changed";
 
 	fprintf(out, "compare=batch_summary\n");
 	fprintf(out, "schema_version=%d\n", CP_REPORT_SCHEMA_VERSION);
@@ -381,6 +389,7 @@ cp_report_tool_compare_batch_summary(const struct cp_report_tool_doc *base,
 	fprintf(out, "items_base=%zu\n", base->item_count);
 	fprintf(out, "items_new=%zu\n", new_doc->item_count);
 	fprintf(out, "changed_items=%zu\n", changed_items);
+	fprintf(out, "reason=%s\n", reason);
 
 	return summary_changes == 0 && changed_items == 0 ?
 	    CP_REPORT_TOOL_OK : CP_REPORT_TOOL_ERR_COMPARE;
@@ -460,16 +469,21 @@ cp_report_tool_compare_processed(const struct cp_report_tool_doc *base,
 {
 	struct cp_report_tool_compare compare;
 	double delta;
+	const char *reason;
 	size_t index;
+	size_t summary_changes;
 	int status;
 
 	(void)memset(&compare, 0, sizeof(compare));
+	summary_changes = 0;
 	if (strcmp(base->status, new_doc->status) != 0)
-		compare.changed_metrics++;
+		summary_changes++;
 	if (base->sample_rate_hz != new_doc->sample_rate_hz ||
 	    base->channels != new_doc->channels ||
 	    base->frames != new_doc->frames)
-		compare.changed_metrics++;
+		summary_changes++;
+	compare.changed_metrics = summary_changes;
+	reason = summary_changes == 0 ? "none" : "summary_fields_changed";
 
 	for (index = 0; index < sizeof(processed_metrics) /
 	    sizeof(processed_metrics[0]); index++) {
@@ -483,8 +497,11 @@ cp_report_tool_compare_processed(const struct cp_report_tool_doc *base,
 	fprintf(out, "schema_version=%d\n", CP_REPORT_SCHEMA_VERSION);
 	fprintf(out, "base=%s\n", base->source_path);
 	fprintf(out, "new=%s\n", new_doc->source_path);
+	fprintf(out, "tolerance=%.9g\n", tolerance);
 	fprintf(out, "status=%s\n",
 	    compare.changed_metrics == 0 ? "pass" : "fail");
+	if (compare.changed_metrics > summary_changes)
+		reason = "metric_delta_exceeded";
 	if (cp_report_tool_get_number_field(base->text, "input_rms",
 	    &delta) == CP_REPORT_TOOL_OK) {
 		double new_value;
@@ -515,6 +532,7 @@ cp_report_tool_compare_processed(const struct cp_report_tool_doc *base,
 	}
 	fprintf(out, "max_abs_delta=%.9g\n", compare.max_abs_delta);
 	fprintf(out, "changed_metrics=%zu\n", compare.changed_metrics);
+	fprintf(out, "reason=%s\n", reason);
 
 	return compare.changed_metrics == 0 ? CP_REPORT_TOOL_OK :
 	    CP_REPORT_TOOL_ERR_COMPARE;
@@ -525,17 +543,22 @@ cp_report_tool_compare_quality(const struct cp_report_tool_doc *base,
 	const struct cp_report_tool_doc *new_doc, double tolerance, FILE *out)
 {
 	struct cp_report_tool_compare compare;
+	const char *reason;
 	size_t index;
+	size_t summary_changes;
 	int status;
 
 	(void)memset(&compare, 0, sizeof(compare));
+	summary_changes = 0;
 	if (strcmp(base->status, new_doc->status) != 0 ||
 	    base->cases != new_doc->cases ||
 	    base->failed_cases != new_doc->failed_cases ||
 	    base->sample_rate_hz != new_doc->sample_rate_hz ||
 	    base->frames != new_doc->frames ||
 	    base->channels != new_doc->channels)
-		compare.changed_metrics++;
+		summary_changes++;
+	compare.changed_metrics = summary_changes;
+	reason = summary_changes == 0 ? "none" : "summary_fields_changed";
 
 	for (index = 0; index < sizeof(quality_metrics) /
 	    sizeof(quality_metrics[0]); index++) {
@@ -550,12 +573,16 @@ cp_report_tool_compare_quality(const struct cp_report_tool_doc *base,
 	fprintf(out, "schema_version=%d\n", CP_REPORT_SCHEMA_VERSION);
 	fprintf(out, "base=%s\n", base->source_path);
 	fprintf(out, "new=%s\n", new_doc->source_path);
+	fprintf(out, "tolerance=%.9g\n", tolerance);
 	fprintf(out, "cases_base=%zu\n", base->cases);
 	fprintf(out, "cases_new=%zu\n", new_doc->cases);
 	fprintf(out, "status=%s\n",
 	    compare.changed_metrics == 0 ? "pass" : "fail");
+	if (compare.changed_metrics > summary_changes)
+		reason = "metric_delta_exceeded";
 	fprintf(out, "max_abs_delta=%.9g\n", compare.max_abs_delta);
 	fprintf(out, "changed_metrics=%zu\n", compare.changed_metrics);
+	fprintf(out, "reason=%s\n", reason);
 
 	return compare.changed_metrics == 0 ? CP_REPORT_TOOL_OK :
 	    CP_REPORT_TOOL_ERR_COMPARE;
@@ -821,6 +848,10 @@ cp_report_tool_parse_doc(struct cp_report_tool_doc *doc)
 	if (cp_report_tool_get_string(doc->text, "status", doc->status,
 	    sizeof(doc->status)) != CP_REPORT_TOOL_OK)
 		return CP_REPORT_TOOL_ERR_PARSE;
+	(void)cp_report_tool_get_string(doc->text, "path",
+	    doc->profile_path, sizeof(doc->profile_path));
+	(void)cp_report_tool_get_string(doc->text, "name",
+	    doc->profile_name, sizeof(doc->profile_name));
 	if (doc->type == CP_REPORT_TOOL_TYPE_QUALITY) {
 		if (cp_report_tool_get_long(doc->text, "sample_rate_hz",
 		    &doc->sample_rate_hz) != CP_REPORT_TOOL_OK ||
@@ -886,10 +917,16 @@ cp_report_tool_print_batch_summary(const struct cp_report_tool_doc *doc,
 	fprintf(out, "status=%s\n", doc->status);
 	fprintf(out, "batch_list=%s\n", doc->batch_list);
 	fprintf(out, "output_dir=%s\n", doc->output_dir);
+	if (doc->profile_path[0] != '\0')
+		fprintf(out, "profile_path=%s\n", doc->profile_path);
+	if (doc->profile_name[0] != '\0')
+		fprintf(out, "profile_name=%s\n", doc->profile_name);
 	fprintf(out, "planned=%ld\n", doc->planned);
 	fprintf(out, "processed=%ld\n", doc->processed);
 	fprintf(out, "failed=%ld\n", doc->failed);
 	fprintf(out, "skipped=%ld\n", doc->skipped);
+	fprintf(out, "last_status=%ld\n", doc->last_status);
+	fprintf(out, "item_count=%zu\n", doc->item_count);
 
 	return CP_REPORT_TOOL_OK;
 }
@@ -921,6 +958,10 @@ cp_report_tool_print_processed_summary(const struct cp_report_tool_doc *doc,
 	fprintf(out, "status=%s\n", doc->status);
 	fprintf(out, "input=%s\n", doc->input);
 	fprintf(out, "output=%s\n", doc->output);
+	if (doc->profile_path[0] != '\0')
+		fprintf(out, "profile_path=%s\n", doc->profile_path);
+	if (doc->profile_name[0] != '\0')
+		fprintf(out, "profile_name=%s\n", doc->profile_name);
 	fprintf(out, "sample_rate_hz=%ld\n", doc->sample_rate_hz);
 	fprintf(out, "frames=%ld\n", doc->frames);
 	fprintf(out, "channels=%ld\n", doc->channels);

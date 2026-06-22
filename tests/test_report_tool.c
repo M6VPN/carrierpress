@@ -12,6 +12,7 @@
 #define TEST_REPORT_TOOL_DIR		"build/tests"
 #define TEST_REPORT_TOOL_BUF_SIZE	16384
 
+static int	buffer_has_forbidden_report_wording(const char *);
 static int	read_file(const char *, char *, size_t);
 static int	run_compare(const char *, const char *, double);
 static int	test_compare_identical_processed(void);
@@ -465,6 +466,23 @@ main(void)
 }
 
 static int
+buffer_has_forbidden_report_wording(const char *buffer)
+{
+	if (buffer == NULL)
+		return 1;
+	if (strstr(buffer, "broadcast") != NULL ||
+	    strstr(buffer, "certification") != NULL ||
+	    strstr(buffer, "compliance") != NULL ||
+	    strstr(buffer, "legal") != NULL ||
+	    strstr(buffer, "occupied") != NULL ||
+	    strstr(buffer, "proof") != NULL ||
+	    strstr(buffer, "regulatory") != NULL)
+		return 1;
+
+	return 0;
+}
+
+static int
 read_file(const char *path, char *buffer, size_t buffer_size)
 {
 	FILE *file;
@@ -541,8 +559,8 @@ test_compare_batch_identical(void)
 	if (strstr(buffer, "compare=batch_summary") == NULL ||
 	    strstr(buffer, "status=pass") == NULL ||
 	    strstr(buffer, "changed_items=0") == NULL ||
-	    strstr(buffer, "compliance") != NULL ||
-	    strstr(buffer, "proof") != NULL) {
+	    strstr(buffer, "reason=none") == NULL ||
+	    buffer_has_forbidden_report_wording(buffer)) {
 		printf("test_report_tool: batch compare output failed\n");
 		return 0;
 	}
@@ -572,6 +590,8 @@ test_compare_batch_item_count(void)
 static int
 test_compare_batch_item_report(void)
 {
+	char buffer[TEST_REPORT_TOOL_BUF_SIZE];
+
 	if (!write_file(TEST_REPORT_TOOL_DIR "/batch-summary.json",
 	    batch_summary_report) ||
 	    !write_file(TEST_REPORT_TOOL_DIR "/batch-summary-item-report.json",
@@ -582,6 +602,15 @@ test_compare_batch_item_report(void)
 	    CP_REPORT_TOOL_DEFAULT_TOLERANCE) !=
 	    CP_REPORT_TOOL_ERR_COMPARE) {
 		printf("test_report_tool: batch item report compare failed\n");
+		return 0;
+	}
+	if (!read_file(TEST_REPORT_TOOL_DIR "/compare-output.txt", buffer,
+	    sizeof(buffer)))
+		return 0;
+	if (strstr(buffer, "status=fail") == NULL ||
+	    strstr(buffer, "reason=batch_items_changed") == NULL ||
+	    buffer_has_forbidden_report_wording(buffer)) {
+		printf("test_report_tool: batch item report output failed\n");
 		return 0;
 	}
 
@@ -657,12 +686,14 @@ test_compare_identical_processed(void)
 		printf("test_report_tool: identical compare failed\n");
 		return 0;
 	}
-	if (!read_file(TEST_REPORT_TOOL_DIR "/processed-a.json", buffer,
+	if (!read_file(TEST_REPORT_TOOL_DIR "/compare-output.txt", buffer,
 	    sizeof(buffer)))
 		return 0;
-	if (strstr(buffer, "compliance") != NULL ||
-	    strstr(buffer, "proof") != NULL) {
-		printf("test_report_tool: report wording failed\n");
+	if (strstr(buffer, "compare=processed_file") == NULL ||
+	    strstr(buffer, "tolerance=1e-06") == NULL ||
+	    strstr(buffer, "reason=none") == NULL ||
+	    buffer_has_forbidden_report_wording(buffer)) {
+		printf("test_report_tool: processed compare output failed\n");
 		return 0;
 	}
 
@@ -725,12 +756,24 @@ test_compare_mismatched_batch_type(void)
 static int
 test_compare_quality(void)
 {
+	char buffer[TEST_REPORT_TOOL_BUF_SIZE];
+
 	if (!write_file(TEST_REPORT_TOOL_DIR "/quality.json", quality_report))
 		return 0;
 	if (run_compare(TEST_REPORT_TOOL_DIR "/quality.json",
 	    TEST_REPORT_TOOL_DIR "/quality.json",
 	    CP_REPORT_TOOL_DEFAULT_TOLERANCE) != CP_REPORT_TOOL_OK) {
 		printf("test_report_tool: quality compare failed\n");
+		return 0;
+	}
+	if (!read_file(TEST_REPORT_TOOL_DIR "/compare-output.txt", buffer,
+	    sizeof(buffer)))
+		return 0;
+	if (strstr(buffer, "compare=quality") == NULL ||
+	    strstr(buffer, "tolerance=1e-06") == NULL ||
+	    strstr(buffer, "reason=none") == NULL ||
+	    buffer_has_forbidden_report_wording(buffer)) {
+		printf("test_report_tool: quality compare output failed\n");
 		return 0;
 	}
 
@@ -832,10 +875,10 @@ test_summary_processed(void)
 		return 0;
 	if (strstr(buffer, "report=processed_file") == NULL ||
 	    strstr(buffer, "schema_version=1") == NULL ||
+	    strstr(buffer, "status=ok") == NULL ||
 	    strstr(buffer, "input_rms=0.1") == NULL ||
 	    strstr(buffer, "output_peak=0.45") == NULL ||
-	    strstr(buffer, "compliance") != NULL ||
-	    strstr(buffer, "proof") != NULL) {
+	    buffer_has_forbidden_report_wording(buffer)) {
 		printf("test_report_tool: processed summary failed\n");
 		return 0;
 	}
@@ -865,10 +908,10 @@ test_summary_quality(void)
 		return 0;
 	if (strstr(buffer, "report=quality") == NULL ||
 	    strstr(buffer, "schema_version=1") == NULL ||
+	    strstr(buffer, "status=pass") == NULL ||
 	    strstr(buffer, "cases=2") == NULL ||
 	    strstr(buffer, "failed_cases=1") == NULL ||
-	    strstr(buffer, "compliance") != NULL ||
-	    strstr(buffer, "proof") != NULL) {
+	    buffer_has_forbidden_report_wording(buffer)) {
 		printf("test_report_tool: quality summary failed\n");
 		return 0;
 	}
@@ -903,11 +946,17 @@ test_summary_batch(void)
 		return 0;
 	if (strstr(buffer, "report=batch_summary") == NULL ||
 	    strstr(buffer, "schema_version=1") == NULL ||
+	    strstr(buffer, "status=ok") == NULL ||
+	    strstr(buffer, "profile_path=profiles/file-cleanup.profile") ==
+	    NULL ||
+	    strstr(buffer, "profile_name=File Cleanup") == NULL ||
 	    strstr(buffer, "planned=2") == NULL ||
 	    strstr(buffer, "processed=2") == NULL ||
 	    strstr(buffer, "failed=0") == NULL ||
-	    strstr(buffer, "compliance") != NULL ||
-	    strstr(buffer, "proof") != NULL) {
+	    strstr(buffer, "skipped=1") == NULL ||
+	    strstr(buffer, "last_status=0") == NULL ||
+	    strstr(buffer, "item_count=1") == NULL ||
+	    buffer_has_forbidden_report_wording(buffer)) {
 		printf("test_report_tool: batch summary failed\n");
 		return 0;
 	}

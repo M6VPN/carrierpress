@@ -22,6 +22,8 @@ or need optional libraries. The table below summarizes the expected boundary.
 | sndio smoke helper | no | sndio for manual commands | no | manual only |
 | Read-only CAT examples | no | flrig or hamlib where selected | no | read-only status only |
 | Release and evidence helpers | no | no | no | no |
+| Report evidence demo | writes `build/quality-report.json` | no | no | no |
+| Batch evidence workflow | writes requested `build/` outputs | libsndfile for processing | no | no |
 | Guarded mock transmit-control validation | writes build outputs | no | yes for mock wrapper | no |
 
 Examples must not install packages, use `sudo`, create tags, push tags,
@@ -141,11 +143,17 @@ Summarize or compare CarrierPress JSON reports without opening audio devices:
 make -s quality-json > build/quality-report.json
 ./examples/report-summary.sh build/quality-report.json
 ./examples/report-compare.sh build/quality-report.json build/quality-report.json
+./examples/report-evidence-demo.sh
 ```
 
 Report comparisons are regression metrics only. They do not prove listening
 quality, RF bandwidth, transmitter compliance, regulatory approval, legal
 station operation, or licence compliance.
+
+The report evidence demo writes `build/quality-report.json`, summarizes it, and
+compares it with itself. It does not run `make clean`, use optional
+dependencies, open audio devices, publish releases, or run transmit actions.
+The full workflow is documented in `docs/report-evidence-workflow.md`.
 
 ## Playout
 
@@ -192,6 +200,7 @@ mkdir -p build/batch-evidence
 
 The script writes `build/batch-evidence/batch-summary.json` through
 `--evidence-dir` and leaves per-file sidecar reports in the output directory.
+Batch processing requires a `WITH_SNDFILE=1` build; dry-run batch checks do not.
 Compare two batch summary reports without processing audio:
 
 ```sh

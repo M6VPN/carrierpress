@@ -47,6 +47,8 @@ else
 fi
 
 printf '\nbatch/report evidence:\n'
+printf 'workflow guide: docs/report-evidence-workflow.md\n'
+printf 'local demo: ./examples/report-evidence-demo.sh\n'
 if [ -f build/quality-report.json ]; then
 	printf 'summary: ./carrierpress --report-summary build/quality-report.json\n'
 	printf 'compare: ./carrierpress --report-compare build/quality-report.json build/quality-report.json\n'

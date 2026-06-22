@@ -156,6 +156,11 @@ Batch summary comparison is exact for stable count fields and ordered item
 `input`, `output`, `report`, and `status` fields. It is intended for
 engineering regression review and local evidence bundles only.
 
+The full report evidence workflow is documented in
+[`report-evidence-workflow.md`](report-evidence-workflow.md). It includes
+quality report evidence, processed-file sidecar review, batch summary review,
+and local comparison examples.
+
 ## Compressed Sources
 
 CarrierPress stays WAV/PCM-native for this workflow. Convert compressed files

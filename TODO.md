@@ -515,10 +515,18 @@ implemented until code, docs, and validation are complete.
 
 ## M33 Report and Evidence Workflow Polish
 
-- [ ] Review report summary and compare UX.
-- [ ] Review batch evidence examples.
-- [ ] Keep reports engineering-only.
-- [ ] Keep compliance/proof claims absent.
+- [x] Review report summary and compare UX.
+- [x] Review batch evidence examples.
+- [x] Keep reports engineering-only.
+- [x] Keep compliance/proof claims absent.
+
+## M33A Report and Evidence Workflow Polish
+
+- [x] Add report evidence workflow guide.
+- [x] Polish report summary/compare wording and tests.
+- [x] Refresh report and batch evidence examples.
+- [x] Keep report tooling inspection-only.
+- [x] Keep compliance/proof claims absent.
 
 ## M34 API and Packaging Polish
 

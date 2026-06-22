@@ -44,11 +44,17 @@ Summarize a JSON report without opening audio devices:
 ./carrierpress --report-summary build/quality-report.json
 ```
 
+The summary prints deterministic key-value lines including report type, schema
+version, status, case counts, and fixture dimensions.
+
 Compare two CarrierPress JSON reports:
 
 ```sh
 ./carrierpress --report-compare build/old-quality.json build/quality-report.json
 ```
+
+The compare output starts with the report type, schema version, source paths,
+status, tolerance for numeric report types, and a compact reason line.
 
 The compare helper uses an absolute default tolerance of `0.000001` for known
 numeric metrics. Override it when needed:
@@ -93,6 +99,10 @@ Summarize and compare processed-file reports:
 ./carrierpress --report-compare old.report.json output.report.json
 ```
 
+Processed-file summaries include input/output paths, sample rate, frame count,
+channel count, and core RMS/peak values. Profile metadata is printed when the
+report contains it.
+
 Report summary and compare modes are inspection-only. They read existing JSON
 reports, do not process audio, and do not require libsndfile, PortAudio, TUI,
 GUI, CAT, or FFTW support.
@@ -134,6 +144,23 @@ Summarize a batch summary report:
 ```sh
 ./carrierpress --report-summary processed/batch-summary.json
 ```
+
+Batch summaries include planned, processed, failed, skipped, last status, item
+count, and profile metadata when available.
+
+Compare batch summary reports:
+
+```sh
+./carrierpress --report-compare old-batch-summary.json batch-summary.json
+```
+
+Batch summary comparison is exact for stable count fields and ordered item
+`input`, `output`, `report`, and `status` fields. It prints
+`compare=batch_summary`, `status=pass` or `status=fail`, count deltas, item
+counts, changed item count, and a compact reason line.
+
+See [`report-evidence-workflow.md`](report-evidence-workflow.md) for local
+quality, processed-file, and batch evidence examples.
 
 ## Report Shape
 

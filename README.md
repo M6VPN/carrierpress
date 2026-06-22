@@ -1347,6 +1347,14 @@ Summarize or compare CarrierPress JSON reports:
 ./carrierpress --report-compare old.report.json new.report.json
 ```
 
+Local report and batch evidence workflows are documented in
+[docs/report-evidence-workflow.md](docs/report-evidence-workflow.md). The
+safe local demo is:
+
+```sh
+./examples/report-evidence-demo.sh
+```
+
 `make professional-check` is the stricter M9.5 gate. It runs deterministic
 fixtures through default, dehummer, declipper, natural dynamics plus low-level
 boost, multiband plus bass EQ, second multiband, AM, and SSB profiles. It fails
