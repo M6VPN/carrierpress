@@ -45,6 +45,7 @@ make quality-json
 make professional-check
 make public-header-smoke
 make pkg-config-smoke
+make packaging-surface-audit
 ```
 
 Optional features remain explicit:
@@ -66,6 +67,8 @@ The base pkg-config metadata should expose only `-lcarrierpress -lm`.
 New library examples should prefer `carrierpress_core.h` for in-memory DSP
 processing and `carrierpress_tooling.h` for profile, config, batch, and report
 tooling.
+`cp_transmit_control.h` is guarded mock-only T5 scaffolding, not an operational
+PTT API.
 
 ## Staged Install
 

@@ -22,6 +22,7 @@ make example-libcarrierpress
 ./build/examples/libcarrierpress-minimal
 make transmit-control-safety-audit
 make operator-workflow-safety-audit
+make packaging-surface-audit
 ```
 
 Base validation must not require libsndfile, PortAudio, sndio, SDL3, FFTW,
@@ -35,6 +36,9 @@ profile/config/report/batch/playlist transmit arming path.
 `make operator-workflow-safety-audit` checks ordinary operator-facing source
 and examples for active transmit controls, release publication, package
 installation, and backend control calls.
+
+`make packaging-surface-audit` checks base pkg-config metadata,
+dependency-light header tiers, and packaging policy docs.
 
 ## Guarded Mock Transmit-Control Matrix
 
@@ -81,7 +85,8 @@ add CAT write/control or PTT behavior.
 unless a stable CI runner is selected later.
 
 Optional dependencies must not leak into base `carrierpress.pc` metadata. Use
-`make pkg-config-smoke` to check base pkg-config output.
+`make pkg-config-smoke` and `make packaging-surface-audit` to check base
+pkg-config output and source/docs package-surface policy.
 
 ## Optional Build Validation Commands
 
@@ -114,6 +119,7 @@ GitHub Actions currently covers:
 - read-only flrig CAT profile
 - read-only hamlib CAT profile
 - packaging smoke and source archive checksum
+- packaging surface audit
 - SDL3 GUI profile when runner packages are available
 
 The SDL3 GUI job is allowed to skip when runner packages are unavailable. Full
@@ -129,4 +135,5 @@ Print a concise matrix without building or mutating the tree:
 
 ```sh
 make test-matrix-help
+make packaging-help
 ```

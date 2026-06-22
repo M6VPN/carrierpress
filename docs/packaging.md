@@ -26,11 +26,17 @@ library users. `carrierpress_tooling.h` is the recommended installed header for
 profile, config, batch, and report tooling. `carrierpress.h` remains installed
 as the broad compatibility umbrella.
 
+The API and packaging surface review guide is
+[`api-packaging-surface.md`](api-packaging-surface.md).
+
 Review the exact staged file list with:
 
 ```sh
 make install-manifest
 ```
+
+`make install-manifest` depends on `make install-smoke` and rewrites
+`build/stage`; run it serially.
 
 ## Build Options
 
@@ -95,6 +101,18 @@ make pkg-config-smoke
 This check rejects libsndfile, PortAudio, sndio, ncurses, SDL3, FFTW, hamlib,
 flrig, and decoder references in the base pkg-config metadata.
 
+The non-mutating source and documentation audit is:
+
+```sh
+make packaging-surface-audit
+```
+
+For a concise local packaging guide:
+
+```sh
+make packaging-help
+```
+
 ## Man Page
 
 Check the staged man page with:
@@ -132,6 +150,8 @@ as OpenBSD `sha256`, and record the result with the release evidence.
 - No release publication is automated.
 - No RF, transmitter, licence, regulatory, legal-bandwidth, or broadcast-quality
   claims are made by package metadata.
+- T5 transmit-control remains guarded and mock-only. Packaging must not present
+  it as operational PTT support.
 
 ## Maintainer Notes
 

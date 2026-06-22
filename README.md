@@ -331,6 +331,14 @@ make dist-check
 ls -lh build/dist/
 ```
 
+The API and packaging surface guide is in
+[`docs/api-packaging-surface.md`](docs/api-packaging-surface.md):
+
+```sh
+make packaging-help
+make packaging-surface-audit
+```
+
 Package maintainer checklists and example distro packaging notes are in
 [`docs/package-maintainer-checklist.md`](docs/package-maintainer-checklist.md).
 These notes are documentation only and do not add real distro packaging files.
@@ -357,6 +365,7 @@ make public-tooling-header-smoke
 make public-compat-header-smoke
 make public-header-smoke
 make pkg-config-smoke
+make packaging-surface-audit
 ```
 
 The active Linux-host validation path is:

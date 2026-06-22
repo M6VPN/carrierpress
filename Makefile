@@ -392,6 +392,7 @@ validation-help:
 	@printf '  ./build/examples/libcarrierpress-minimal\n'
 	@printf '  make transmit-control-safety-audit\n'
 	@printf '  make operator-workflow-safety-audit\n'
+	@printf '  make packaging-surface-audit\n'
 	@printf '  make release-check\n'
 	@printf '\nGuarded mock validation, run serially:\n'
 	@printf '  make clean\n'
@@ -413,6 +414,7 @@ validation-help:
 	@printf '  sha256sum -c build/dist/carrierpress-*.tar.gz.sha256\n'
 	@printf '\nDo not run clean-mutating targets concurrently with build or test targets.\n'
 	@printf 'Detailed test matrix: make test-matrix-help\n'
+	@printf 'Packaging checks: make packaging-help\n'
 	@printf 'Release publication remains manual.\n'
 
 test-matrix-help:
@@ -450,11 +452,33 @@ test-matrix-help:
 	@printf 'Optional dependencies are opt-in and must not affect base validation.\n'
 	@printf 'Details: docs/test-matrix.md\n'
 
+packaging-help:
+	@printf 'CarrierPress packaging checks\n'
+	@printf '\nBase packaging review:\n'
+	@printf '  make clean\n'
+	@printf '  make\n'
+	@printf '  make public-header-smoke\n'
+	@printf '  make pkg-config-smoke\n'
+	@printf '  make packaging-surface-audit\n'
+	@printf '\nStaged install review, run serially:\n'
+	@printf '  make install-smoke\n'
+	@printf '  make install-manifest\n'
+	@printf '\nRelease archive review, after commit:\n'
+	@printf '  make clean\n'
+	@printf '  make dist-check\n'
+	@printf '  sha256sum -c build/dist/carrierpress-*.tar.gz.sha256\n'
+	@printf '\nOptional dependencies remain opt-in and must not appear in base carrierpress.pc.\n'
+	@printf 'Release publication remains manual; no packaging target creates tags or releases.\n'
+	@printf 'Details: docs/api-packaging-surface.md and docs/packaging.md\n'
+
 transmit-control-safety-audit:
 	sh scripts/transmit-control-safety-audit.sh
 
 operator-workflow-safety-audit:
 	sh scripts/operator-workflow-safety-audit.sh
+
+packaging-surface-audit:
+	sh scripts/packaging-surface-audit.sh
 
 # Runs make clean internally; run serially, not concurrently with other make jobs.
 transmit-control-mock-test:
@@ -879,4 +903,4 @@ clean:
 	rm -f tests/playlist_check.txt tests/playlist_too_long.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check example-libcarrierpress feature-summary install install-manifest install-smoke operator-workflow-safety-audit pkg-config-smoke professional-check public-compat-header-smoke public-core-header-smoke public-header-smoke public-tooling-header-smoke quality quality-json release-check test test-matrix-help transmit-control-mock-test transmit-control-safety-audit uninstall validate validation-help
+.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check example-libcarrierpress feature-summary install install-manifest install-smoke operator-workflow-safety-audit packaging-help packaging-surface-audit pkg-config-smoke professional-check public-compat-header-smoke public-core-header-smoke public-header-smoke public-tooling-header-smoke quality quality-json release-check test test-matrix-help transmit-control-mock-test transmit-control-safety-audit uninstall validate validation-help

@@ -94,6 +94,15 @@ make public-header-smoke
 Use `carrierpress_core.h` for new in-memory DSP library users and
 `carrierpress_tooling.h` for profile, config, batch, and report tooling.
 `carrierpress.h` remains the broad compatibility umbrella.
+`cp_transmit_control.h` is guarded T5 mock-only scaffolding and must not be
+packaged or described as operational PTT support.
+
+Review the surface guide and audit:
+
+```sh
+make packaging-help
+make packaging-surface-audit
+```
 
 ## Optional Feature Packages
 

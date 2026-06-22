@@ -21,6 +21,9 @@ New applications should include the narrowest umbrella that matches their use:
 The broad umbrella remains installed and compatible, but it includes more
 headers than ordinary library users normally need.
 
+The API and packaging surface guide is
+[`api-packaging-surface.md`](api-packaging-surface.md).
+
 ## Stable Core Areas
 
 The most stable public area is the dependency-light DSP block interface:
@@ -109,6 +112,8 @@ Host and optional backend headers are not part of the portable core API:
 
 Base builds and `carrierpress.pc` do not require these optional dependencies.
 Build with the matching `WITH_*` flag before using optional backend functions.
+Base public-header smoke checks and pkg-config smoke checks are documented in
+`docs/api-packaging-surface.md`.
 
 ## Minimal Example
 

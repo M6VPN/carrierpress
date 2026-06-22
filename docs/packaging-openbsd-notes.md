@@ -42,6 +42,7 @@ make DESTDIR="$PWD/build/stage" PREFIX=/usr/local install
 make install-manifest
 make public-header-smoke
 make pkg-config-smoke
+make packaging-surface-audit
 ```
 
 Do not add scripts that change system audio configuration. Do not add
@@ -50,6 +51,8 @@ services, daemons, setuid, setcap, or post-install behavior.
 The base pkg-config metadata should expose only `-lcarrierpress -lm`.
 `carrierpress_core.h` is the recommended dependency-light DSP header, and
 `carrierpress_tooling.h` is the recommended dependency-light tooling header.
+`cp_transmit_control.h` is guarded mock-only T5 scaffolding and is not
+operational PTT support.
 
 ## Source Archive and Checksum
 

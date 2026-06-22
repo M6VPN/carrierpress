@@ -21,6 +21,13 @@ in `docs/test-matrix.md`. For a local matrix summary, run:
 make test-matrix-help
 ```
 
+API and package-surface checks are documented in
+`docs/api-packaging-surface.md`. For a local packaging summary, run:
+
+```sh
+make packaging-help
+```
+
 Run the release profile from a clean working tree:
 
 ```sh
@@ -77,6 +84,8 @@ make public-header-smoke
 make example-libcarrierpress
 ./build/examples/libcarrierpress-minimal
 make transmit-control-safety-audit
+make packaging-surface-audit
+make packaging-help
 make release-check
 sh scripts/release-evidence.sh
 ./carrierpress --version

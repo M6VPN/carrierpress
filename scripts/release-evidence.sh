@@ -32,6 +32,13 @@ printf '\ntest matrix guide:\n'
 make test-matrix-help
 printf 'full test matrix: docs/test-matrix.md\n'
 
+printf '\npackaging surface guide:\n'
+make packaging-help
+printf 'surface guide: docs/api-packaging-surface.md\n'
+printf 'audit: make packaging-surface-audit\n'
+printf 'pkg-config smoke: make pkg-config-smoke\n'
+printf 'staged install manifest, serial only: make install-manifest\n'
+
 printf '\nquality JSON evidence:\n'
 if [ -f build/quality-report.json ]; then
 	printf 'build/quality-report.json\n'

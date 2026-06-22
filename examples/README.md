@@ -22,6 +22,7 @@ or need optional libraries. The table below summarizes the expected boundary.
 | sndio smoke helper | no | sndio for manual commands | no | manual only |
 | Read-only CAT examples | no | flrig or hamlib where selected | no | read-only status only |
 | Release and evidence helpers | no | no | no | no |
+| Packaging surface checks | no | no | no | no |
 | Report evidence demo | writes `build/quality-report.json` | no | no | no |
 | Batch evidence workflow | writes requested `build/` outputs | libsndfile for processing | no | no |
 | Guarded mock transmit-control validation | writes build outputs | no | yes for mock wrapper | no |
@@ -44,6 +45,7 @@ make
 ./examples/cat-mock-status.sh
 make validation-help
 make test-matrix-help
+make packaging-help
 ./examples/release-check-local.sh
 ```
 
@@ -59,7 +61,8 @@ devices.
 
 `make validation-help` prints the local validation target classes.
 `make test-matrix-help` prints the ordinary, guarded mock, and optional
-dependency test matrix. Release evidence is reported by
+dependency test matrix. `make packaging-help` prints the local packaging and
+pkg-config surface checks. Release evidence is reported by
 `scripts/release-evidence.sh`; it does not tag, push, publish, install
 packages, or run transmit actions.
 
@@ -86,6 +89,8 @@ make public-core-header-smoke
 make public-tooling-header-smoke
 make public-compat-header-smoke
 make public-header-smoke
+make pkg-config-smoke
+make packaging-surface-audit
 ```
 
 After installing CarrierPress, the same example can be built with pkg-config:

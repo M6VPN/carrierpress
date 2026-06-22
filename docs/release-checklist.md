@@ -31,6 +31,13 @@ in `docs/test-matrix.md`. The short local matrix guide is:
 make test-matrix-help
 ```
 
+API/package surface checks are documented in
+`docs/api-packaging-surface.md`. The short local packaging guide is:
+
+```sh
+make packaging-help
+```
+
 Run the default release validation profile:
 
 ```sh
@@ -85,9 +92,15 @@ scaffolding after v0.4.0.
 - Confirm `make transmit-control-mock-test` passes when run serially.
 - Confirm `make validation-help` prints the current target classes.
 - Confirm `make test-matrix-help` prints the current build/test matrix.
+- Confirm `make packaging-help` prints the current packaging check guide.
+- Confirm `make packaging-surface-audit` passes.
+- Confirm `make pkg-config-smoke` passes and optional dependencies are absent
+  from base pkg-config metadata.
 - Confirm `docs/validation-targets.md` matches the release procedure.
 - Confirm `docs/test-matrix.md` documents ordinary, guarded mock, and optional
   dependency profiles.
+- Confirm `docs/api-packaging-surface.md` documents public header tiers,
+  staged install files, and base pkg-config metadata.
 - Confirm `scripts/release-evidence.sh` remains a non-mutating reporter.
 - Confirm ordinary builds keep transmit control unavailable.
 - Confirm guarded builds remain mock-only.

@@ -44,6 +44,7 @@ make
 make DESTDIR="$PWD/debian/tmp" PREFIX=/usr install
 make public-header-smoke
 make pkg-config-smoke
+make packaging-surface-audit
 ```
 
 Package scripts should not install packages, use `sudo`, publish releases, or
@@ -53,6 +54,8 @@ The base pkg-config metadata should expose only `-lcarrierpress -lm`.
 `carrierpress_core.h` is the recommended header for new in-memory DSP users,
 `carrierpress_tooling.h` is the recommended header for tooling users, and
 `carrierpress.h` remains the broad compatibility umbrella.
+`cp_transmit_control.h` is guarded mock-only T5 scaffolding, not operational
+PTT support.
 
 ## Package Metadata Wording
 

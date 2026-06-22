@@ -530,10 +530,19 @@ implemented until code, docs, and validation are complete.
 
 ## M34 API and Packaging Polish
 
-- [ ] Review public headers after v0.4.1.
-- [ ] Review install manifest and pkg-config smoke.
-- [ ] Review package maintainer notes.
-- [ ] Keep optional dependencies out of base package metadata.
+- [x] Review public headers after v0.4.1.
+- [x] Review install manifest and pkg-config smoke.
+- [x] Review package maintainer notes.
+- [x] Keep optional dependencies out of base package metadata.
+
+## M34A API and Packaging Surface Polish
+
+- [x] Add API/package surface guide.
+- [x] Add non-mutating packaging surface audit.
+- [x] Add non-mutating packaging help target.
+- [x] Review public header tiers after v0.4.1.
+- [x] Review install manifest and pkg-config smoke documentation.
+- [x] Keep optional dependencies out of base package metadata.
 
 ## M35 Future Optional Feature Research
 

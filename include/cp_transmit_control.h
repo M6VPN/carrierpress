@@ -4,6 +4,8 @@
 #ifndef CP_TRANSMIT_CONTROL_H
 #define CP_TRANSMIT_CONTROL_H
 
+/* Guarded mock-only T5 safety namespace; not an operational PTT API. */
+
 enum cp_tx_status {
 	CP_TX_OK                = 0,
 	CP_TX_ERR_NULL          = -1100,

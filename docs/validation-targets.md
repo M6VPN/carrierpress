@@ -34,8 +34,10 @@ outputs when those prerequisites are absent.
 - `make pkg-config-smoke`
 - `make transmit-control-safety-audit`
 - `make operator-workflow-safety-audit`
+- `make packaging-surface-audit`
 - `make validation-help`
 - `make test-matrix-help`
+- `make packaging-help`
 
 `make transmit-control-safety-audit` is intended to be mutation-safe. It scans
 source paths and prints a pass or failure result. It does not build, clean,
@@ -45,6 +47,11 @@ publish, install packages, or access hardware.
 operator-facing source and examples for active transmit controls, package
 installation, release publication, and backend control calls. It does not
 build, clean, publish, install packages, or access hardware.
+
+`make packaging-surface-audit` is intended to be mutation-safe. It checks base
+pkg-config metadata, dependency-light header tiers, packaging docs, and package
+surface policy. It does not build, clean, publish, install packages, or access
+hardware.
 
 ## Build-output Targets
 
@@ -111,6 +118,7 @@ make example-libcarrierpress
 ./build/examples/libcarrierpress-minimal
 make transmit-control-safety-audit
 make operator-workflow-safety-audit
+make packaging-surface-audit
 make release-check
 ```
 
@@ -165,4 +173,5 @@ For a concise target guide:
 ```sh
 make validation-help
 make test-matrix-help
+make packaging-help
 ```
