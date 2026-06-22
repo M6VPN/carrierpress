@@ -206,6 +206,11 @@ For batch summary reports, these top-level fields are stable:
 - `failed`.
 - `skipped`.
 - `last_status`.
+- `items[].input`.
+- `items[].output`.
+- `items[].report`.
+- `items[].status`.
+- `last_status`.
 - `items`.
 
 Future schema-version-1 reports may add fields. Stable fields listed here should
@@ -325,7 +330,14 @@ dimensions, and known numeric per-case metrics. For processed-file reports, it
 compares WAV properties and known numeric metrics such as RMS, peak, crest, DC,
 output min/max, and sample count.
 
-Batch summary comparison is planned for a later M27 slice.
+For batch summary reports, the helper compares stable run fields exactly:
+`status`, `batch_list`, `output_dir`, `planned`, `processed`, `failed`,
+`skipped`, `last_status`, item count, and each ordered item `input`, `output`,
+`report`, and `status`.
+
+```sh
+./carrierpress --report-compare old-batch-summary.json new-batch-summary.json
+```
 
 Unknown future fields are ignored. Existing stable schema-version-1 fields
 should remain available to scripts until a schema version bump.

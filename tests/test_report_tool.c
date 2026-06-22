@@ -15,8 +15,16 @@
 static int	read_file(const char *, char *, size_t);
 static int	run_compare(const char *, const char *, double);
 static int	test_compare_identical_processed(void);
+static int	test_compare_batch_failed_count(void);
+static int	test_compare_batch_identical(void);
+static int	test_compare_batch_item_count(void);
+static int	test_compare_batch_item_report(void);
+static int	test_compare_batch_processed_count(void);
+static int	test_compare_batch_unknown_extra(void);
+static int	test_compare_batch_unsupported_schema(void);
 static int	test_compare_large_delta(void);
 static int	test_compare_mismatched_type(void);
+static int	test_compare_mismatched_batch_type(void);
 static int	test_compare_quality(void);
 static int	test_compare_small_delta(void);
 static int	test_reject_missing_schema(void);
@@ -256,6 +264,160 @@ static const char batch_summary_report[] =
 	"  ]\n"
 	"}\n";
 
+static const char batch_summary_extra_report[] =
+	"{\n"
+	"  \"carrierpress_report\": \"batch_summary\",\n"
+	"  \"schema_version\": 1,\n"
+	"  \"version\": \"0.3.0\",\n"
+	"  \"status\": \"ok\",\n"
+	"  \"batch_list\": \"batch.txt\",\n"
+	"  \"output_dir\": \"processed\",\n"
+	"  \"future_extra\": \"ignored\",\n"
+	"  \"profile\": {\n"
+	"    \"path\": \"profiles/file-cleanup.profile\",\n"
+	"    \"name\": \"File Cleanup\"\n"
+	"  },\n"
+	"  \"planned\": 2,\n"
+	"  \"processed\": 2,\n"
+	"  \"failed\": 0,\n"
+	"  \"skipped\": 1,\n"
+	"  \"last_status\": 0,\n"
+	"  \"items\": [\n"
+	"    {\n"
+	"      \"line\": 2,\n"
+	"      \"input\": \"audio/a.wav\",\n"
+	"      \"output\": \"processed/a.wav\",\n"
+	"      \"report\": \"processed/a.report.json\",\n"
+	"      \"status\": \"ok\",\n"
+	"      \"reason\": null\n"
+	"    }\n"
+	"  ]\n"
+	"}\n";
+
+static const char batch_summary_processed_count_report[] =
+	"{\n"
+	"  \"carrierpress_report\": \"batch_summary\",\n"
+	"  \"schema_version\": 1,\n"
+	"  \"version\": \"0.3.0\",\n"
+	"  \"status\": \"ok\",\n"
+	"  \"batch_list\": \"batch.txt\",\n"
+	"  \"output_dir\": \"processed\",\n"
+	"  \"planned\": 2,\n"
+	"  \"processed\": 1,\n"
+	"  \"failed\": 0,\n"
+	"  \"skipped\": 1,\n"
+	"  \"last_status\": 0,\n"
+	"  \"items\": [\n"
+	"    {\n"
+	"      \"line\": 2,\n"
+	"      \"input\": \"audio/a.wav\",\n"
+	"      \"output\": \"processed/a.wav\",\n"
+	"      \"report\": \"processed/a.report.json\",\n"
+	"      \"status\": \"ok\",\n"
+	"      \"reason\": null\n"
+	"    }\n"
+	"  ]\n"
+	"}\n";
+
+static const char batch_summary_failed_count_report[] =
+	"{\n"
+	"  \"carrierpress_report\": \"batch_summary\",\n"
+	"  \"schema_version\": 1,\n"
+	"  \"version\": \"0.3.0\",\n"
+	"  \"status\": \"fail\",\n"
+	"  \"batch_list\": \"batch.txt\",\n"
+	"  \"output_dir\": \"processed\",\n"
+	"  \"planned\": 2,\n"
+	"  \"processed\": 1,\n"
+	"  \"failed\": 1,\n"
+	"  \"skipped\": 1,\n"
+	"  \"last_status\": 1,\n"
+	"  \"items\": [\n"
+	"    {\n"
+	"      \"line\": 2,\n"
+	"      \"input\": \"audio/a.wav\",\n"
+	"      \"output\": \"processed/a.wav\",\n"
+	"      \"report\": \"processed/a.report.json\",\n"
+	"      \"status\": \"fail\",\n"
+	"      \"reason\": \"failed\"\n"
+	"    }\n"
+	"  ]\n"
+	"}\n";
+
+static const char batch_summary_item_count_report[] =
+	"{\n"
+	"  \"carrierpress_report\": \"batch_summary\",\n"
+	"  \"schema_version\": 1,\n"
+	"  \"version\": \"0.3.0\",\n"
+	"  \"status\": \"ok\",\n"
+	"  \"batch_list\": \"batch.txt\",\n"
+	"  \"output_dir\": \"processed\",\n"
+	"  \"planned\": 3,\n"
+	"  \"processed\": 3,\n"
+	"  \"failed\": 0,\n"
+	"  \"skipped\": 1,\n"
+	"  \"last_status\": 0,\n"
+	"  \"items\": [\n"
+	"    {\n"
+	"      \"line\": 2,\n"
+	"      \"input\": \"audio/a.wav\",\n"
+	"      \"output\": \"processed/a.wav\",\n"
+	"      \"report\": \"processed/a.report.json\",\n"
+	"      \"status\": \"ok\",\n"
+	"      \"reason\": null\n"
+	"    },\n"
+	"    {\n"
+	"      \"line\": 3,\n"
+	"      \"input\": \"audio/b.wav\",\n"
+	"      \"output\": \"processed/b.wav\",\n"
+	"      \"report\": \"processed/b.report.json\",\n"
+	"      \"status\": \"ok\",\n"
+	"      \"reason\": null\n"
+	"    }\n"
+	"  ]\n"
+	"}\n";
+
+static const char batch_summary_item_report_changed[] =
+	"{\n"
+	"  \"carrierpress_report\": \"batch_summary\",\n"
+	"  \"schema_version\": 1,\n"
+	"  \"version\": \"0.3.0\",\n"
+	"  \"status\": \"ok\",\n"
+	"  \"batch_list\": \"batch.txt\",\n"
+	"  \"output_dir\": \"processed\",\n"
+	"  \"planned\": 2,\n"
+	"  \"processed\": 2,\n"
+	"  \"failed\": 0,\n"
+	"  \"skipped\": 1,\n"
+	"  \"last_status\": 0,\n"
+	"  \"items\": [\n"
+	"    {\n"
+	"      \"line\": 2,\n"
+	"      \"input\": \"audio/a.wav\",\n"
+	"      \"output\": \"processed/a.wav\",\n"
+	"      \"report\": \"processed/a-new.report.json\",\n"
+	"      \"status\": \"ok\",\n"
+	"      \"reason\": null\n"
+	"    }\n"
+	"  ]\n"
+	"}\n";
+
+static const char batch_summary_bad_schema_report[] =
+	"{\n"
+	"  \"carrierpress_report\": \"batch_summary\",\n"
+	"  \"schema_version\": 99,\n"
+	"  \"version\": \"0.3.0\",\n"
+	"  \"status\": \"ok\",\n"
+	"  \"batch_list\": \"batch.txt\",\n"
+	"  \"output_dir\": \"processed\",\n"
+	"  \"planned\": 2,\n"
+	"  \"processed\": 2,\n"
+	"  \"failed\": 0,\n"
+	"  \"skipped\": 1,\n"
+	"  \"last_status\": 0,\n"
+	"  \"items\": []\n"
+	"}\n";
+
 int
 main(void)
 {
@@ -281,6 +443,22 @@ main(void)
 	if (!test_compare_large_delta())
 		return 1;
 	if (!test_compare_quality())
+		return 1;
+	if (!test_compare_batch_identical())
+		return 1;
+	if (!test_compare_batch_unknown_extra())
+		return 1;
+	if (!test_compare_batch_processed_count())
+		return 1;
+	if (!test_compare_batch_failed_count())
+		return 1;
+	if (!test_compare_batch_item_count())
+		return 1;
+	if (!test_compare_batch_item_report())
+		return 1;
+	if (!test_compare_mismatched_batch_type())
+		return 1;
+	if (!test_compare_batch_unsupported_schema())
 		return 1;
 
 	return 0;
@@ -322,6 +500,147 @@ run_compare(const char *base_path, const char *new_path, double tolerance)
 	fclose(out);
 
 	return status;
+}
+
+static int
+test_compare_batch_failed_count(void)
+{
+	if (!write_file(TEST_REPORT_TOOL_DIR "/batch-summary.json",
+	    batch_summary_report) ||
+	    !write_file(TEST_REPORT_TOOL_DIR "/batch-summary-failed.json",
+	    batch_summary_failed_count_report))
+		return 0;
+	if (run_compare(TEST_REPORT_TOOL_DIR "/batch-summary.json",
+	    TEST_REPORT_TOOL_DIR "/batch-summary-failed.json",
+	    CP_REPORT_TOOL_DEFAULT_TOLERANCE) !=
+	    CP_REPORT_TOOL_ERR_COMPARE) {
+		printf("test_report_tool: batch failed count compare failed\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_compare_batch_identical(void)
+{
+	char buffer[TEST_REPORT_TOOL_BUF_SIZE];
+
+	if (!write_file(TEST_REPORT_TOOL_DIR "/batch-summary.json",
+	    batch_summary_report))
+		return 0;
+	if (run_compare(TEST_REPORT_TOOL_DIR "/batch-summary.json",
+	    TEST_REPORT_TOOL_DIR "/batch-summary.json",
+	    CP_REPORT_TOOL_DEFAULT_TOLERANCE) != CP_REPORT_TOOL_OK) {
+		printf("test_report_tool: batch identical compare failed\n");
+		return 0;
+	}
+	if (!read_file(TEST_REPORT_TOOL_DIR "/compare-output.txt", buffer,
+	    sizeof(buffer)))
+		return 0;
+	if (strstr(buffer, "compare=batch_summary") == NULL ||
+	    strstr(buffer, "status=pass") == NULL ||
+	    strstr(buffer, "changed_items=0") == NULL ||
+	    strstr(buffer, "compliance") != NULL ||
+	    strstr(buffer, "proof") != NULL) {
+		printf("test_report_tool: batch compare output failed\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_compare_batch_item_count(void)
+{
+	if (!write_file(TEST_REPORT_TOOL_DIR "/batch-summary.json",
+	    batch_summary_report) ||
+	    !write_file(TEST_REPORT_TOOL_DIR "/batch-summary-item-count.json",
+	    batch_summary_item_count_report))
+		return 0;
+	if (run_compare(TEST_REPORT_TOOL_DIR "/batch-summary.json",
+	    TEST_REPORT_TOOL_DIR "/batch-summary-item-count.json",
+	    CP_REPORT_TOOL_DEFAULT_TOLERANCE) !=
+	    CP_REPORT_TOOL_ERR_COMPARE) {
+		printf("test_report_tool: batch item count compare failed\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_compare_batch_item_report(void)
+{
+	if (!write_file(TEST_REPORT_TOOL_DIR "/batch-summary.json",
+	    batch_summary_report) ||
+	    !write_file(TEST_REPORT_TOOL_DIR "/batch-summary-item-report.json",
+	    batch_summary_item_report_changed))
+		return 0;
+	if (run_compare(TEST_REPORT_TOOL_DIR "/batch-summary.json",
+	    TEST_REPORT_TOOL_DIR "/batch-summary-item-report.json",
+	    CP_REPORT_TOOL_DEFAULT_TOLERANCE) !=
+	    CP_REPORT_TOOL_ERR_COMPARE) {
+		printf("test_report_tool: batch item report compare failed\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_compare_batch_processed_count(void)
+{
+	if (!write_file(TEST_REPORT_TOOL_DIR "/batch-summary.json",
+	    batch_summary_report) ||
+	    !write_file(TEST_REPORT_TOOL_DIR "/batch-summary-processed.json",
+	    batch_summary_processed_count_report))
+		return 0;
+	if (run_compare(TEST_REPORT_TOOL_DIR "/batch-summary.json",
+	    TEST_REPORT_TOOL_DIR "/batch-summary-processed.json",
+	    CP_REPORT_TOOL_DEFAULT_TOLERANCE) !=
+	    CP_REPORT_TOOL_ERR_COMPARE) {
+		printf("test_report_tool: batch processed count compare failed\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_compare_batch_unknown_extra(void)
+{
+	if (!write_file(TEST_REPORT_TOOL_DIR "/batch-summary.json",
+	    batch_summary_report) ||
+	    !write_file(TEST_REPORT_TOOL_DIR "/batch-summary-extra.json",
+	    batch_summary_extra_report))
+		return 0;
+	if (run_compare(TEST_REPORT_TOOL_DIR "/batch-summary.json",
+	    TEST_REPORT_TOOL_DIR "/batch-summary-extra.json",
+	    CP_REPORT_TOOL_DEFAULT_TOLERANCE) != CP_REPORT_TOOL_OK) {
+		printf("test_report_tool: batch extra field compare failed\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_compare_batch_unsupported_schema(void)
+{
+	if (!write_file(TEST_REPORT_TOOL_DIR "/batch-summary.json",
+	    batch_summary_report) ||
+	    !write_file(TEST_REPORT_TOOL_DIR "/batch-summary-bad-schema.json",
+	    batch_summary_bad_schema_report))
+		return 0;
+	if (run_compare(TEST_REPORT_TOOL_DIR "/batch-summary.json",
+	    TEST_REPORT_TOOL_DIR "/batch-summary-bad-schema.json",
+	    CP_REPORT_TOOL_DEFAULT_TOLERANCE) != CP_REPORT_TOOL_ERR_SCHEMA) {
+		printf("test_report_tool: batch bad schema compare failed\n");
+		return 0;
+	}
+
+	return 1;
 }
 
 static int
@@ -380,6 +699,23 @@ test_compare_mismatched_type(void)
 	    TEST_REPORT_TOOL_DIR "/quality.json",
 	    CP_REPORT_TOOL_DEFAULT_TOLERANCE) != CP_REPORT_TOOL_ERR_TYPE) {
 		printf("test_report_tool: mismatched type compare failed\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_compare_mismatched_batch_type(void)
+{
+	if (!write_file(TEST_REPORT_TOOL_DIR "/batch-summary.json",
+	    batch_summary_report) ||
+	    !write_file(TEST_REPORT_TOOL_DIR "/quality.json", quality_report))
+		return 0;
+	if (run_compare(TEST_REPORT_TOOL_DIR "/batch-summary.json",
+	    TEST_REPORT_TOOL_DIR "/quality.json",
+	    CP_REPORT_TOOL_DEFAULT_TOLERANCE) != CP_REPORT_TOOL_ERR_TYPE) {
+		printf("test_report_tool: batch mismatched type compare failed\n");
 		return 0;
 	}
 

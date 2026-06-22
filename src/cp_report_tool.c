@@ -43,6 +43,8 @@ struct cp_report_tool_doc {
 	long processed;
 	long failed;
 	long skipped;
+	long last_status;
+	size_t item_count;
 	size_t cases;
 	size_t failed_cases;
 };
@@ -53,6 +55,12 @@ struct cp_report_tool_compare {
 };
 
 static double	cp_report_tool_abs(double);
+static int	cp_report_tool_batch_get_item(const char *, size_t,
+		    char *, size_t, char *, size_t, char *, size_t,
+		    char *, size_t);
+static int	cp_report_tool_compare_batch_summary(
+		    const struct cp_report_tool_doc *,
+		    const struct cp_report_tool_doc *, FILE *);
 static int	cp_report_tool_compare_metric(const struct cp_report_tool_doc *,
 		    const struct cp_report_tool_doc *, const char *, double,
 		    struct cp_report_tool_compare *);
@@ -235,6 +243,9 @@ cp_report_tool_compare_files(const char *base_path, const char *new_path,
 	else if (base.type == CP_REPORT_TOOL_TYPE_PROCESSED_FILE)
 		status = cp_report_tool_compare_processed(&base, &new_doc,
 		    tolerance, out);
+	else if (base.type == CP_REPORT_TOOL_TYPE_BATCH_SUMMARY)
+		status = cp_report_tool_compare_batch_summary(&base, &new_doc,
+		    out);
 	else
 		status = CP_REPORT_TOOL_ERR_TYPE;
 
@@ -249,6 +260,130 @@ static double
 cp_report_tool_abs(double value)
 {
 	return value < 0.0 ? -value : value;
+}
+
+static int
+cp_report_tool_batch_get_item(const char *text, size_t target,
+	char *input, size_t input_size, char *output, size_t output_size,
+	char *report, size_t report_size, char *status, size_t status_size)
+{
+	const char *cursor;
+	size_t index;
+
+	if (text == NULL || input == NULL || output == NULL ||
+	    report == NULL || status == NULL)
+		return CP_REPORT_TOOL_ERR_NULL;
+
+	cursor = strstr(text, "\"items\"");
+	if (cursor == NULL)
+		return CP_REPORT_TOOL_ERR_PARSE;
+
+	index = 0;
+	for (;;) {
+		cursor = cp_report_tool_find_key(cursor, "input");
+		if (cursor == NULL)
+			return CP_REPORT_TOOL_ERR_PARSE;
+		if (index == target)
+			break;
+		cursor++;
+		index++;
+	}
+
+	if (cp_report_tool_get_string(cursor, "input", input,
+	    input_size) != CP_REPORT_TOOL_OK ||
+	    cp_report_tool_get_string(cursor, "output", output,
+	    output_size) != CP_REPORT_TOOL_OK ||
+	    cp_report_tool_get_string(cursor, "report", report,
+	    report_size) != CP_REPORT_TOOL_OK ||
+	    cp_report_tool_get_string(cursor, "status", status,
+	    status_size) != CP_REPORT_TOOL_OK)
+		return CP_REPORT_TOOL_ERR_PARSE;
+
+	return CP_REPORT_TOOL_OK;
+}
+
+static int
+cp_report_tool_compare_batch_summary(const struct cp_report_tool_doc *base,
+	const struct cp_report_tool_doc *new_doc, FILE *out)
+{
+	char base_input[CP_REPORT_TOOL_VALUE_SIZE];
+	char base_output[CP_REPORT_TOOL_VALUE_SIZE];
+	char base_report[CP_REPORT_TOOL_VALUE_SIZE];
+	char base_status[CP_REPORT_TOOL_VALUE_SIZE];
+	char new_input[CP_REPORT_TOOL_VALUE_SIZE];
+	char new_output[CP_REPORT_TOOL_VALUE_SIZE];
+	char new_report[CP_REPORT_TOOL_VALUE_SIZE];
+	char new_status[CP_REPORT_TOOL_VALUE_SIZE];
+	long failed_delta;
+	long planned_delta;
+	long processed_delta;
+	long skipped_delta;
+	size_t changed_items;
+	size_t index;
+	size_t summary_changes;
+
+	if (base == NULL || new_doc == NULL || out == NULL)
+		return CP_REPORT_TOOL_ERR_NULL;
+
+	planned_delta = new_doc->planned - base->planned;
+	processed_delta = new_doc->processed - base->processed;
+	failed_delta = new_doc->failed - base->failed;
+	skipped_delta = new_doc->skipped - base->skipped;
+	summary_changes = 0;
+	changed_items = 0;
+
+	if (strcmp(base->status, new_doc->status) != 0 ||
+	    strcmp(base->batch_list, new_doc->batch_list) != 0 ||
+	    strcmp(base->output_dir, new_doc->output_dir) != 0 ||
+	    base->planned != new_doc->planned ||
+	    base->processed != new_doc->processed ||
+	    base->failed != new_doc->failed ||
+	    base->skipped != new_doc->skipped ||
+	    base->last_status != new_doc->last_status ||
+	    base->item_count != new_doc->item_count)
+		summary_changes++;
+
+	if (base->item_count == new_doc->item_count) {
+		for (index = 0; index < base->item_count; index++) {
+			if (cp_report_tool_batch_get_item(base->text, index,
+			    base_input, sizeof(base_input), base_output,
+			    sizeof(base_output), base_report,
+			    sizeof(base_report), base_status,
+			    sizeof(base_status)) != CP_REPORT_TOOL_OK ||
+			    cp_report_tool_batch_get_item(new_doc->text, index,
+			    new_input, sizeof(new_input), new_output,
+			    sizeof(new_output), new_report,
+			    sizeof(new_report), new_status,
+			    sizeof(new_status)) != CP_REPORT_TOOL_OK)
+				return CP_REPORT_TOOL_ERR_COMPARE;
+			if (strcmp(base_input, new_input) != 0 ||
+			    strcmp(base_output, new_output) != 0 ||
+			    strcmp(base_report, new_report) != 0 ||
+			    strcmp(base_status, new_status) != 0)
+				changed_items++;
+		}
+	} else {
+		changed_items = base->item_count > new_doc->item_count ?
+		    base->item_count - new_doc->item_count :
+		    new_doc->item_count - base->item_count;
+	}
+
+	fprintf(out, "compare=batch_summary\n");
+	fprintf(out, "schema_version=%d\n", CP_REPORT_SCHEMA_VERSION);
+	fprintf(out, "base=%s\n", base->source_path);
+	fprintf(out, "new=%s\n", new_doc->source_path);
+	fprintf(out, "status=%s\n",
+	    summary_changes == 0 && changed_items == 0 ? "pass" : "fail");
+	fprintf(out, "planned_delta=%ld\n", planned_delta);
+	fprintf(out, "processed_delta=%ld\n", processed_delta);
+	fprintf(out, "failed_delta=%ld\n", failed_delta);
+	fprintf(out, "skipped_delta=%ld\n", skipped_delta);
+	fprintf(out, "items_base=%zu\n", base->item_count);
+	fprintf(out, "items_new=%zu\n", new_doc->item_count);
+	fprintf(out, "changed_items=%zu\n", changed_items);
+
+	return summary_changes == 0 && changed_items == 0 ?
+	    CP_REPORT_TOOL_OK : CP_REPORT_TOOL_ERR_COMPARE;
 }
 
 static int
@@ -727,8 +862,12 @@ cp_report_tool_parse_doc(struct cp_report_tool_doc *doc)
 		    cp_report_tool_get_long(doc->text, "failed",
 		    &doc->failed) != CP_REPORT_TOOL_OK ||
 		    cp_report_tool_get_long(doc->text, "skipped",
-		    &doc->skipped) != CP_REPORT_TOOL_OK)
+		    &doc->skipped) != CP_REPORT_TOOL_OK ||
+		    cp_report_tool_get_long(doc->text, "last_status",
+		    &doc->last_status) != CP_REPORT_TOOL_OK)
 			return CP_REPORT_TOOL_ERR_PARSE;
+		doc->item_count = cp_report_tool_count_string_field_after(
+		    doc->text, "\"items\"", "input", NULL);
 	}
 
 	return CP_REPORT_TOOL_OK;

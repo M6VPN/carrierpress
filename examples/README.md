@@ -145,6 +145,11 @@ mkdir -p build/batch-evidence
 
 The script writes `build/batch-evidence/batch-summary.json` through
 `--evidence-dir` and leaves per-file sidecar reports in the output directory.
+Compare two batch summary reports without processing audio:
+
+```sh
+./examples/batch-report-compare.sh build/batch-evidence/batch-summary.json build/batch-evidence/batch-summary.json
+```
 
 To play the playlist, edit `examples/playout-playlist.txt` so it points at local
 WAV files, then run:

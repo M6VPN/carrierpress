@@ -365,7 +365,7 @@ implemented until code, docs, and validation are complete.
 ## M27 Batch and Report Evidence Bundles
 
 - [x] Add batch-level summary report.
-- [ ] Add batch report comparison helper.
+- [x] Add batch report comparison helper.
 - [x] Add evidence directory workflow.
 - [x] Document report bundle fields.
 - [x] Keep reports free of transmitter-compliance and regulatory claims.

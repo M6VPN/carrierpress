@@ -875,6 +875,8 @@ Batch runs can also write an aggregate summary report:
 Use `--evidence-dir DIR` to write `DIR/batch-summary.json` into an existing
 local evidence directory. See
 [docs/measurement-reports.md](docs/measurement-reports.md).
+Batch summary reports can also be compared with `--report-compare` for local
+regression review.
 
 WAV playout requires a `WITH_SNDFILE=1 WITH_PORTAUDIO=1` build. Without it, `--play` and `--playlist` exit with:
 

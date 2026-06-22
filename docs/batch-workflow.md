@@ -144,6 +144,18 @@ directories in this slice. If both `--batch-summary-report` and
 `--evidence-dir` are supplied, the explicit `--batch-summary-report` path is
 used for the batch summary.
 
+Compare two batch summary reports with the report comparison helper:
+
+```sh
+./carrierpress --report-compare \
+	build/evidence-old/batch-summary.json \
+	build/evidence/batch-summary.json
+```
+
+Batch summary comparison is exact for stable count fields and ordered item
+`input`, `output`, `report`, and `status` fields. It is intended for
+engineering regression review and local evidence bundles only.
+
 ## Compressed Sources
 
 CarrierPress stays WAV/PCM-native for this workflow. Convert compressed files
