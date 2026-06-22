@@ -16,6 +16,7 @@ static int	test_cat_format(void);
 static int	test_chain_format(void);
 static int	test_control_mapping(void);
 static int	test_cue_slots_format(void);
+static int	test_audio_choices_format(void);
 static int	test_help_format(void);
 static int	test_meter_format(void);
 static int	test_mode_format(void);
@@ -39,6 +40,8 @@ main(void)
 		return 1;
 	if (!test_cue_slots_format())
 		return 1;
+	if (!test_audio_choices_format())
+		return 1;
 	if (!test_cat_format())
 		return 1;
 	if (!test_help_format())
@@ -57,6 +60,62 @@ main(void)
 		return 1;
 
 	return 0;
+}
+
+static int
+test_audio_choices_format(void)
+{
+	const char *paths[] = {
+		"audio/intro.wav",
+		"audio/music.mp3",
+		"audio/news-bed.WAV",
+		"audio/readme.txt"
+	};
+	char buffer[256];
+	char long_path[320];
+
+	if (cp_gui_format_audio_choices(NULL, 0, NULL, NULL, buffer,
+	    sizeof(buffer)) != CP_OK ||
+	    strcmp(buffer, "audio selector: no candidates") != 0) {
+		printf("test_gui_format: audio no candidates mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	if (cp_gui_format_audio_choices(paths, 4, "audio/intro.wav",
+	    "audio/news-bed.WAV", buffer, sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "selector=audio_file") == NULL ||
+	    strstr(buffer, "news-bed.WAV") == NULL ||
+	    strstr(buffer, "requested") == NULL ||
+	    strstr(buffer, "convert externally") == NULL ||
+	    strstr(buffer, "disabled") == NULL) {
+		printf("test_gui_format: audio choices mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	memset(long_path, 'a', sizeof(long_path) - 5);
+	(void)snprintf(long_path + sizeof(long_path) - 5, 5, ".wav");
+	paths[0] = long_path;
+	if (cp_gui_format_audio_choices(paths, 1, long_path, NULL, buffer,
+	    sizeof(buffer)) != CP_OK ||
+	    strlen(buffer) >= sizeof(buffer) ||
+	    strstr(buffer, "...") == NULL) {
+		printf("test_gui_format: long audio choices mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	if (strstr(buffer, "ptt") != NULL ||
+	    strstr(buffer, "transmit") != NULL ||
+	    strstr(buffer, "cat_ptt") != NULL ||
+	    strstr(buffer, "rig_frequency") != NULL ||
+	    strstr(buffer, "rig_mode") != NULL ||
+	    strstr(buffer, "hamlib") != NULL ||
+	    strstr(buffer, "flrig") != NULL) {
+		printf("test_gui_format: audio forbidden text: %s\n",
+		    buffer);
+		return 0;
+	}
+
+	return 1;
 }
 
 static int

@@ -397,6 +397,8 @@ cp_playout_run_file_with_result(const char *path,
 #if defined(CP_WITH_TUI) || defined(CP_WITH_GUI)
 	struct cp_audio_device_candidate device_choices[
 	    CP_PLAYOUT_DEVICE_CHOICES];
+	const char *audio_candidates[2];
+	char audio_choices[256];
 	char output_choices[256];
 	size_t device_choice_count;
 #endif
@@ -789,6 +791,11 @@ cp_playout_run_file_with_result(const char *path,
 		if (audio_config.tui_enabled) {
 			(void)cp_cat_snapshot_update(&config->cat_config,
 			    &cat_snapshot);
+			audio_candidates[0] = audio_config.gui_cue_wav_path;
+			audio_candidates[1] = path;
+			(void)cp_gui_format_audio_choices(audio_candidates,
+			    2, path, NULL, audio_choices,
+			    sizeof(audio_choices));
 			memset(&tui_view, 0, sizeof(tui_view));
 			tui_view.mode           = CP_TUI_MODE_PLAYOUT;
 			tui_view.config         = &audio_config;
@@ -798,6 +805,7 @@ cp_playout_run_file_with_result(const char *path,
 			tui_view.path           = path;
 			tui_view.playlist_index = config->playlist_index;
 			tui_view.playlist_count = config->playlist_count;
+			tui_view.audio_choices  = audio_choices;
 			tui_view.next_enabled   = config->playlist_count >
 			    config->playlist_index + 1;
 			tui_view.output_device  = (int)output_device;
@@ -828,6 +836,13 @@ cp_playout_run_file_with_result(const char *path,
 		if (audio_config.gui_enabled) {
 			(void)cp_cat_snapshot_update(&config->cat_config,
 			    &cat_snapshot);
+			audio_candidates[0] = audio_config.gui_cue_wav_path;
+			audio_candidates[1] = path;
+			(void)cp_gui_format_audio_choices(audio_candidates,
+			    2, path, workflow_request.type ==
+			    CP_GUI_WORKFLOW_REQUEST_LOAD_WAV ?
+			    workflow_request.path : NULL, audio_choices,
+			    sizeof(audio_choices));
 			(void)cp_gui_format_output_choices(device_choices,
 			    device_choice_count, (int)output_device,
 			    workflow_request.type ==
@@ -849,6 +864,7 @@ cp_playout_run_file_with_result(const char *path,
 			    audio_config.gui_cue_wav_path;
 			gui_view.cue_playlist_path =
 			    audio_config.gui_cue_playlist_path;
+			gui_view.audio_choices = audio_choices;
 			gui_view.output_choices = output_choices;
 			gui_view.path           = path;
 			gui_view.playlist_index = config->playlist_index;

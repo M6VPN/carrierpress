@@ -71,9 +71,11 @@ Safe GUI controls include:
 Interactive selectors are documented in
 [`selector-workflow.md`](selector-workflow.md). Output-device candidates can now
 be displayed through the shared selector model where backend enumeration is
-already available. Audio-file and playlist selectors remain future work. The
-selector model does not scan directories, open file dialogs, open audio
-devices, or change audio behavior.
+already available. Audio-file selector state can display explicit WAV
+candidates and recent cue slots, with compressed formats disabled for external
+conversion. Playlist selectors remain future work. The selector model does not
+scan directories, open file dialogs, open audio devices, open audio files, or
+change audio behavior.
 
 GUI text must remain bounded and clipped inside panels. Long paths, request
 reasons, output-device names, and help strings are truncated before drawing.

@@ -193,8 +193,10 @@ commands remain documented in
 The product roadmap is documented in
 [`docs/roadmap-product.md`](docs/roadmap-product.md). The first product
 foundation adds bounded selector state. Output-device selector display now uses
-that model where backend choices are already available; audio-file and playlist
-selectors remain future work. Selector workflow notes are in
+that model where backend choices are already available. Audio-file selector
+display now uses explicit WAV candidates and recent cue slots; compressed
+formats remain disabled external-conversion workflows. Playlist selectors
+remain future work. Selector workflow notes are in
 [`docs/selector-workflow.md`](docs/selector-workflow.md). TX operator controls
 remain future, guarded, and mock-only unless a later safety milestone selects
 more work.

@@ -13,6 +13,7 @@ static int	test_disabled_items(void);
 static int	test_empty_selector(void);
 static int	test_forbidden_text(void);
 static int	test_format_kinds(void);
+static int	test_audio_file_selector(void);
 static int	test_long_text_bounds(void);
 static int	test_next_prev(void);
 static int	test_output_device_selector(void);
@@ -29,6 +30,8 @@ main(void)
 	if (!test_long_text_bounds())
 		return 1;
 	if (!test_format_kinds())
+		return 1;
+	if (!test_audio_file_selector())
 		return 1;
 	if (!test_output_device_selector())
 		return 1;
@@ -156,6 +159,101 @@ test_output_device_selector(void)
 	    strlen(selector.items[0].label) >= CP_SELECTOR_LABEL_MAX ||
 	    strstr(selector.items[0].label, "...") == NULL)
 		return 0;
+
+	return 1;
+}
+
+static int
+test_audio_file_selector(void)
+{
+	struct cp_selector selector;
+	const char *paths[] = {
+		"audio/intro.wav",
+		"audio/music.mp3",
+		"audio/news-bed.WAV",
+		"audio/archive.flac",
+		"audio/readme.txt",
+		"",
+		NULL,
+		"audio/intro.wav"
+	};
+	char buffer[256];
+	char menu[128];
+	char long_path[320];
+	size_t index;
+
+	if (cp_selector_load_audio_files(NULL, paths, 1, NULL, NULL) !=
+	    CP_ERR_NULL)
+		return 0;
+	if (cp_selector_load_audio_files(&selector, NULL, 1, NULL, NULL) !=
+	    CP_ERR_NULL)
+		return 0;
+	if (cp_selector_add_audio_file(&selector, NULL, NULL, NULL, NULL) !=
+	    CP_ERR_NULL)
+		return 0;
+	if (cp_selector_add_audio_file(&selector, NULL, "", NULL, NULL) !=
+	    CP_ERR_RANGE)
+		return 0;
+
+	if (cp_selector_load_audio_files(&selector, paths, 8,
+	    "audio/intro.wav", "audio/news-bed.WAV") != CP_OK)
+		return 0;
+	if (selector.kind != CP_SELECTOR_AUDIO_FILE || selector.count != 5 ||
+	    selector.selected != 2)
+		return 0;
+	if (!selector.items[0].enabled || selector.items[1].enabled ||
+	    !selector.items[2].enabled || selector.items[3].enabled ||
+	    selector.items[4].enabled)
+		return 0;
+	if (strstr(selector.items[0].label, "current") == NULL ||
+	    strstr(selector.items[2].label, "requested") == NULL ||
+	    strstr(selector.items[1].label, "convert externally") == NULL ||
+	    strstr(selector.items[3].label, "convert externally") == NULL ||
+	    strstr(selector.items[4].label, "unsupported") == NULL)
+		return 0;
+	if (strcmp(selector.items[2].value, "audio/news-bed.WAV") != 0)
+		return 0;
+	if (cp_selector_format_line(&selector, buffer, sizeof(buffer)) !=
+	    CP_OK ||
+	    strstr(buffer, "selector=audio_file") == NULL ||
+	    strstr(buffer, "selected=3/5") == NULL ||
+	    strstr(buffer, "news-bed.WAV") == NULL)
+		return 0;
+	if (cp_selector_format_menu_item(&selector, 1, menu,
+	    sizeof(menu)) != CP_OK ||
+	    strstr(menu, "music.mp3") == NULL ||
+	    strstr(menu, "disabled") == NULL)
+		return 0;
+	if (cp_selector_select(&selector, 1) != CP_ERR_RANGE)
+		return 0;
+	if (cp_selector_next(&selector) != CP_OK || selector.selected != 0)
+		return 0;
+	if (cp_selector_prev(&selector) != CP_OK || selector.selected != 2)
+		return 0;
+
+	memset(long_path, 'p', sizeof(long_path) - 5);
+	(void)snprintf(long_path + sizeof(long_path) - 5, 5, ".wav");
+	if (cp_selector_load_audio_files(&selector,
+	    (const char *const *)&paths[0], 0, NULL, NULL) != CP_OK)
+		return 0;
+	if (cp_selector_add_audio_file(&selector, NULL, long_path, NULL,
+	    NULL) != CP_OK)
+		return 0;
+	if (strlen(selector.items[0].label) >= CP_SELECTOR_LABEL_MAX ||
+	    strlen(selector.items[0].value) >= CP_SELECTOR_VALUE_MAX)
+		return 0;
+
+	for (index = 0; index < selector.count; index++) {
+		if (strstr(selector.items[index].label, "ptt") != NULL ||
+		    strstr(selector.items[index].label, "transmit") != NULL ||
+		    strstr(selector.items[index].label, "cat_ptt") != NULL ||
+		    strstr(selector.items[index].label, "rig_frequency") !=
+		    NULL ||
+		    strstr(selector.items[index].label, "rig_mode") != NULL ||
+		    strstr(selector.items[index].label, "hamlib") != NULL ||
+		    strstr(selector.items[index].label, "flrig") != NULL)
+			return 0;
+	}
 
 	return 1;
 }

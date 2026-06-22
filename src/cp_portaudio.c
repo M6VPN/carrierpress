@@ -298,6 +298,8 @@ cp_portaudio_run_with_result(const struct cp_audio_config *config,
 #if defined(CP_WITH_TUI) || defined(CP_WITH_GUI)
 	struct cp_audio_device_candidate *device_choices;
 	PaDeviceIndex device_choice_count;
+	const char *audio_candidates[1];
+	char audio_choices[256];
 	char output_choices[256];
 #endif
 #ifdef CP_WITH_FFTW
@@ -489,6 +491,10 @@ cp_portaudio_run_with_result(const struct cp_audio_config *config,
 		if (config->tui_enabled) {
 			(void)cp_cat_snapshot_update(cat_config,
 			    &cat_snapshot);
+			audio_candidates[0] = config->gui_cue_wav_path;
+			(void)cp_gui_format_audio_choices(audio_candidates,
+			    1, NULL, NULL, audio_choices,
+			    sizeof(audio_choices));
 			memset(&tui_view, 0, sizeof(tui_view));
 			tui_view.mode          = CP_TUI_MODE_LIVE;
 			tui_view.config        = config;
@@ -496,6 +502,7 @@ cp_portaudio_run_with_result(const struct cp_audio_config *config,
 			tui_view.cat_snapshot  = &cat_snapshot;
 			tui_view.operator_state = operator_state;
 			tui_view.output_device = (int)output_device;
+			tui_view.audio_choices = audio_choices;
 			(void)cp_gui_format_output_choices(device_choices,
 			    (size_t)device_choice_count, (int)output_device,
 			    0, 0, output_choices, sizeof(output_choices));
@@ -512,6 +519,12 @@ cp_portaudio_run_with_result(const struct cp_audio_config *config,
 		if (config->gui_enabled) {
 			(void)cp_cat_snapshot_update(cat_config,
 			    &cat_snapshot);
+			audio_candidates[0] = config->gui_cue_wav_path;
+			(void)cp_gui_format_audio_choices(audio_candidates,
+			    1, NULL, workflow_request.type ==
+			    CP_GUI_WORKFLOW_REQUEST_LOAD_WAV ?
+			    workflow_request.path : NULL, audio_choices,
+			    sizeof(audio_choices));
 			(void)cp_gui_format_output_choices(device_choices,
 			    (size_t)device_choice_count, (int)output_device,
 			    workflow_request.type ==
@@ -532,6 +545,7 @@ cp_portaudio_run_with_result(const struct cp_audio_config *config,
 			gui_view.cue_wav_path = config->gui_cue_wav_path;
 			gui_view.cue_playlist_path =
 			    config->gui_cue_playlist_path;
+			gui_view.audio_choices = audio_choices;
 			gui_view.output_choices = output_choices;
 			gui_view.output_device = (int)output_device;
 			if (cp_gui_update(&gui, &gui_view) != CP_OK ||

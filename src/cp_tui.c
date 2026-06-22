@@ -577,17 +577,34 @@ cp_tui_draw_transport(int rows, int cols, const struct cp_tui_view *view,
 			    config->sample_rate, config->channels,
 			    config->block_size, view->output_device);
 		}
-		cp_tui_draw_text(2, 2, cols, "%s | %s", cue, report);
+		if (view->audio_choices != NULL &&
+		    view->audio_choices[0] != '\0') {
+			cp_tui_draw_text(2, 2, cols, "%s | %s | %s", cue,
+			    report, view->audio_choices);
+		} else {
+			cp_tui_draw_text(2, 2, cols, "%s | %s", cue,
+			    report);
+		}
 	} else {
 		cp_tui_draw_text(1, 2, cols, "Transport LIVE | rate %.0f Hz | "
 		    "channels %zu | block %zu | input %d | output %d",
 		    config->sample_rate, config->channels, config->block_size,
 		    config->input_device, config->output_device);
-		cp_tui_draw_text(2, 2, cols, "Backend %s | device %s | %s",
-		    cp_audio_backend_string(config->backend),
-		    config->device_name == NULL ||
-		    config->device_name[0] == '\0' ? "auto" :
-		    config->device_name, report);
+		if (view->audio_choices != NULL &&
+		    view->audio_choices[0] != '\0') {
+			cp_tui_draw_text(2, 2, cols, "Backend %s | device %s "
+			    "| %s | %s", cp_audio_backend_string(
+			    config->backend), config->device_name == NULL ||
+			    config->device_name[0] == '\0' ? "auto" :
+			    config->device_name, report, view->audio_choices);
+		} else {
+			cp_tui_draw_text(2, 2, cols,
+			    "Backend %s | device %s | %s",
+			    cp_audio_backend_string(config->backend),
+			    config->device_name == NULL ||
+			    config->device_name[0] == '\0' ? "auto" :
+			    config->device_name, report);
+		}
 	}
 
 	if (cp_tui_format_key_help(view, bank, keys,

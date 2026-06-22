@@ -8,6 +8,8 @@
 
 #include "cp_types.h"
 
+struct cp_selector;
+
 #define CP_GUI_WORKFLOW_PATH_SIZE 512
 #define CP_GUI_WORKFLOW_REASON_SIZE 128
 
@@ -40,6 +42,9 @@ int		cp_gui_workflow_output_device_restart_needed(int,
 		    const struct cp_gui_workflow_request *, int *, int *);
 int		cp_gui_workflow_request_set_device(
 		    struct cp_gui_workflow_request *, int);
+int		cp_gui_workflow_request_from_audio_selector(
+		    const struct cp_selector *,
+		    struct cp_gui_workflow_request *);
 int		cp_gui_workflow_request_set_path(
 		    struct cp_gui_workflow_request *,
 		    enum cp_gui_workflow_request_type, const char *);

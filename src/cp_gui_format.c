@@ -50,6 +50,53 @@ cp_gui_format_agc(const struct cp_monitor_snapshot *snapshot,
 }
 
 int
+cp_gui_format_audio_choices(const char *const *paths, size_t count,
+	const char *current_path, const char *requested_path, char *buffer,
+	size_t buffer_size)
+{
+	char full[512];
+	char item[96];
+	size_t index;
+	int shown;
+	struct cp_selector selector;
+
+	if (buffer == NULL || buffer_size == 0)
+		return CP_ERR_NULL;
+	if (paths == NULL || count == 0)
+		return cp_gui_snprintf(buffer, buffer_size,
+		    "audio selector: no candidates");
+
+	if (cp_selector_load_audio_files(&selector, paths, count,
+	    current_path, requested_path) != CP_OK)
+		return CP_ERR_RANGE;
+	if (cp_selector_format_line(&selector, full, sizeof(full)) != CP_OK)
+		return CP_ERR_RANGE;
+	cp_gui_append_text(full, sizeof(full), " choices:");
+	shown = 0;
+	for (index = 0; index < selector.count && shown < 4; index++) {
+		if (cp_selector_format_menu_item(&selector, index, item,
+		    sizeof(item)) != CP_OK)
+			continue;
+		cp_gui_append_text(full, sizeof(full), shown == 0 ?
+		    " " : ", ");
+		cp_gui_append_text(full, sizeof(full), item);
+		shown++;
+	}
+	if (shown == 0)
+		cp_gui_append_text(full, sizeof(full), " -");
+	else if (index < selector.count)
+		cp_gui_append_text(full, sizeof(full), ", ...");
+
+	if (buffer_size == 1) {
+		buffer[0] = '\0';
+		return CP_OK;
+	}
+	(void)cp_gui_format_truncate(full, buffer, buffer_size,
+	    buffer_size - 1);
+	return CP_OK;
+}
+
+int
 cp_gui_format_cat(const struct cp_cat_snapshot *snapshot, char *buffer,
 	size_t buffer_size)
 {

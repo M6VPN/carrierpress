@@ -21,6 +21,8 @@ enum cp_gui_mode {
 
 int	cp_gui_format_agc(const struct cp_monitor_snapshot *, char *,
 	    size_t);
+int	cp_gui_format_audio_choices(const char *const *, size_t,
+	    const char *, const char *, char *, size_t);
 int	cp_gui_format_cat(const struct cp_cat_snapshot *, char *, size_t);
 int	cp_gui_format_chain(const struct cp_monitor_snapshot *, char *,
 	    size_t);

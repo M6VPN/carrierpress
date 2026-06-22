@@ -580,7 +580,7 @@ implemented until code, docs, and validation are complete.
 
 - [x] Add shared selector model for UI/TUI.
 - [x] Add output-device selector workflow.
-- [ ] Add audio-file cue/load selector workflow.
+- [x] Add audio-file cue/load selector workflow.
 - [ ] Add playlist selector workflow.
 - [x] Keep selector paths bounded and safe.
 
@@ -599,6 +599,14 @@ implemented until code, docs, and validation are complete.
 - [x] Keep PortAudio enumeration optional.
 - [x] Keep sndio named-device workflow separate.
 - [x] Keep device changes outside callbacks and real-time paths.
+
+## P38C Audio-File Cue/Load Selector Workflow
+
+- [x] Map explicit audio-file candidates into shared selector model.
+- [x] Display WAV cue/load selector state in operator UI surfaces where available.
+- [x] Keep compressed formats disabled and external-conversion only.
+- [x] Keep file loading/cueing outside callbacks and real-time paths.
+- [x] Keep native file dialogs and directory scanning deferred.
 
 ## T6 Mock TX Operator Controls
 

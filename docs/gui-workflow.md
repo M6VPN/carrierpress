@@ -72,10 +72,18 @@ default output device, and the first output-capable choices. The host loop
 collects this list outside GUI callbacks and passes preformatted text to the
 GUI. sndio remains a named-device workflow and is documented separately.
 
+The GUI can also display a compact audio-file selector line from explicit WAV
+candidates or recent cue slots already known to the host. WAV candidates are
+enabled, compressed candidates are disabled with a convert-externally marker,
+and unsupported paths are disabled. Selecting an enabled WAV candidate uses the
+existing deferred `load_wav` workflow request path; no audio file is opened or
+processed from GUI callbacks.
+
 The shared selector workflow is documented in
 [`selector-workflow.md`](selector-workflow.md). Output-device choices now use
-the selector model where candidates are already collected. Audio-file and
-playlist selectors remain future work. The selector path does not add native
+the selector model where candidates are already collected. Audio-file choices
+also use the selector model for explicit WAV candidates and recent cue slots.
+Playlist selectors remain future work. The selector path does not add native
 file dialogs, directory scanning, device opening, stream restart behavior, or
 compressed-audio decoding.
 

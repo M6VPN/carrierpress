@@ -1531,6 +1531,8 @@ run_gui_demo(const struct cp_audio_config *config,
 	struct cp_gui_workflow_request pending_workflow;
 	struct cp_monitor_snapshot snapshot;
 	struct cp_waveform_snapshot waveform;
+	const char *audio_candidates[1];
+	char audio_choices[256];
 #ifdef CP_WITH_FFTW
 	struct cp_spectrum_analyzer spectrum_analyzer;
 	struct cp_spectrum_input spectrum_input;
@@ -1613,6 +1615,11 @@ run_gui_demo(const struct cp_audio_config *config,
 #endif
 
 		(void)cp_cat_snapshot_update(cat_config, &cat_snapshot);
+		audio_candidates[0] = config->gui_cue_wav_path;
+		(void)cp_gui_format_audio_choices(audio_candidates, 1, NULL,
+		    workflow_request.type == CP_GUI_WORKFLOW_REQUEST_LOAD_WAV ?
+		    workflow_request.path : NULL, audio_choices,
+		    sizeof(audio_choices));
 		memset(&view, 0, sizeof(view));
 		view.mode = CP_GUI_MODE_DEMO;
 		view.config = config;
@@ -1626,6 +1633,7 @@ run_gui_demo(const struct cp_audio_config *config,
 #endif
 		view.cue_wav_path = config->gui_cue_wav_path;
 		view.cue_playlist_path = config->gui_cue_playlist_path;
+		view.audio_choices = audio_choices;
 		view.output_device = config->output_device;
 		status = cp_gui_update(&gui, &view);
 		if (status != CP_OK)

@@ -86,3 +86,12 @@ If a playlist contains `.mp3`, `.flac`, `.ogg`, `.opus`, or `.m4a`, the checker
 reports the line as unsupported and asks for conversion to WAV first. This is
 intentional. Native compressed audio playout is deferred unless it is selected
 as a later optional milestone.
+
+## Selector Display
+
+Interactive audio-file selectors use explicit candidate paths or recent cue
+slots only. WAV candidates are selectable. Compressed candidates such as
+`.mp3`, `.flac`, `.ogg`, `.opus`, `.m4a`, and `.aac` may be displayed as
+disabled items with a convert-externally marker. The selector does not decode
+compressed files, scan directories, open file dialogs, or process audio from UI
+callbacks.

@@ -38,6 +38,7 @@ struct cp_gui_view {
 #endif
 	const char *cue_wav_path;
 	const char *cue_playlist_path;
+	const char *audio_choices;
 	const char *output_choices;
 	const char *path;
 	size_t playlist_index;

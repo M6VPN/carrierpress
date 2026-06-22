@@ -32,8 +32,10 @@ publish releases, upload artifacts, key a radio, or send CAT write/control
 commands. Operator workflow boundaries are documented in
 `docs/operator-workflow.md`. Selector workflows are documented in
 `docs/selector-workflow.md`; output-device selector display uses the shared
-state model where backend choices are available. The selector model is not a
-file dialog, device opener, or transmit-control UI.
+state model where backend choices are available. Audio-file selector display
+uses explicit WAV candidates or recent cue slots and keeps compressed formats
+disabled for external conversion. The selector model is not a file dialog,
+device opener, decoder, or transmit-control UI.
 
 ## Base Examples
 

@@ -43,6 +43,34 @@ already available. Device changes still use the existing deferred workflow
 request and restart paths. sndio stays a named-device workflow and does not use
 numeric output-device enumeration.
 
+## Audio-File Selector
+
+P38C adds an audio-file cue/load selector workflow foundation. Host code can
+map explicit WAV candidates into `cp_selector` with
+`cp_selector_load_audio_files()`. The helper does not scan directories, open
+file dialogs, open files, call libsndfile, process audio, or decode compressed
+formats. It only turns already-known paths, such as configured cue paths or
+recent cue slots, into bounded selector labels and values.
+
+WAV candidates with `.wav` or `.WAV` extensions are enabled. Compressed
+formats such as `.mp3`, `.flac`, `.ogg`, `.opus`, `.m4a`, and `.aac` are shown
+disabled with a convert-externally marker. Unknown extensions are shown
+disabled as unsupported. Current and requested cue paths are marked when that
+state is known. Example lines:
+
+```text
+selector=audio_file selected=2/3 label="news-bed.WAV [requested]" value="audio/news-bed.WAV"
+> intro.wav [current]
+  music.mp3 [convert externally] disabled
+  news-bed.WAV [requested]
+```
+
+Selecting an enabled audio-file item can create the existing deferred
+`load_wav` workflow request. Applying the request still happens in the host
+workflow path, outside GUI callbacks, TUI draw paths, real-time audio
+callbacks, and DSP block processing. Disabled compressed or unsupported items
+cannot create a valid load request.
+
 ## Navigation Rules
 
 Selectors are bounded and fixed-size:
@@ -68,8 +96,6 @@ selector=playlist selected=2/2 label="Show" value="playlists/show.txt"
 Future TUI and GUI selector work should reuse `cp_selector` for display and
 navigation state:
 
-- audio-file selectors should start with explicit candidate lists or recent
-  paths
 - playlist selectors should use existing playlist validation before applying a
   cue request
 - file and device changes must stay outside GUI callbacks, TUI draw paths,

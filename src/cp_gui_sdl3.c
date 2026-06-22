@@ -166,6 +166,7 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 {
 	SDL_Renderer *renderer;
 	char agc[256];
+	char audio_choices[256];
 	char cat[256];
 	char chain[512];
 	char cue_slots[256];
@@ -175,7 +176,6 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	char mode[64];
 	char operator_status[512];
 	char output_choices[256];
-	char output_device[256];
 	char transport[256];
 	char workflow[256];
 
@@ -205,9 +205,6 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	    CP_OK ||
 	    cp_gui_format_workflow(view->workflow_request, workflow,
 	    sizeof(workflow)) != CP_OK ||
-	    cp_gui_format_output_device(view->config, view->output_device,
-	    view->workflow_request, output_device, sizeof(output_device)) !=
-	    CP_OK ||
 	    cp_gui_format_chain(view->snapshot, chain, sizeof(chain)) !=
 	    CP_OK ||
 	    cp_gui_format_cat(view->cat_snapshot, cat, sizeof(cat)) !=
@@ -225,6 +222,14 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 		(void)snprintf(output_choices, sizeof(output_choices),
 		    "outputs: PortAudio not enabled");
 #endif
+	}
+	if (view->audio_choices != NULL && view->audio_choices[0] != '\0') {
+		(void)cp_gui_format_truncate(view->audio_choices,
+		    audio_choices, sizeof(audio_choices),
+		    sizeof(audio_choices) - 1);
+	} else {
+		(void)snprintf(audio_choices, sizeof(audio_choices),
+		    "audio selector: no candidates");
 	}
 
 	renderer = (SDL_Renderer *)gui->renderer;
@@ -276,7 +281,7 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	cp_gui_draw_panel_text(renderer, 492.0f, 204.0f, 440.0f, 16.0f,
 	    workflow);
 	cp_gui_draw_panel_text(renderer, 492.0f, 220.0f, 440.0f, 16.0f,
-	    output_device);
+	    audio_choices);
 	cp_gui_draw_panel_text(renderer, 492.0f, 236.0f, 440.0f, 16.0f,
 	    output_choices);
 

@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "cp_gui_workflow.h"
+#include "cp_selector.h"
 
 #define TEST_GUI_WORKFLOW_DIR	"build/tests"
 #define TEST_GUI_WORKFLOW_GOOD	"build/tests/gui-workflow-good.txt"
@@ -18,6 +19,7 @@ static int	test_device_request(void);
 static int	test_forbidden_text(void);
 static int	test_format_bounds(void);
 static int	test_key_mapping(void);
+static int	test_audio_selector_request(void);
 static int	test_path_request(void);
 static int	test_rejected_request_display(void);
 static int	test_playlist_item_request(void);
@@ -56,12 +58,49 @@ main(void)
 		return 1;
 	if (!test_key_mapping())
 		return 1;
+	if (!test_audio_selector_request())
+		return 1;
 	if (!test_restart_decision())
 		return 1;
 	if (!test_forbidden_text())
 		return 1;
 
 	return 0;
+}
+
+static int
+test_audio_selector_request(void)
+{
+	struct cp_gui_workflow_request request;
+	struct cp_selector selector;
+	const char *paths[] = {
+		"audio/music.mp3",
+		"audio/program.wav"
+	};
+
+	cp_selector_init(&selector, CP_SELECTOR_OUTPUT_DEVICE);
+	if (cp_gui_workflow_request_from_audio_selector(&selector,
+	    &request) != CP_ERR_RANGE)
+		return 0;
+
+	if (cp_selector_load_audio_files(&selector, paths, 1, NULL,
+	    NULL) != CP_OK ||
+	    cp_gui_workflow_request_from_audio_selector(&selector,
+	    &request) != CP_ERR_RANGE)
+		return 0;
+	if (cp_selector_load_audio_files(&selector, paths, 2, NULL,
+	    "audio/program.wav") != CP_OK ||
+	    cp_gui_workflow_request_from_audio_selector(&selector,
+	    &request) != CP_OK)
+		return 0;
+	if (request.type != CP_GUI_WORKFLOW_REQUEST_LOAD_WAV ||
+	    strcmp(request.path, "audio/program.wav") != 0)
+		return 0;
+	if (cp_gui_workflow_request_validate(&request) != CP_OK ||
+	    request.validation_status != CP_OK)
+		return 0;
+
+	return 1;
 }
 
 static int
