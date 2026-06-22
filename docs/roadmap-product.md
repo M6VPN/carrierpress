@@ -26,12 +26,18 @@ Planned work:
 
 Planned work:
 
+- Add shared dashboard section labels.
 - Improve dashboard layout hierarchy.
 - Make meters and status panels clearer.
 - Keep help text consistent across CLI, TUI, and GUI docs.
-- Group processing, playout, device, report, and safety state cleanly.
+- Group processing, playout, selectors, device, workflow, and safety state
+  cleanly.
 - Keep long labels, paths, device names, and reasons bounded or truncated.
 - Keep active TX controls absent from ordinary builds.
+
+The first implementation slice adds shared dashboard section labels and applies
+them to the TUI/GUI display foundation without changing DSP, selector,
+workflow, audio, or transmit-control behavior.
 
 ## C. P38 Interactive Selectors
 

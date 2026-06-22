@@ -50,6 +50,7 @@ CORE_SRCS = \
 	src/cp_config_file.c \
 	src/cp_control.c \
 	src/cp_crossover.c \
+	src/cp_dashboard.c \
 	src/cp_dc_blocker.c \
 	src/cp_declipper.c \
 	src/cp_dehummer.c \

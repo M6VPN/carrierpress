@@ -32,6 +32,11 @@ mock-only and is not part of ordinary CLI workflow.
 The ncurses TUI is optional. It is a local monitor and safe-control surface for
 operator state and audio-chain controls.
 
+The TUI dashboard groups status into compact sections: Playout, Processing,
+Meters, Workflow, Selectors, Device, and Safety. Lines are clipped to the
+terminal width, and long operator paths or selector labels are formatted before
+display.
+
 Safe TUI controls include:
 
 - stop or quit
@@ -51,6 +56,11 @@ The SDL3 GUI is optional. It is a monitor and safe-control surface. It also
 shows deferred workflow state for queued WAV and playlist paths, request
 status, rejected request reasons, and output-device choices where PortAudio
 enumeration is available.
+
+The GUI dashboard uses the same section names as the TUI: Processing, Meters,
+Playout, Selectors, Device, Workflow, and Safety. The panels keep transport,
+meters, workflow, selector, device, waveform, spectrum, and help information in
+bounded display areas.
 
 GUI workflow changes are represented as deferred requests. The GUI records a
 bounded request, and the host loop validates and consumes it outside SDL event
@@ -80,7 +90,8 @@ file dialogs, open audio devices, open audio files, parse playlists from draw
 callbacks, or change audio behavior.
 
 GUI text must remain bounded and clipped inside panels. Long paths, request
-reasons, output-device names, and help strings are truncated before drawing.
+reasons, output-device names, selector labels, and help strings are truncated
+before drawing.
 
 The GUI has no active TRANSMIT button, no PTT toggle, no CAT write/control
 control, and no transmit arming path.

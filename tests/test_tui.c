@@ -104,6 +104,7 @@ test_key_help(void)
 		return 0;
 	}
 	if (strstr(buffer, "AM BANK") == NULL ||
+	    strstr(buffer, "Help:") == NULL ||
 	    strstr(buffer, "n next") != NULL ||
 	    strstr(buffer, "mode NEUTRAL") == NULL) {
 		printf("test_tui: live key help mismatch: %s\n", buffer);
@@ -151,7 +152,7 @@ test_mode_state(void)
 		printf("test_tui: neutral status failed\n");
 		return 0;
 	}
-	if (strstr(buffer, "Mode NEUTRAL") == NULL ||
+	if (strstr(buffer, "Processing: mode=NEUTRAL") == NULL ||
 	    strstr(buffer, "SSB controls locked by AM bank") == NULL) {
 		printf("test_tui: neutral status mismatch: %s\n", buffer);
 		return 0;

@@ -14,6 +14,7 @@
 #include "cp_am.h"
 #include "cp_auto_eq.h"
 #include "cp_bass_eq.h"
+#include "cp_dashboard.h"
 #include "cp_declipper.h"
 #include "cp_multiband.h"
 #include "cp_restoration.h"
@@ -201,7 +202,7 @@ cp_tui_format_key_help(const struct cp_tui_view *view,
 	    " n next" : "";
 
 	return cp_tui_snprintf(buffer, buffer_size,
-	    "Keys: q stop%s | a AM bank s SSB bank | d hum m MB1 b MB2 | "
+	    "Help: q stop%s | a AM bank s SSB bank | d hum m MB1 b MB2 | "
 	    "%s | %s | mode %s",
 	    next_text, bank_name, preset_text, mode_name);
 }
@@ -239,7 +240,7 @@ cp_tui_format_mode_status(const struct cp_monitor_snapshot *snapshot,
 	}
 
 	return cp_tui_snprintf(buffer, buffer_size,
-	    "Mode %-7s | Control %-8s | %s | %s",
+	    "Processing: mode=%s control=%s | %s | %s",
 	    cp_tui_processing_mode_name(mode), bank_name, am_state,
 	    ssb_state);
 }
@@ -416,7 +417,7 @@ cp_tui_draw_details(int rows, int cols, const struct cp_tui_view *view)
 	if (bass_preset == NULL)
 		bass_preset = "unknown";
 
-	cp_tui_draw_box_line(15, cols, " Detailed Status ", 0);
+	cp_tui_draw_box_line(15, cols, " Workflow / Device ", 0);
 	cp_tui_draw_text(16, 2, cols, "AM %s preset %s HP %u LP %u pos %.2f "
 	    "neg %.2f asym %s %.2f",
 	    snapshot->am_enabled ? "on" : "off", am_preset,
@@ -495,7 +496,8 @@ cp_tui_draw_meters(int rows, int cols,
 	    cp_monitor_level_to_sample(snapshot->output_rms), 1.0f);
 	cp_tui_format_flags(flags, sizeof(flags), snapshot->stream_flags);
 
-	cp_tui_draw_box_line(6, cols, " Meters ", 0);
+	cp_tui_draw_box_line(6, cols,
+	    cp_dashboard_section_title(CP_DASHBOARD_METERS), 0);
 	cp_tui_draw_text(7, 2, cols, "Input  peak %s %.3f  RMS %s %.3f",
 	    in_peak, cp_monitor_level_to_sample(snapshot->input_peak),
 	    in_rms, cp_monitor_level_to_sample(snapshot->input_rms));
@@ -519,7 +521,8 @@ cp_tui_draw_mode(int rows, int cols, const struct cp_tui_view *view,
 	char operator_text[CP_TUI_TEXT_SIZE];
 
 	(void)rows;
-	cp_tui_draw_box_line(3, cols, " Mode / Controls ", 0);
+	cp_tui_draw_box_line(3, cols,
+	    cp_dashboard_section_title(CP_DASHBOARD_PROCESSING), 0);
 	if (cp_tui_format_mode_status(view->snapshot, bank, mode_text,
 	    sizeof(mode_text)) != CP_OK)
 		mode_text[0] = '\0';
@@ -561,19 +564,19 @@ cp_tui_draw_transport(int rows, int cols, const struct cp_tui_view *view,
 	if (cp_operator_state_format_report(view->operator_state, report,
 	    sizeof(report)) != CP_OK)
 		report[0] = '\0';
-	cp_tui_draw_box_line(0, cols, " CarrierPress Operator Panel ", 1);
+	cp_tui_draw_box_line(0, cols,
+	    cp_dashboard_section_title(CP_DASHBOARD_PLAYOUT), 1);
 	if (view->mode == CP_TUI_MODE_PLAYOUT) {
 		if (view->playlist_count > 0) {
-			cp_tui_draw_text(1, 2, cols, "Transport PLAYLIST "
-			    "track %zu/%zu | rate %.0f Hz | channels %zu | "
-			    "block %zu | output %d",
+			cp_tui_draw_text(1, 2, cols, "Playout: mode=PLAYLIST "
+			    "track=%zu/%zu rate=%.0fHz channels=%zu "
+			    "block=%zu output=%d",
 			    view->playlist_index + 1, view->playlist_count,
 			    config->sample_rate, config->channels,
 			    config->block_size, view->output_device);
 		} else {
-			cp_tui_draw_text(1, 2, cols, "Transport PLAY file | "
-			    "rate %.0f Hz | channels %zu | block %zu | "
-			    "output %d",
+			cp_tui_draw_text(1, 2, cols, "Playout: mode=PLAY "
+			    "rate=%.0fHz channels=%zu block=%zu output=%d",
 			    config->sample_rate, config->channels,
 			    config->block_size, view->output_device);
 		}
@@ -597,8 +600,8 @@ cp_tui_draw_transport(int rows, int cols, const struct cp_tui_view *view,
 			    report);
 		}
 	} else {
-		cp_tui_draw_text(1, 2, cols, "Transport LIVE | rate %.0f Hz | "
-		    "channels %zu | block %zu | input %d | output %d",
+		cp_tui_draw_text(1, 2, cols, "Playout: mode=LIVE rate=%.0fHz "
+		    "channels=%zu block=%zu input=%d output=%d",
 		    config->sample_rate, config->channels, config->block_size,
 		    config->input_device, config->output_device);
 		if (view->audio_choices != NULL &&

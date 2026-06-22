@@ -34,8 +34,8 @@ workflow=load_wav status=pending path=audio/program.wav
 workflow=load_playlist status=pending path=playlists/show.txt
 workflow=cue_playlist_item status=pending index=2 path=audio/program.wav
 workflow=select_output_device status=pending device=3
-Cue: WAV audio/program.wav | Playlist playlists/show.txt
-output_device=current:3 requested:4 backend=auto device=default
+Selectors: wav=audio/program.wav playlist=playlists/show.txt
+Device: output=current:3 requested:4 backend=auto device=default
 ```
 
 When a request is consumed and validated by the host loop, the status is shown
@@ -50,9 +50,11 @@ workflow=select_output_device status=valid reason=deferred output device request
 
 ## GUI Request Status Display
 
-The GUI status panel shows the configured WAV cue slot, configured playlist
-cue slot, last workflow request, request status, target path or device, and
-validation reason when one exists.
+The GUI dashboard groups display text into Processing, Meters, Playout,
+Selectors, Device, Workflow, and Safety sections. The workflow and selector
+panel shows the configured WAV cue slot, configured playlist cue slot, last
+workflow request, request status, target path or device, and validation reason
+when one exists.
 
 Request status values are:
 

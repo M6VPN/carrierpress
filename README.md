@@ -192,13 +192,14 @@ commands remain documented in
 [`docs/release-procedure.md`](docs/release-procedure.md).
 The product roadmap is documented in
 [`docs/roadmap-product.md`](docs/roadmap-product.md). The first product
-foundation adds bounded selector state. Output-device selector display now uses
-that model where backend choices are already available. Audio-file selector
-display now uses explicit WAV candidates and recent cue slots; compressed
-formats remain disabled external-conversion workflows. Playlist selector
-display now uses explicit `.txt` and `.playlist` candidates and existing
-playlist validation before deferred requests are accepted. Selector workflow
-notes are in
+foundation adds shared dashboard section labels and bounded selector state.
+TUI and GUI dashboards group Processing, Meters, Playout, Selectors, Device,
+Workflow, and Safety displays. Output-device selector display now uses that
+model where backend choices are already available. Audio-file selector display
+now uses explicit WAV candidates and recent cue slots; compressed formats
+remain disabled external-conversion workflows. Playlist selector display now
+uses explicit `.txt` and `.playlist` candidates and existing playlist
+validation before deferred requests are accepted. Selector workflow notes are in
 [`docs/selector-workflow.md`](docs/selector-workflow.md). TX operator controls
 remain future, guarded, and mock-only unless a later safety milestone selects
 more work.
@@ -253,13 +254,13 @@ spectrum preview. These displays do not alter audio samples.
 Future GUI file workflows are documented in
 [`docs/gui-workflow.md`](docs/gui-workflow.md). They use deferred requests and
 are not active file dialogs. The GUI can request preconfigured WAV and playlist
-cue slots with `l` and `p`. The GUI status panel shows queued cue paths, the
+cue slots with `l` and `p`. The GUI workflow panel shows queued cue paths, the
 last workflow request, and pending, valid, or error status with bounded text.
 In live PortAudio GUI mode and GUI WAV playout, `o` and `O` create a deferred
 output-device request that is consumed by the host loop and applied by
 restarting the stream outside SDL and audio callbacks. If the requested device
 cannot open or start, CarrierPress tries once to fall back to the previous
-output device. Where PortAudio enumeration is available, the GUI status panel
+output device. Where PortAudio enumeration is available, the GUI device panel
 shows a compact output-choice line. sndio GUI output-device restart is deferred
 because sndio uses named devices, not PortAudio numeric device indices. See
 [`docs/sndio-gui-device-workflow.md`](docs/sndio-gui-device-workflow.md):
@@ -634,11 +635,13 @@ GUI commands exit with:
 GUI support not enabled. Rebuild with WITH_GUI=1.
 ```
 
-The GUI monitor shows transport state, input and output peak/RMS meters, AGC
-state, stream flags, processing-chain state, read-only CAT status, a
-processed-output waveform preview, and an optional FFTW spectrum preview. The
-waveform and spectrum previews are monitor-only. GUI text is clipped inside
-the monitor panels, and safe keyboard controls mirror the ncurses TUI:
+The GUI monitor groups display text into Processing, Meters, Playout,
+Selectors, Device, Workflow, and Safety panels. It shows transport state, input
+and output peak/RMS meters, AGC state, stream flags, processing-chain state,
+read-only CAT status, a processed-output waveform preview, and an optional FFTW
+spectrum preview. The waveform and spectrum previews are monitor-only. GUI text
+is clipped inside the monitor panels, and safe keyboard controls mirror the
+ncurses TUI:
 `q`/Escape stop, `n` playlist next, `d` dehummer, `m` multiband 1, `b`
 multiband 2, `a` AM bank, `s` SSB bank, `0` off, and `1` to `4` presets.
 Preconfigured GUI cue slots use `l` for WAV, `p` for playlist, and `c` for

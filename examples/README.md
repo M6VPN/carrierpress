@@ -31,13 +31,15 @@ Examples must not install packages, use `sudo`, create tags, push tags,
 publish releases, upload artifacts, key a radio, or send CAT write/control
 commands. Operator workflow boundaries are documented in
 `docs/operator-workflow.md`. Selector workflows are documented in
-`docs/selector-workflow.md`; output-device selector display uses the shared
-state model where backend choices are available. Audio-file selector display
-uses explicit WAV candidates or recent cue slots and keeps compressed formats
-disabled for external conversion. Playlist selector display uses explicit
-`.txt` and `.playlist` candidates and existing playlist validation before
-deferred requests are accepted. The selector model is not a file dialog,
-device opener, decoder, playlist auto-discovery tool, or transmit-control UI.
+`docs/selector-workflow.md`; dashboard grouping uses Processing, Meters,
+Playout, Selectors, Device, Workflow, and Safety labels. Output-device selector
+display uses the shared state model where backend choices are available.
+Audio-file selector display uses explicit WAV candidates or recent cue slots
+and keeps compressed formats disabled for external conversion. Playlist
+selector display uses explicit `.txt` and `.playlist` candidates and existing
+playlist validation before deferred requests are accepted. The selector model
+is not a file dialog, device opener, decoder, playlist auto-discovery tool, or
+transmit-control UI.
 
 ## Base Examples
 
@@ -271,17 +273,19 @@ make WITH_GUI=1 WITH_FFTW=1
 The screenshot example writes `build/gui-demo.bmp` and
 `build/gui-demo.bmp.txt`.
 
-The current GUI is a monitor and safe-control demo. Preconfigured WAV and
-playlist cue slots can be requested from the GUI with `l` and `p`, then
-validated outside SDL callbacks. The GUI status panel shows queued cue paths,
-the latest request, and pending, valid, or error status with bounded text.
+The current GUI is a monitor and safe-control demo. It groups Processing,
+Meters, Playout, Selectors, Device, Workflow, and Safety display text into
+bounded panels. Preconfigured WAV and playlist cue slots can be requested from
+the GUI with `l` and `p`, then validated outside SDL callbacks. The GUI
+workflow panel shows queued cue paths, the latest request, and pending, valid,
+or error status with bounded text.
 Deferred output-device selection requests can be created with `o` and `O`. In
 live PortAudio GUI mode, those requests are consumed by the host loop and
 applied by restarting the stream outside SDL and audio callbacks. If the
 requested device cannot open or start, CarrierPress tries once to fall back to
 the previous output device. GUI WAV playout uses the same deferred request
 pattern and reopens the blocking PortAudio output stream between processed
-blocks. Where PortAudio enumeration is available, the GUI status panel shows a
+blocks. Where PortAudio enumeration is available, the GUI device panel shows a
 compact output-choice line. Future file dialogs and sndio switching are
 documented in
 `docs/gui-workflow.md` and

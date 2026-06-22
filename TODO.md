@@ -571,10 +571,18 @@ implemented until code, docs, and validation are complete.
 
 ## P37 TUI and GUI Layout Polish
 
-- [ ] Review dashboard layout hierarchy.
-- [ ] Improve TUI/GUI panel grouping and labels.
-- [ ] Improve meter/status readability.
-- [ ] Keep GUI/TUI strings bounded and restrained.
+- [x] Review dashboard layout hierarchy.
+- [x] Improve TUI/GUI panel grouping and labels.
+- [x] Improve meter/status readability.
+- [x] Keep GUI/TUI strings bounded and restrained.
+
+## P37A Dashboard Layout Polish
+
+- [x] Add shared dashboard section labels.
+- [x] Improve GUI/TUI display grouping and labels.
+- [x] Keep selector/workflow/device/status lines bounded.
+- [x] Keep ordinary operator UI free of active TX/PTT controls.
+- [x] Update operator workflow docs for dashboard grouping.
 
 ## P38 Interactive File and Device Selectors
 

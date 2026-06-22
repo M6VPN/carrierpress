@@ -9,6 +9,7 @@
 
 #include <SDL3/SDL.h>
 
+#include "cp_dashboard.h"
 #include "cp_gui.h"
 
 #define CP_GUI_WINDOW_WIDTH	960
@@ -218,10 +219,10 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	} else {
 #ifdef CP_WITH_PORTAUDIO
 		(void)snprintf(output_choices, sizeof(output_choices),
-		    "outputs: enumeration unavailable");
+		    "Device: outputs unavailable");
 #else
 		(void)snprintf(output_choices, sizeof(output_choices),
-		    "outputs: PortAudio not enabled");
+		    "Device: PortAudio not enabled");
 #endif
 	}
 	if (view->audio_choices != NULL && view->audio_choices[0] != '\0') {
@@ -230,7 +231,7 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 		    sizeof(audio_choices) - 1);
 	} else {
 		(void)snprintf(audio_choices, sizeof(audio_choices),
-		    "audio selector: no candidates");
+		    "Selectors: audio none");
 	}
 	if (view->playlist_choices != NULL &&
 	    view->playlist_choices[0] != '\0') {
@@ -239,7 +240,7 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 		    sizeof(playlist_choices) - 1);
 	} else {
 		(void)snprintf(playlist_choices, sizeof(playlist_choices),
-		    "playlist selector: no candidates");
+		    "Selectors: playlist none");
 	}
 
 	renderer = (SDL_Renderer *)gui->renderer;
@@ -247,14 +248,14 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	(void)SDL_RenderClear(renderer);
 
 	cp_gui_draw_panel(renderer, CP_GUI_MARGIN, CP_GUI_MARGIN, 928.0f,
-	    72.0f, "CarrierPress Monitor");
+	    72.0f, cp_dashboard_section_title(CP_DASHBOARD_PROCESSING));
 	cp_gui_draw_panel_text(renderer, 28.0f, 40.0f, 904.0f, 16.0f,
 	    transport);
 	cp_gui_draw_panel_text(renderer, 28.0f, 58.0f, 904.0f, 16.0f,
 	    mode);
 
 	cp_gui_draw_panel(renderer, CP_GUI_MARGIN, 104.0f, 448.0f, 152.0f,
-	    "Meters");
+	    cp_dashboard_section_title(CP_DASHBOARD_METERS));
 	cp_gui_draw_panel_text(renderer, 28.0f, 128.0f, 424.0f, 16.0f,
 	    meters);
 	cp_gui_draw_panel_text(renderer, 28.0f, 148.0f, 104.0f, 16.0f,
@@ -277,7 +278,7 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	    "Level scale: linear 0.0 to 1.0");
 
 	cp_gui_draw_panel(renderer, 480.0f, 104.0f, 464.0f, 168.0f,
-	    "Status");
+	    "Workflow / Selectors");
 	cp_gui_draw_panel_text(renderer, 492.0f, 124.0f, 440.0f, 16.0f,
 	    agc);
 	cp_gui_draw_panel_text(renderer, 492.0f, 140.0f, 440.0f, 16.0f,
@@ -303,14 +304,14 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	    chain);
 
 	cp_gui_draw_panel(renderer, CP_GUI_MARGIN, 388.0f, 448.0f, 116.0f,
-	    "Processed Output Waveform");
+	    cp_dashboard_section_title(CP_DASHBOARD_PLAYOUT));
 	cp_gui_draw_panel_text(renderer, 28.0f, 412.0f, 424.0f, 16.0f,
 	    "Processed output waveform: +/-1.0");
 	cp_gui_draw_waveform(renderer, 28.0f, 434.0f, 424.0f, 52.0f,
 	    view->waveform);
 
 	cp_gui_draw_panel(renderer, 480.0f, 388.0f, 464.0f, 116.0f,
-	    "Processed Output Spectrum");
+	    cp_dashboard_section_title(CP_DASHBOARD_METERS));
 	cp_gui_draw_panel_text(renderer, 492.0f, 412.0f, 440.0f, 16.0f,
 	    "Relative magnitude: low Hz to high Hz");
 #ifdef CP_WITH_FFTW
@@ -320,9 +321,9 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	cp_gui_draw_panel_text(renderer, 492.0f, 448.0f, 440.0f, 16.0f,
 	    "spectrum unavailable; build WITH_FFTW=1");
 #endif
-	cp_gui_draw_panel(renderer, CP_GUI_MARGIN, 508.0f, 928.0f, 24.0f,
-	    NULL);
-	cp_gui_draw_panel_text(renderer, 28.0f, 514.0f, 904.0f, 14.0f,
+	cp_gui_draw_panel(renderer, CP_GUI_MARGIN, 506.0f, 928.0f, 28.0f,
+	    cp_dashboard_section_title(CP_DASHBOARD_SAFETY));
+	cp_gui_draw_panel_text(renderer, 28.0f, 520.0f, 904.0f, 12.0f,
 	    help);
 
 	(void)SDL_RenderPresent(renderer);

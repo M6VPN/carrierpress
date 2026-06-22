@@ -16,6 +16,7 @@ static int	test_cat_format(void);
 static int	test_chain_format(void);
 static int	test_control_mapping(void);
 static int	test_cue_slots_format(void);
+static int	test_dashboard_sections(void);
 static int	test_audio_choices_format(void);
 static int	test_help_format(void);
 static int	test_meter_format(void);
@@ -40,6 +41,8 @@ main(void)
 	if (!test_control_mapping())
 		return 1;
 	if (!test_cue_slots_format())
+		return 1;
+	if (!test_dashboard_sections())
 		return 1;
 	if (!test_audio_choices_format())
 		return 1;
@@ -79,13 +82,14 @@ test_audio_choices_format(void)
 
 	if (cp_gui_format_audio_choices(NULL, 0, NULL, NULL, buffer,
 	    sizeof(buffer)) != CP_OK ||
-	    strcmp(buffer, "audio selector: no candidates") != 0) {
+	    strcmp(buffer, "Selectors: audio none") != 0) {
 		printf("test_gui_format: audio no candidates mismatch: %s\n",
 		    buffer);
 		return 0;
 	}
 	if (cp_gui_format_audio_choices(paths, 4, "audio/intro.wav",
 	    "audio/news-bed.WAV", buffer, sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "Selectors:") == NULL ||
 	    strstr(buffer, "selector=audio_file") == NULL ||
 	    strstr(buffer, "news-bed.WAV") == NULL ||
 	    strstr(buffer, "requested") == NULL ||
@@ -183,11 +187,12 @@ test_chain_format(void)
 		printf("test_gui_format: chain format failed\n");
 		return 0;
 	}
-	if (strstr(buffer, "dehummer on") == NULL ||
-	    strstr(buffer, "restoration on") == NULL ||
-	    strstr(buffer, "MB1 on") == NULL ||
-	    strstr(buffer, "AM off") == NULL ||
-	    strstr(buffer, "SSB on") == NULL) {
+	if (strstr(buffer, "Processing:") == NULL ||
+	    strstr(buffer, "dehummer=on") == NULL ||
+	    strstr(buffer, "restoration=on") == NULL ||
+	    strstr(buffer, "MB1=on") == NULL ||
+	    strstr(buffer, "AM=off") == NULL ||
+	    strstr(buffer, "SSB=on") == NULL) {
 		printf("test_gui_format: chain mismatch: %s\n", buffer);
 		return 0;
 	}
@@ -230,6 +235,32 @@ test_control_mapping(void)
 }
 
 static int
+test_dashboard_sections(void)
+{
+	if (strcmp(cp_dashboard_section_title(CP_DASHBOARD_PROCESSING),
+	    "Processing") != 0 ||
+	    strcmp(cp_dashboard_section_title(CP_DASHBOARD_METERS),
+	    "Meters") != 0 ||
+	    strcmp(cp_dashboard_section_title(CP_DASHBOARD_PLAYOUT),
+	    "Playout") != 0 ||
+	    strcmp(cp_dashboard_section_title(CP_DASHBOARD_SELECTORS),
+	    "Selectors") != 0 ||
+	    strcmp(cp_dashboard_section_title(CP_DASHBOARD_DEVICE),
+	    "Device") != 0 ||
+	    strcmp(cp_dashboard_section_title(CP_DASHBOARD_WORKFLOW),
+	    "Workflow") != 0 ||
+	    strcmp(cp_dashboard_section_title(CP_DASHBOARD_SAFETY),
+	    "Safety") != 0 ||
+	    strcmp(cp_dashboard_section_title((enum cp_dashboard_section)99),
+	    "Status") != 0) {
+		printf("test_gui_format: dashboard section title mismatch\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
 test_cue_slots_format(void)
 {
 	char buffer[192];
@@ -238,14 +269,14 @@ test_cue_slots_format(void)
 
 	if (cp_gui_format_cue_slots("audio/program.wav",
 	    "playlists/show.txt", buffer, sizeof(buffer)) != CP_OK ||
-	    strstr(buffer, "Cue: WAV audio/program.wav") == NULL ||
-	    strstr(buffer, "Playlist playlists/show.txt") == NULL) {
+	    strstr(buffer, "Selectors: wav=audio/program.wav") == NULL ||
+	    strstr(buffer, "playlist=playlists/show.txt") == NULL) {
 		printf("test_gui_format: cue slots mismatch: %s\n", buffer);
 		return 0;
 	}
 	if (cp_gui_format_cue_slots(NULL, "", buffer, sizeof(buffer)) !=
 	    CP_OK ||
-	    strcmp(buffer, "Cue: WAV - | Playlist -") != 0) {
+	    strcmp(buffer, "Selectors: wav=- playlist=-") != 0) {
 		printf("test_gui_format: empty cue slots mismatch: %s\n",
 		    buffer);
 		return 0;
@@ -292,10 +323,10 @@ test_meter_format(void)
 		printf("test_gui_format: meter format failed\n");
 		return 0;
 	}
-	if (strstr(buffer, "in peak 0.500") == NULL ||
-	    strstr(buffer, "rms 0.250") == NULL ||
-	    strstr(buffer, "out peak 0.750") == NULL ||
-	    strstr(buffer, "rms 0.125") == NULL) {
+	if (strstr(buffer, "input_peak=0.500") == NULL ||
+	    strstr(buffer, "input_rms=0.250") == NULL ||
+	    strstr(buffer, "output_peak=0.750") == NULL ||
+	    strstr(buffer, "output_rms=0.125") == NULL) {
 		printf("test_gui_format: meter mismatch: %s\n", buffer);
 		return 0;
 	}
@@ -320,6 +351,7 @@ test_help_format(void)
 
 	if (cp_gui_format_help(CP_CONTROL_BANK_AM, 1, buffer,
 	    sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "Help:") == NULL ||
 	    strstr(buffer, "q/Esc stop") == NULL ||
 	    strstr(buffer, "n next") == NULL ||
 	    strstr(buffer, "m MB1") == NULL ||
@@ -360,7 +392,7 @@ test_mode_format(void)
 
 	cp_monitor_snapshot_clear(&snapshot);
 	if (cp_gui_format_mode(&snapshot, buffer, sizeof(buffer)) != CP_OK ||
-	    strcmp(buffer, "Mode: NEUTRAL") != 0) {
+	    strcmp(buffer, "Processing: mode=NEUTRAL") != 0) {
 		printf("test_gui_format: neutral mode mismatch: %s\n",
 		    buffer);
 		return 0;
@@ -368,7 +400,7 @@ test_mode_format(void)
 
 	snapshot.am_enabled = 1;
 	if (cp_gui_format_mode(&snapshot, buffer, sizeof(buffer)) != CP_OK ||
-	    strcmp(buffer, "Mode: AM") != 0) {
+	    strcmp(buffer, "Processing: mode=AM") != 0) {
 		printf("test_gui_format: AM mode mismatch: %s\n", buffer);
 		return 0;
 	}
@@ -376,7 +408,7 @@ test_mode_format(void)
 	snapshot.am_enabled = 0;
 	snapshot.ssb_enabled = 1;
 	if (cp_gui_format_mode(&snapshot, buffer, sizeof(buffer)) != CP_OK ||
-	    strcmp(buffer, "Mode: SSB") != 0) {
+	    strcmp(buffer, "Processing: mode=SSB") != 0) {
 		printf("test_gui_format: SSB mode mismatch: %s\n", buffer);
 		return 0;
 	}
@@ -437,7 +469,7 @@ test_output_choices_format(void)
 	memset(choices, 0, sizeof(choices));
 	if (cp_gui_format_output_choices(NULL, 0, 2, 0, 0, buffer,
 	    sizeof(buffer)) != CP_OK ||
-	    strcmp(buffer, "outputs: enumeration unavailable") != 0) {
+	    strcmp(buffer, "Device: outputs unavailable") != 0) {
 		printf("test_gui_format: no choices mismatch: %s\n",
 		    buffer);
 		return 0;
@@ -450,6 +482,7 @@ test_output_choices_format(void)
 	choices[0].default_output = 1;
 	if (cp_gui_format_output_choices(choices, 1, 1, 0, 0, buffer,
 	    sizeof(buffer)) != CP_OK ||
+	    strstr(buffer, "Device:") == NULL ||
 	    strstr(buffer, "selector=output_device") == NULL ||
 	    strstr(buffer, "Built-in") == NULL ||
 	    strstr(buffer, "current") == NULL ||
@@ -523,7 +556,7 @@ test_output_device_format(void)
 	cp_audio_default_config(&config);
 	if (cp_gui_format_output_device(&config, CP_AUDIO_DEFAULT_DEVICE,
 	    NULL, buffer, sizeof(buffer)) != CP_OK ||
-	    strstr(buffer, "output_device=current:-1 requested:-") == NULL ||
+	    strstr(buffer, "Device: output=current:-1 requested:-") == NULL ||
 	    strstr(buffer, "backend=auto") == NULL) {
 		printf("test_gui_format: default output mismatch: %s\n",
 		    buffer);
@@ -534,7 +567,7 @@ test_output_device_format(void)
 	if (cp_gui_workflow_request_set_device(&request, 4) != CP_OK ||
 	    cp_gui_format_output_device(&config, 3, &request, buffer,
 	    sizeof(buffer)) != CP_OK ||
-	    strstr(buffer, "output_device=current:3 requested:4") == NULL ||
+	    strstr(buffer, "Device: output=current:3 requested:4") == NULL ||
 	    strstr(buffer, "device=") == NULL) {
 		printf("test_gui_format: requested output mismatch: %s\n",
 		    buffer);
@@ -567,7 +600,7 @@ test_playlist_choices_format(void)
 
 	if (cp_gui_format_playlist_choices(NULL, 0, NULL, NULL, buffer,
 	    sizeof(buffer)) != CP_OK ||
-	    strcmp(buffer, "playlist selector: no candidates") != 0) {
+	    strcmp(buffer, "Selectors: playlist none") != 0) {
 		printf("test_gui_format: playlist no candidates mismatch: "
 		    "%s\n", buffer);
 		return 0;
@@ -575,6 +608,7 @@ test_playlist_choices_format(void)
 	if (cp_gui_format_playlist_choices(paths, 4, "playlists/show.txt",
 	    "playlists/morning.playlist", buffer, sizeof(buffer)) !=
 	    CP_OK ||
+	    strstr(buffer, "Selectors:") == NULL ||
 	    strstr(buffer, "selector=playlist") == NULL ||
 	    strstr(buffer, "morning.playlist") == NULL ||
 	    strstr(buffer, "requested") == NULL ||
@@ -648,7 +682,7 @@ test_transport_format(void)
 	cp_audio_default_config(&config);
 	if (cp_gui_format_transport(CP_GUI_MODE_LIVE, &config, NULL, 0, 0,
 	    CP_AUDIO_DEFAULT_DEVICE, buffer, sizeof(buffer)) != CP_OK ||
-	    strstr(buffer, "Transport LIVE") == NULL) {
+	    strstr(buffer, "Playout: mode=LIVE") == NULL) {
 		printf("test_gui_format: live transport mismatch: %s\n",
 		    buffer);
 		return 0;
@@ -656,9 +690,9 @@ test_transport_format(void)
 
 	if (cp_gui_format_transport(CP_GUI_MODE_PLAYOUT, &config,
 	    "input.wav", 1, 3, 7, buffer, sizeof(buffer)) != CP_OK ||
-	    strstr(buffer, "Transport PLAYLIST 2/3") == NULL ||
+	    strstr(buffer, "Playout: mode=PLAYLIST item=2/3") == NULL ||
 	    strstr(buffer, "input.wav") == NULL ||
-	    strstr(buffer, "out 7") == NULL) {
+	    strstr(buffer, "output=7") == NULL) {
 		printf("test_gui_format: playlist transport mismatch: %s\n",
 		    buffer);
 		return 0;

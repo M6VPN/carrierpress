@@ -9,6 +9,7 @@
 #include "cp_audio.h"
 #include "cp_cat.h"
 #include "cp_control.h"
+#include "cp_dashboard.h"
 #include "cp_gui_workflow.h"
 #include "cp_monitor.h"
 #include "cp_operator_state.h"

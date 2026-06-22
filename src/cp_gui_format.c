@@ -42,7 +42,7 @@ cp_gui_format_agc(const struct cp_monitor_snapshot *snapshot,
 		return CP_ERR_NULL;
 
 	return cp_gui_snprintf(buffer, buffer_size,
-	    "AGC gain %.3f %.2f dB state %s | DSP %s",
+	    "Meters: agc_gain=%.3f agc_db=%.2f state=%s dsp=%s",
 	    cp_monitor_level_to_sample(snapshot->agc_gain),
 	    cp_monitor_centibel_to_db(snapshot->agc_gain_db_centibel),
 	    cp_agc_state_string((enum cp_agc_gate_state)snapshot->agc_state),
@@ -64,13 +64,15 @@ cp_gui_format_audio_choices(const char *const *paths, size_t count,
 		return CP_ERR_NULL;
 	if (paths == NULL || count == 0)
 		return cp_gui_snprintf(buffer, buffer_size,
-		    "audio selector: no candidates");
+		    "Selectors: audio none");
 
 	if (cp_selector_load_audio_files(&selector, paths, count,
 	    current_path, requested_path) != CP_OK)
 		return CP_ERR_RANGE;
-	if (cp_selector_format_line(&selector, full, sizeof(full)) != CP_OK)
+	if (cp_selector_format_line(&selector, item, sizeof(item)) != CP_OK)
 		return CP_ERR_RANGE;
+	(void)snprintf(full, sizeof(full), "%s: %s",
+	    cp_dashboard_section_title(CP_DASHBOARD_SELECTORS), item);
 	cp_gui_append_text(full, sizeof(full), " choices:");
 	shown = 0;
 	for (index = 0; index < selector.count && shown < 4; index++) {
@@ -116,9 +118,9 @@ cp_gui_format_chain(const struct cp_monitor_snapshot *snapshot,
 		return CP_ERR_NULL;
 
 	return cp_gui_snprintf(buffer, buffer_size,
-	    "Chain: dehummer %s | restoration %s | declipper %s | "
-	    "natural dynamics %s | low-level boost %s | MB1 %s | "
-	    "bass EQ %s | MB2 %s | AM %s | SSB %s | limiter final",
+	    "Processing: dehummer=%s | restoration=%s | declipper=%s | "
+	    "natural_dynamics=%s | low_boost=%s | MB1=%s | bass_eq=%s | "
+	    "MB2=%s | AM=%s | SSB=%s | limiter=final",
 	    cp_gui_onoff(snapshot->dehummer_enabled),
 	    cp_gui_onoff(snapshot->restoration_enabled),
 	    cp_gui_onoff(snapshot->declipper_enabled),
@@ -149,7 +151,7 @@ cp_gui_format_cue_slots(const char *wav_path, const char *playlist_path,
 	    playlist_path, playlist, sizeof(playlist), sizeof(playlist) - 1);
 
 	return cp_gui_snprintf(buffer, buffer_size,
-	    "Cue: WAV %s | Playlist %s", wav, playlist);
+	    "Selectors: wav=%s playlist=%s", wav, playlist);
 }
 
 int
@@ -184,7 +186,7 @@ cp_gui_format_help(enum cp_control_bank bank, int next_enabled,
 	    "0 SSB off 1-4 SSB presets" : "0 AM off 1-4 AM presets";
 
 	return cp_gui_snprintf(buffer, buffer_size,
-	    "Keys: q/Esc stop | %s | a AM s SSB | d hum | m MB1 b MB2 | "
+	    "Help: q/Esc stop | %s | a AM s SSB | d hum | m MB1 b MB2 | "
 	    "l WAV p playlist c cue | o/O output | %s | %s",
 	    next_enabled ? "n next" : "n next locked", bank_label,
 	    preset_label);
@@ -198,7 +200,8 @@ cp_gui_format_meters(const struct cp_monitor_snapshot *snapshot,
 		return CP_ERR_NULL;
 
 	return cp_gui_snprintf(buffer, buffer_size,
-	    "Meters: in peak %.3f rms %.3f | out peak %.3f rms %.3f",
+	    "Meters: input_peak=%.3f input_rms=%.3f | "
+	    "output_peak=%.3f output_rms=%.3f",
 	    cp_monitor_level_to_sample(snapshot->input_peak),
 	    cp_monitor_level_to_sample(snapshot->input_rms),
 	    cp_monitor_level_to_sample(snapshot->output_peak),
@@ -220,7 +223,8 @@ cp_gui_format_mode(const struct cp_monitor_snapshot *snapshot,
 	else if (snapshot->ssb_enabled)
 		mode = "SSB";
 
-	return cp_gui_snprintf(buffer, buffer_size, "Mode: %s", mode);
+	return cp_gui_snprintf(buffer, buffer_size, "Processing: mode=%s",
+	    mode);
 }
 
 int
@@ -246,13 +250,15 @@ cp_gui_format_output_choices(
 		return CP_ERR_NULL;
 	if (choices == NULL || count == 0)
 		return cp_gui_snprintf(buffer, buffer_size,
-		    "outputs: enumeration unavailable");
+		    "Device: outputs unavailable");
 
 	if (cp_selector_load_output_devices(&selector, choices, count,
 	    current_device, requested_set, requested_device) != CP_OK)
 		return CP_ERR_RANGE;
-	if (cp_selector_format_line(&selector, full, sizeof(full)) != CP_OK)
+	if (cp_selector_format_line(&selector, item, sizeof(item)) != CP_OK)
 		return CP_ERR_RANGE;
+	(void)snprintf(full, sizeof(full), "%s: %s",
+	    cp_dashboard_section_title(CP_DASHBOARD_DEVICE), item);
 	cp_gui_append_text(full, sizeof(full), " choices:");
 	shown = 0;
 	for (index = 0; index < selector.count && shown < 4; index++) {
@@ -296,13 +302,13 @@ cp_gui_format_output_device(const struct cp_audio_config *config,
 	if (request != NULL &&
 	    request->type == CP_GUI_WORKFLOW_REQUEST_SELECT_OUTPUT_DEVICE) {
 		return cp_gui_snprintf(buffer, buffer_size,
-		    "output_device=current:%d requested:%d backend=%s device=%s",
+		    "Device: output=current:%d requested:%d backend=%s device=%s",
 		    current_device, request->device_index,
 		    cp_audio_backend_string(config->backend), device);
 	}
 
 	return cp_gui_snprintf(buffer, buffer_size,
-	    "output_device=current:%d requested:- backend=%s device=%s",
+	    "Device: output=current:%d requested:- backend=%s device=%s",
 	    current_device, cp_audio_backend_string(config->backend),
 	    device);
 }
@@ -322,13 +328,15 @@ cp_gui_format_playlist_choices(const char *const *paths, size_t count,
 		return CP_ERR_NULL;
 	if (paths == NULL || count == 0)
 		return cp_gui_snprintf(buffer, buffer_size,
-		    "playlist selector: no candidates");
+		    "Selectors: playlist none");
 
 	if (cp_selector_load_playlists(&selector, paths, count,
 	    current_path, requested_path) != CP_OK)
 		return CP_ERR_RANGE;
-	if (cp_selector_format_line(&selector, full, sizeof(full)) != CP_OK)
+	if (cp_selector_format_line(&selector, item, sizeof(item)) != CP_OK)
 		return CP_ERR_RANGE;
+	(void)snprintf(full, sizeof(full), "%s: %s",
+	    cp_dashboard_section_title(CP_DASHBOARD_SELECTORS), item);
 	cp_gui_append_text(full, sizeof(full), " choices:");
 	shown = 0;
 	for (index = 0; index < selector.count && shown < 4; index++) {
@@ -405,15 +413,15 @@ cp_gui_format_transport(enum cp_gui_mode mode,
 
 	if (mode == CP_GUI_MODE_PLAYOUT && playlist_count > 0) {
 		return cp_gui_snprintf(buffer, buffer_size,
-		    "Transport %s %zu/%zu | %s | rate %.0f Hz | ch %zu | "
-		    "out %d",
+		    "Playout: mode=%s item=%zu/%zu path=%s rate=%.0fHz "
+		    "channels=%zu output=%d",
 		    label, playlist_index + 1, playlist_count,
 		    path == NULL ? "" : path, config->sample_rate,
 		    config->channels, output_device);
 	}
 
 	return cp_gui_snprintf(buffer, buffer_size,
-	    "Transport %s | %s | rate %.0f Hz | ch %zu | out %d",
+	    "Playout: mode=%s path=%s rate=%.0fHz channels=%zu output=%d",
 	    label, path == NULL ? "" : path, config->sample_rate,
 	    config->channels, output_device);
 }

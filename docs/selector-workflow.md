@@ -127,6 +127,8 @@ navigation state:
 - file and device changes must stay outside GUI callbacks, TUI draw paths,
   real-time audio callbacks, and DSP block processing
 - paths, labels, and reasons must remain bounded before display
+- selector display should live in the dashboard Selectors section, with related
+  output-device state in the Device section
 
 Native file dialogs, directory scanning, and compressed-audio decode support
 remain future optional work. Compressed formats stay external-conversion

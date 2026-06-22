@@ -24,6 +24,7 @@
 #include "cp_config_file.h"
 #include "cp_control.h"
 #include "cp_crossover.h"
+#include "cp_dashboard.h"
 #include "cp_dc_blocker.h"
 #include "cp_declipper.h"
 #include "cp_dehummer.h"
