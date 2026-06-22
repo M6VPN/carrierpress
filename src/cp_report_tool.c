@@ -20,7 +20,8 @@
 enum cp_report_tool_type {
 	CP_REPORT_TOOL_TYPE_UNKNOWN = 0,
 	CP_REPORT_TOOL_TYPE_QUALITY,
-	CP_REPORT_TOOL_TYPE_PROCESSED_FILE
+	CP_REPORT_TOOL_TYPE_PROCESSED_FILE,
+	CP_REPORT_TOOL_TYPE_BATCH_SUMMARY
 };
 
 struct cp_report_tool_doc {
@@ -33,9 +34,15 @@ struct cp_report_tool_doc {
 	char status[CP_REPORT_TOOL_VALUE_SIZE];
 	char input[CP_REPORT_TOOL_VALUE_SIZE];
 	char output[CP_REPORT_TOOL_VALUE_SIZE];
+	char batch_list[CP_REPORT_TOOL_VALUE_SIZE];
+	char output_dir[CP_REPORT_TOOL_VALUE_SIZE];
 	long sample_rate_hz;
 	long frames;
 	long channels;
+	long planned;
+	long processed;
+	long failed;
+	long skipped;
 	size_t cases;
 	size_t failed_cases;
 };
@@ -77,6 +84,8 @@ static int	cp_report_tool_parse_doc(struct cp_report_tool_doc *);
 static int	cp_report_tool_print_processed_summary(
 		    const struct cp_report_tool_doc *, FILE *);
 static int	cp_report_tool_print_quality_summary(
+		    const struct cp_report_tool_doc *, FILE *);
+static int	cp_report_tool_print_batch_summary(
 		    const struct cp_report_tool_doc *, FILE *);
 static int	cp_report_tool_read_file(const char *, char **, size_t *);
 static const char *cp_report_tool_skip_ws(const char *);
@@ -183,6 +192,8 @@ cp_report_tool_summary_file(const char *path, FILE *out)
 		status = cp_report_tool_print_quality_summary(&doc, out);
 	else if (doc.type == CP_REPORT_TOOL_TYPE_PROCESSED_FILE)
 		status = cp_report_tool_print_processed_summary(&doc, out);
+	else if (doc.type == CP_REPORT_TOOL_TYPE_BATCH_SUMMARY)
+		status = cp_report_tool_print_batch_summary(&doc, out);
 	else
 		status = CP_REPORT_TOOL_ERR_TYPE;
 
@@ -510,6 +521,8 @@ static const char *
 cp_report_tool_find_key(const char *text, const char *key)
 {
 	char pattern[CP_REPORT_TOOL_VALUE_SIZE];
+	const char *cursor;
+	const char *match;
 	int written;
 
 	if (text == NULL || key == NULL)
@@ -519,7 +532,15 @@ cp_report_tool_find_key(const char *text, const char *key)
 	if (written < 0 || (size_t)written >= sizeof(pattern))
 		return NULL;
 
-	return strstr(text, pattern);
+	cursor = text;
+	while ((match = strstr(cursor, pattern)) != NULL) {
+		cursor = cp_report_tool_skip_ws(match + (size_t)written);
+		if (*cursor == ':')
+			return match;
+		cursor = match + 1;
+	}
+
+	return NULL;
 }
 
 static int
@@ -665,15 +686,14 @@ cp_report_tool_parse_doc(struct cp_report_tool_doc *doc)
 	if (cp_report_tool_get_string(doc->text, "status", doc->status,
 	    sizeof(doc->status)) != CP_REPORT_TOOL_OK)
 		return CP_REPORT_TOOL_ERR_PARSE;
-	if (cp_report_tool_get_long(doc->text, "sample_rate_hz",
-	    &doc->sample_rate_hz) != CP_REPORT_TOOL_OK ||
-	    cp_report_tool_get_long(doc->text, "frames", &doc->frames) !=
-	    CP_REPORT_TOOL_OK ||
-	    cp_report_tool_get_long(doc->text, "channels", &doc->channels) !=
-	    CP_REPORT_TOOL_OK)
-		return CP_REPORT_TOOL_ERR_PARSE;
-
 	if (doc->type == CP_REPORT_TOOL_TYPE_QUALITY) {
+		if (cp_report_tool_get_long(doc->text, "sample_rate_hz",
+		    &doc->sample_rate_hz) != CP_REPORT_TOOL_OK ||
+		    cp_report_tool_get_long(doc->text, "frames",
+		    &doc->frames) != CP_REPORT_TOOL_OK ||
+		    cp_report_tool_get_long(doc->text, "channels",
+		    &doc->channels) != CP_REPORT_TOOL_OK)
+			return CP_REPORT_TOOL_ERR_PARSE;
 		doc->cases = cp_report_tool_count_string_field_after(
 		    doc->text, "\"cases\"", "fixture", NULL);
 		doc->failed_cases = cp_report_tool_count_string_field_after(
@@ -681,12 +701,56 @@ cp_report_tool_parse_doc(struct cp_report_tool_doc *doc)
 		if (doc->cases == 0)
 			return CP_REPORT_TOOL_ERR_PARSE;
 	} else if (doc->type == CP_REPORT_TOOL_TYPE_PROCESSED_FILE) {
+		if (cp_report_tool_get_long(doc->text, "sample_rate_hz",
+		    &doc->sample_rate_hz) != CP_REPORT_TOOL_OK ||
+		    cp_report_tool_get_long(doc->text, "frames",
+		    &doc->frames) != CP_REPORT_TOOL_OK ||
+		    cp_report_tool_get_long(doc->text, "channels",
+		    &doc->channels) != CP_REPORT_TOOL_OK)
+			return CP_REPORT_TOOL_ERR_PARSE;
 		if (cp_report_tool_get_string(doc->text, "input", doc->input,
 		    sizeof(doc->input)) != CP_REPORT_TOOL_OK ||
 		    cp_report_tool_get_string(doc->text, "output", doc->output,
 		    sizeof(doc->output)) != CP_REPORT_TOOL_OK)
 			return CP_REPORT_TOOL_ERR_PARSE;
+	} else if (doc->type == CP_REPORT_TOOL_TYPE_BATCH_SUMMARY) {
+		if (cp_report_tool_get_string(doc->text, "batch_list",
+		    doc->batch_list, sizeof(doc->batch_list)) !=
+		    CP_REPORT_TOOL_OK ||
+		    cp_report_tool_get_string(doc->text, "output_dir",
+		    doc->output_dir, sizeof(doc->output_dir)) !=
+		    CP_REPORT_TOOL_OK ||
+		    cp_report_tool_get_long(doc->text, "planned",
+		    &doc->planned) != CP_REPORT_TOOL_OK ||
+		    cp_report_tool_get_long(doc->text, "processed",
+		    &doc->processed) != CP_REPORT_TOOL_OK ||
+		    cp_report_tool_get_long(doc->text, "failed",
+		    &doc->failed) != CP_REPORT_TOOL_OK ||
+		    cp_report_tool_get_long(doc->text, "skipped",
+		    &doc->skipped) != CP_REPORT_TOOL_OK)
+			return CP_REPORT_TOOL_ERR_PARSE;
 	}
+
+	return CP_REPORT_TOOL_OK;
+}
+
+static int
+cp_report_tool_print_batch_summary(const struct cp_report_tool_doc *doc,
+	FILE *out)
+{
+	if (doc == NULL || out == NULL)
+		return CP_REPORT_TOOL_ERR_NULL;
+
+	fprintf(out, "report=batch_summary\n");
+	fprintf(out, "schema_version=%d\n", doc->schema_version);
+	fprintf(out, "version=%s\n", doc->version);
+	fprintf(out, "status=%s\n", doc->status);
+	fprintf(out, "batch_list=%s\n", doc->batch_list);
+	fprintf(out, "output_dir=%s\n", doc->output_dir);
+	fprintf(out, "planned=%ld\n", doc->planned);
+	fprintf(out, "processed=%ld\n", doc->processed);
+	fprintf(out, "failed=%ld\n", doc->failed);
+	fprintf(out, "skipped=%ld\n", doc->skipped);
 
 	return CP_REPORT_TOOL_OK;
 }
@@ -818,6 +882,10 @@ cp_report_tool_type_from_string(const char *text,
 	}
 	if (strcmp(text, "processed_file") == 0) {
 		*type = CP_REPORT_TOOL_TYPE_PROCESSED_FILE;
+		return CP_REPORT_TOOL_OK;
+	}
+	if (strcmp(text, "batch_summary") == 0) {
+		*type = CP_REPORT_TOOL_TYPE_BATCH_SUMMARY;
 		return CP_REPORT_TOOL_OK;
 	}
 

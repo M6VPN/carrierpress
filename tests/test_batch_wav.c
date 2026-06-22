@@ -23,6 +23,7 @@
 #define TEST_BATCH_WAV_CLIOUT	TEST_BATCH_WAV_DIR "/batch-cli-out"
 
 static int	check_file_exists(const char *);
+static int	check_batch_summary(const char *);
 static int	check_report(const char *);
 static int	ensure_dir(const char *);
 static int	read_file(const char *, char *, size_t);
@@ -60,6 +61,34 @@ check_file_exists(const char *path)
 	if (file == NULL)
 		return 0;
 	fclose(file);
+
+	return 1;
+}
+
+static int
+check_batch_summary(const char *path)
+{
+	char buffer[TEST_BATCH_WAV_BUFSIZ];
+
+	if (!read_file(path, buffer, sizeof(buffer)))
+		return 0;
+	if (strstr(buffer,
+	    "\"carrierpress_report\": \"batch_summary\"") == NULL)
+		return 0;
+	if (strstr(buffer, "\"schema_version\": 1") == NULL)
+		return 0;
+	if (strstr(buffer, "\"status\": \"ok\"") == NULL)
+		return 0;
+	if (strstr(buffer, "\"planned\": 2") == NULL ||
+	    strstr(buffer, "\"processed\": 2") == NULL ||
+	    strstr(buffer, "\"failed\": 0") == NULL)
+		return 0;
+	if (strstr(buffer, "batch-a.report.json") == NULL ||
+	    strstr(buffer, "batch-b.report.json") == NULL)
+		return 0;
+	if (strstr(buffer, "compliance") != NULL ||
+	    strstr(buffer, "proof") != NULL)
+		return 0;
 
 	return 1;
 }
@@ -142,6 +171,7 @@ test_batch_processing(void)
 	(void)remove(TEST_BATCH_WAV_OUTDIR "/batch-b.wav");
 	(void)remove(TEST_BATCH_WAV_OUTDIR "/batch-a.report.json");
 	(void)remove(TEST_BATCH_WAV_OUTDIR "/batch-b.report.json");
+	(void)remove(TEST_BATCH_WAV_OUTDIR "/batch-summary.json");
 
 	if (!write_fixture(input_a) || !write_fixture(input_b) ||
 	    !write_text(list_path,
@@ -163,14 +193,22 @@ test_batch_processing(void)
 	status = cp_batch_wav_process_plan(&plan, &config,
 	    TEST_BATCH_WAV_BLOCK, &result, NULL);
 	if (status != CP_BATCH_OK || result.processed != 2 ||
-	    result.failed != 0) {
+	    result.failed != 0 || result.planned != 2) {
 		printf("test_batch_wav: process failed\n");
+		return 0;
+	}
+	if (cp_batch_wav_write_summary_json(TEST_BATCH_WAV_OUTDIR
+	    "/batch-summary.json", &plan, &result, NULL, NULL) !=
+	    CP_BATCH_OK) {
+		printf("test_batch_wav: summary write failed\n");
 		return 0;
 	}
 	if (!check_file_exists(TEST_BATCH_WAV_OUTDIR "/batch-a.wav") ||
 	    !check_file_exists(TEST_BATCH_WAV_OUTDIR "/batch-b.wav") ||
 	    !check_report(TEST_BATCH_WAV_OUTDIR "/batch-a.report.json") ||
-	    !check_report(TEST_BATCH_WAV_OUTDIR "/batch-b.report.json")) {
+	    !check_report(TEST_BATCH_WAV_OUTDIR "/batch-b.report.json") ||
+	    !check_batch_summary(TEST_BATCH_WAV_OUTDIR
+	    "/batch-summary.json")) {
 		printf("test_batch_wav: output/report missing\n");
 		return 0;
 	}

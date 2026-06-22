@@ -136,6 +136,16 @@ file. It does not create the output directory and does not overwrite existing
 outputs unless `--allow-overwrite` is supplied. Batch workflow details are
 documented in `docs/batch-workflow.md`.
 
+Write a batch-level summary into an existing evidence directory:
+
+```sh
+mkdir -p build/batch-evidence
+./examples/batch-evidence.sh examples/batch-list.txt build/batch-out build/batch-evidence --profile profiles/file-cleanup.profile
+```
+
+The script writes `build/batch-evidence/batch-summary.json` through
+`--evidence-dir` and leaves per-file sidecar reports in the output directory.
+
 To play the playlist, edit `examples/playout-playlist.txt` so it points at local
 WAV files, then run:
 

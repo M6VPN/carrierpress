@@ -102,6 +102,39 @@ schema-version-1 reports, extracts known fields, ignores unknown future fields,
 and rejects missing or unsupported schema versions. It is not a general-purpose
 JSON parser.
 
+## Batch Summary Report
+
+Batch WAV processing can write a batch-level summary report:
+
+```sh
+./carrierpress --batch-process examples/batch-list.txt \
+	--batch-output-dir processed \
+	--batch-summary-report processed/batch-summary.json
+```
+
+The report type is `batch_summary`. It links the batch list, output directory,
+optional profile metadata, planned/processed/failed/skipped counts, and per-item
+input/output/report paths. Per-file sidecar reports remain the source for
+processed-file metrics.
+
+An evidence directory can provide a standard local summary path:
+
+```sh
+mkdir -p build/evidence
+./carrierpress --batch-process examples/batch-list.txt \
+	--batch-output-dir processed \
+	--evidence-dir build/evidence
+```
+
+This writes `build/evidence/batch-summary.json`. The directory must already
+exist.
+
+Summarize a batch summary report:
+
+```sh
+./carrierpress --report-summary processed/batch-summary.json
+```
+
 ## Report Shape
 
 The top-level JSON object contains:
@@ -162,6 +195,18 @@ For processed-file reports, these top-level fields are stable:
 - `profile`.
 - `metrics`.
 - `stages`.
+
+For batch summary reports, these top-level fields are stable:
+
+- `batch_list`.
+- `output_dir`.
+- `profile`.
+- `planned`.
+- `processed`.
+- `failed`.
+- `skipped`.
+- `last_status`.
+- `items`.
 
 Future schema-version-1 reports may add fields. Stable fields listed here should
 not be renamed or removed without a schema version bump.
@@ -254,6 +299,19 @@ Processed-file reports include:
 - `input_peak`.
 - `output_peak`.
 
+Batch summary reports include:
+
+- `report=batch_summary`.
+- `schema_version`.
+- `version`.
+- `status`.
+- `batch_list`.
+- `output_dir`.
+- `planned`.
+- `processed`.
+- `failed`.
+- `skipped`.
+
 ## Compare Output
 
 `--report-compare` compares two reports of the same type and prints stable
@@ -266,6 +324,8 @@ For quality reports, the helper compares case counts, status fields, fixture
 dimensions, and known numeric per-case metrics. For processed-file reports, it
 compares WAV properties and known numeric metrics such as RMS, peak, crest, DC,
 output min/max, and sample count.
+
+Batch summary comparison is planned for a later M27 slice.
 
 Unknown future fields are ignored. Existing stable schema-version-1 fields
 should remain available to scripts until a schema version bump.

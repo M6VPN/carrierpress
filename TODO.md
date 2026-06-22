@@ -364,11 +364,11 @@ implemented until code, docs, and validation are complete.
 
 ## M27 Batch and Report Evidence Bundles
 
-- [ ] Add batch-level summary report.
+- [x] Add batch-level summary report.
 - [ ] Add batch report comparison helper.
-- [ ] Add evidence directory workflow.
-- [ ] Document report bundle fields.
-- [ ] Keep reports free of transmitter-compliance and regulatory claims.
+- [x] Add evidence directory workflow.
+- [x] Document report bundle fields.
+- [x] Keep reports free of transmitter-compliance and regulatory claims.
 
 ## M28 API and Packaging Hardening
 

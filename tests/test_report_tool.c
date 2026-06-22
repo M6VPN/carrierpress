@@ -24,6 +24,7 @@ static int	test_reject_non_carrierpress(void);
 static int	test_reject_unsupported_schema(void);
 static int	test_summary_processed(void);
 static int	test_summary_quality(void);
+static int	test_summary_batch(void);
 static int	write_file(const char *, const char *);
 
 static const char processed_report_a[] =
@@ -226,6 +227,35 @@ static const char quality_report[] =
 	"  ]\n"
 	"}\n";
 
+static const char batch_summary_report[] =
+	"{\n"
+	"  \"carrierpress_report\": \"batch_summary\",\n"
+	"  \"schema_version\": 1,\n"
+	"  \"version\": \"0.3.0\",\n"
+	"  \"status\": \"ok\",\n"
+	"  \"batch_list\": \"batch.txt\",\n"
+	"  \"output_dir\": \"processed\",\n"
+	"  \"profile\": {\n"
+	"    \"path\": \"profiles/file-cleanup.profile\",\n"
+	"    \"name\": \"File Cleanup\"\n"
+	"  },\n"
+	"  \"planned\": 2,\n"
+	"  \"processed\": 2,\n"
+	"  \"failed\": 0,\n"
+	"  \"skipped\": 1,\n"
+	"  \"last_status\": 0,\n"
+	"  \"items\": [\n"
+	"    {\n"
+	"      \"line\": 2,\n"
+	"      \"input\": \"audio/a.wav\",\n"
+	"      \"output\": \"processed/a.wav\",\n"
+	"      \"report\": \"processed/a.report.json\",\n"
+	"      \"status\": \"ok\",\n"
+	"      \"reason\": null\n"
+	"    }\n"
+	"  ]\n"
+	"}\n";
+
 int
 main(void)
 {
@@ -233,6 +263,8 @@ main(void)
 	if (!test_summary_quality())
 		return 1;
 	if (!test_summary_processed())
+		return 1;
+	if (!test_summary_batch())
 		return 1;
 	if (!test_reject_missing_schema())
 		return 1;
@@ -502,6 +534,45 @@ test_summary_quality(void)
 	    strstr(buffer, "compliance") != NULL ||
 	    strstr(buffer, "proof") != NULL) {
 		printf("test_report_tool: quality summary failed\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_summary_batch(void)
+{
+	char buffer[TEST_REPORT_TOOL_BUF_SIZE];
+	FILE *out;
+	int status;
+
+	if (!write_file(TEST_REPORT_TOOL_DIR "/batch-summary.json",
+	    batch_summary_report))
+		return 0;
+	out = fopen(TEST_REPORT_TOOL_DIR "/summary-batch.txt", "w");
+	if (out == NULL)
+		return 0;
+	status = cp_report_tool_summary_file(TEST_REPORT_TOOL_DIR
+	    "/batch-summary.json", out);
+	if (status != CP_REPORT_TOOL_OK) {
+		fclose(out);
+		printf("test_report_tool: batch summary status failed: %d\n",
+		    status);
+		return 0;
+	}
+	fclose(out);
+	if (!read_file(TEST_REPORT_TOOL_DIR "/summary-batch.txt", buffer,
+	    sizeof(buffer)))
+		return 0;
+	if (strstr(buffer, "report=batch_summary") == NULL ||
+	    strstr(buffer, "schema_version=1") == NULL ||
+	    strstr(buffer, "planned=2") == NULL ||
+	    strstr(buffer, "processed=2") == NULL ||
+	    strstr(buffer, "failed=0") == NULL ||
+	    strstr(buffer, "compliance") != NULL ||
+	    strstr(buffer, "proof") != NULL) {
+		printf("test_report_tool: batch summary failed\n");
 		return 0;
 	}
 

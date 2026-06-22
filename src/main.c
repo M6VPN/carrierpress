@@ -38,6 +38,7 @@
 #define CP_TWO_PI		6.28318530717958647692f
 #define CP_WAV_BLOCK_FRAMES	512
 #define CP_LIVE_RESTART_LIMIT	8
+#define CP_BATCH_SUMMARY_NAME	"batch-summary.json"
 
 struct cp_inspection_state {
 	char config_path[CP_CONFIG_FILE_PATH_SIZE];
@@ -73,7 +74,9 @@ static int	parse_uint64_arg(const char *, uint64_t *);
 static int	run_cat_status(const struct cp_cat_config *);
 static int	run_batch_check(const char *, const char *, int);
 static int	run_batch_process(const char *, const char *, int,
-		    const struct cp_block_config *);
+		    const struct cp_block_config *,
+		    const struct cp_inspection_state *, const char *,
+		    const char *);
 static int	run_gui_demo(const struct cp_audio_config *,
 		    const struct cp_cat_config *,
 		    const struct cp_operator_state *, const char *);
@@ -133,6 +136,8 @@ main(int argc, char *argv[])
 	const char *batch_check_path;
 	const char *batch_process_path;
 	const char *batch_output_dir;
+	const char *batch_summary_path;
+	const char *evidence_dir;
 	const char *gui_screenshot_path;
 	const char *validate_config_path;
 	const char *validate_profile_path;
@@ -172,6 +177,8 @@ main(int argc, char *argv[])
 	batch_check_path = NULL;
 	batch_process_path = NULL;
 	batch_output_dir = NULL;
+	batch_summary_path = NULL;
+	evidence_dir = NULL;
 	gui_screenshot_path = NULL;
 	validate_config_path = NULL;
 	validate_profile_path = NULL;
@@ -277,6 +284,12 @@ main(int argc, char *argv[])
 		} else if (strcmp(argv[arg], "--batch-output-dir") == 0 &&
 		    arg + 1 < argc) {
 			batch_output_dir = argv[++arg];
+		} else if (strcmp(argv[arg], "--batch-summary-report") == 0 &&
+		    arg + 1 < argc) {
+			batch_summary_path = argv[++arg];
+		} else if (strcmp(argv[arg], "--evidence-dir") == 0 &&
+		    arg + 1 < argc) {
+			evidence_dir = argv[++arg];
 		} else if (strcmp(argv[arg], "--allow-overwrite") == 0) {
 			batch_allow_overwrite = 1;
 		} else if (strcmp(argv[arg], "--list-devices") == 0) {
@@ -844,7 +857,8 @@ main(int argc, char *argv[])
 		    report_path != NULL || play_path != NULL ||
 		    playlist_path != NULL || playlist_check_path != NULL ||
 		    batch_check_path != NULL || batch_process_path != NULL ||
-		    batch_output_dir != NULL || batch_allow_overwrite ||
+		    batch_output_dir != NULL || batch_summary_path != NULL ||
+		    evidence_dir != NULL || batch_allow_overwrite ||
 		    gui_screenshot_path != NULL || gui_demo_mode || live_mode ||
 		    list_devices || self_test_mode || cat_status_mode ||
 		    audio_config.tui_enabled || audio_config.gui_enabled) {
@@ -859,7 +873,8 @@ main(int argc, char *argv[])
 		    report_path != NULL || play_path != NULL ||
 		    playlist_path != NULL || playlist_check_path != NULL ||
 		    batch_check_path != NULL || batch_process_path != NULL ||
-		    batch_output_dir != NULL || batch_allow_overwrite ||
+		    batch_output_dir != NULL || batch_summary_path != NULL ||
+		    evidence_dir != NULL || batch_allow_overwrite ||
 		    gui_screenshot_path != NULL || gui_demo_mode || live_mode ||
 		    list_devices || self_test_mode || cat_status_mode ||
 		    audio_config.tui_enabled || audio_config.gui_enabled) {
@@ -901,6 +916,7 @@ main(int argc, char *argv[])
 		    playlist_path != NULL || live_mode ||
 		    playlist_check_path != NULL || batch_check_path != NULL ||
 		    batch_process_path != NULL || batch_output_dir != NULL ||
+		    batch_summary_path != NULL || evidence_dir != NULL ||
 		    batch_allow_overwrite || list_devices || self_test_mode ||
 		    cat_status_mode) {
 			usage(argv[0]);
@@ -917,6 +933,7 @@ main(int argc, char *argv[])
 		    playlist_path != NULL ||
 		    playlist_check_path != NULL || batch_check_path != NULL ||
 		    batch_process_path != NULL || batch_output_dir != NULL ||
+		    batch_summary_path != NULL || evidence_dir != NULL ||
 		    batch_allow_overwrite || live_mode || list_devices ||
 		    self_test_mode || audio_config.gui_enabled) {
 			usage(argv[0]);
@@ -932,6 +949,7 @@ main(int argc, char *argv[])
 		    playlist_path != NULL ||
 		    playlist_check_path != NULL || batch_check_path != NULL ||
 		    batch_process_path != NULL || batch_output_dir != NULL ||
+		    batch_summary_path != NULL || evidence_dir != NULL ||
 		    batch_allow_overwrite || live_mode || list_devices ||
 		    audio_config.gui_enabled) {
 			usage(argv[0]);
@@ -946,6 +964,7 @@ main(int argc, char *argv[])
 		    report_path != NULL || play_path != NULL ||
 		    playlist_path != NULL || batch_check_path != NULL ||
 		    batch_process_path != NULL || batch_output_dir != NULL ||
+		    batch_summary_path != NULL || evidence_dir != NULL ||
 		    batch_allow_overwrite || live_mode || list_devices ||
 		    audio_config.tui_enabled || audio_config.gui_enabled) {
 			usage(argv[0]);
@@ -956,14 +975,17 @@ main(int argc, char *argv[])
 	}
 
 	if (batch_check_path != NULL || batch_process_path != NULL ||
-	    batch_output_dir != NULL || batch_allow_overwrite) {
+	    batch_output_dir != NULL || batch_summary_path != NULL ||
+	    evidence_dir != NULL || batch_allow_overwrite) {
 		if (input_path != NULL || output_path != NULL ||
 		    report_path != NULL || play_path != NULL ||
 		    playlist_path != NULL || playlist_check_path != NULL ||
 		    live_mode || list_devices || audio_config.tui_enabled ||
 		    audio_config.gui_enabled || batch_output_dir == NULL ||
 		    (batch_check_path == NULL && batch_process_path == NULL) ||
-		    (batch_check_path != NULL && batch_process_path != NULL)) {
+		    (batch_check_path != NULL && batch_process_path != NULL) ||
+		    (batch_check_path != NULL &&
+		    (batch_summary_path != NULL || evidence_dir != NULL))) {
 			usage(argv[0]);
 			return 1;
 		}
@@ -973,7 +995,8 @@ main(int argc, char *argv[])
 			    batch_output_dir, batch_allow_overwrite);
 
 		return run_batch_process(batch_process_path, batch_output_dir,
-		    batch_allow_overwrite, &block_config);
+		    batch_allow_overwrite, &block_config, &inspection_state,
+		    batch_summary_path, evidence_dir);
 	}
 
 	if (play_path != NULL || playlist_path != NULL) {
@@ -1863,18 +1886,41 @@ run_batch_check(const char *list_path, const char *output_dir,
 
 static int
 run_batch_process(const char *list_path, const char *output_dir,
-	int allow_overwrite, const struct cp_block_config *config)
+	int allow_overwrite, const struct cp_block_config *config,
+	const struct cp_inspection_state *inspection_state,
+	const char *summary_path, const char *evidence_dir)
 {
 #ifdef CP_WITH_SNDFILE
 	struct cp_batch_plan plan;
 	struct cp_batch_error error;
 	struct cp_batch_wav_result result;
+	char evidence_summary_path[CP_BATCH_MAX_PATH];
+	const char *profile_name;
+	const char *profile_path;
 	int status;
+	int summary_status;
+	int written;
 
 	if (!path_is_directory(output_dir)) {
 		printf("carrierpress: batch output directory does not exist: %s\n",
 		    output_dir == NULL ? "" : output_dir);
 		return 1;
+	}
+	if (evidence_dir != NULL && !path_is_directory(evidence_dir)) {
+		printf("carrierpress: evidence directory does not exist: %s\n",
+		    evidence_dir);
+		return 1;
+	}
+	if (summary_path == NULL && evidence_dir != NULL) {
+		written = snprintf(evidence_summary_path,
+		    sizeof(evidence_summary_path), "%s/%s", evidence_dir,
+		    CP_BATCH_SUMMARY_NAME);
+		if (written < 0 ||
+		    (size_t)written >= sizeof(evidence_summary_path)) {
+			printf("carrierpress: evidence summary path is too long\n");
+			return 1;
+		}
+		summary_path = evidence_summary_path;
 	}
 
 	memset(&error, 0, sizeof(error));
@@ -1903,6 +1949,23 @@ run_batch_process(const char *list_path, const char *output_dir,
 		printf("carrierpress: batch processing failed: %s\n",
 		    cp_wav_status_string(result.last_status));
 	}
+	if (summary_path != NULL) {
+		profile_path = NULL;
+		profile_name = NULL;
+		if (inspection_state != NULL &&
+		    inspection_state->profile_path[0] != '\0')
+			profile_path = inspection_state->profile_path;
+		if (inspection_state != NULL &&
+		    inspection_state->profile_name[0] != '\0')
+			profile_name = inspection_state->profile_name;
+		summary_status = cp_batch_wav_write_summary_json(summary_path,
+		    &plan, &result, profile_path, profile_name);
+		if (summary_status != CP_BATCH_OK) {
+			printf("carrierpress: batch summary report failed: %s\n",
+			    cp_batch_status_string(summary_status));
+			status = summary_status;
+		}
+	}
 	cp_batch_plan_free(&plan);
 
 	return status == CP_BATCH_OK ? 0 : 1;
@@ -1911,6 +1974,9 @@ run_batch_process(const char *list_path, const char *output_dir,
 	(void)output_dir;
 	(void)allow_overwrite;
 	(void)config;
+	(void)inspection_state;
+	(void)summary_path;
+	(void)evidence_dir;
 
 	printf("Batch WAV processing not enabled. Rebuild with WITH_SNDFILE=1.\n");
 	return 1;
@@ -2388,7 +2454,8 @@ usage(const char *program)
 	printf("usage: %s --batch-check batch.txt --batch-output-dir "
 	    "processed [--allow-overwrite]\n", program);
 	printf("usage: %s --batch-process batch.txt --batch-output-dir "
-	    "processed [--allow-overwrite]\n", program);
+	    "processed [--batch-summary-report summary.json] "
+	    "[--evidence-dir dir] [--allow-overwrite]\n", program);
 	printf("usage: %s --playlist playlist.txt [--output-device N]\n",
 	    program);
 	printf("usage: %s --gui-demo --cat-backend mock --cat-frequency-hz "

@@ -102,6 +102,48 @@ Even with `--allow-overwrite`, duplicate planned output/report paths,
 unsupported formats, malformed paths, and other plan errors still fail before
 processing.
 
+## Batch Summary Reports
+
+Batch processing can write one batch-level JSON summary report:
+
+```sh
+./carrierpress --batch-process examples/batch-list.txt \
+	--batch-output-dir processed \
+	--batch-summary-report processed/batch-summary.json
+```
+
+The summary is written after processing finishes. It references the batch list,
+output directory, profile metadata when present, planned/processed/failed
+counts, and each per-file sidecar report path. It does not replace the per-file
+processed-file reports.
+
+If batch preflight fails before processing starts, CarrierPress does not write a
+successful batch summary. If summary writing fails after processing, the command
+exits non-zero.
+
+## Evidence Directory Workflow
+
+Use `--evidence-dir DIR` to write a standard summary name into an existing
+directory:
+
+```sh
+mkdir -p build/evidence
+./carrierpress --batch-process examples/batch-list.txt \
+	--batch-output-dir processed \
+	--evidence-dir build/evidence
+```
+
+This writes:
+
+```text
+build/evidence/batch-summary.json
+```
+
+The evidence directory must already exist. CarrierPress does not create parent
+directories in this slice. If both `--batch-summary-report` and
+`--evidence-dir` are supplied, the explicit `--batch-summary-report` path is
+used for the batch summary.
+
 ## Compressed Sources
 
 CarrierPress stays WAV/PCM-native for this workflow. Convert compressed files

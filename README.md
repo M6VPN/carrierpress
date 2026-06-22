@@ -866,6 +866,16 @@ sidecar per output. It fails before processing if planned output/report files
 already exist unless `--allow-overwrite` is supplied. See
 [docs/batch-workflow.md](docs/batch-workflow.md).
 
+Batch runs can also write an aggregate summary report:
+
+```sh
+./carrierpress --batch-process examples/batch-list.txt --batch-output-dir processed --batch-summary-report processed/batch-summary.json
+```
+
+Use `--evidence-dir DIR` to write `DIR/batch-summary.json` into an existing
+local evidence directory. See
+[docs/measurement-reports.md](docs/measurement-reports.md).
+
 WAV playout requires a `WITH_SNDFILE=1 WITH_PORTAUDIO=1` build. Without it, `--play` and `--playlist` exit with:
 
 ```text

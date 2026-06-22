@@ -12,8 +12,10 @@
 #include "cp_block.h"
 
 struct cp_batch_wav_result {
+	size_t planned;
 	size_t processed;
 	size_t failed;
+	size_t skipped;
 	int last_status;
 };
 
@@ -21,5 +23,8 @@ void	cp_batch_wav_result_init(struct cp_batch_wav_result *);
 int	cp_batch_wav_process_plan(const struct cp_batch_plan *,
 	    const struct cp_block_config *, size_t,
 	    struct cp_batch_wav_result *, FILE *);
+int	cp_batch_wav_write_summary_json(const char *,
+	    const struct cp_batch_plan *, const struct cp_batch_wav_result *,
+	    const char *, const char *);
 
 #endif
