@@ -578,9 +578,20 @@ cp_tui_draw_transport(int rows, int cols, const struct cp_tui_view *view,
 			    config->block_size, view->output_device);
 		}
 		if (view->audio_choices != NULL &&
+		    view->audio_choices[0] != '\0' &&
+		    view->playlist_choices != NULL &&
+		    view->playlist_choices[0] != '\0') {
+			cp_tui_draw_text(2, 2, cols, "%s | %s | %s | %s",
+			    cue, report, view->audio_choices,
+			    view->playlist_choices);
+		} else if (view->audio_choices != NULL &&
 		    view->audio_choices[0] != '\0') {
 			cp_tui_draw_text(2, 2, cols, "%s | %s | %s", cue,
 			    report, view->audio_choices);
+		} else if (view->playlist_choices != NULL &&
+		    view->playlist_choices[0] != '\0') {
+			cp_tui_draw_text(2, 2, cols, "%s | %s | %s", cue,
+			    report, view->playlist_choices);
 		} else {
 			cp_tui_draw_text(2, 2, cols, "%s | %s", cue,
 			    report);
@@ -591,12 +602,29 @@ cp_tui_draw_transport(int rows, int cols, const struct cp_tui_view *view,
 		    config->sample_rate, config->channels, config->block_size,
 		    config->input_device, config->output_device);
 		if (view->audio_choices != NULL &&
+		    view->audio_choices[0] != '\0' &&
+		    view->playlist_choices != NULL &&
+		    view->playlist_choices[0] != '\0') {
+			cp_tui_draw_text(2, 2, cols, "Backend %s | device %s "
+			    "| %s | %s | %s", cp_audio_backend_string(
+			    config->backend), config->device_name == NULL ||
+			    config->device_name[0] == '\0' ? "auto" :
+			    config->device_name, report, view->audio_choices,
+			    view->playlist_choices);
+		} else if (view->audio_choices != NULL &&
 		    view->audio_choices[0] != '\0') {
 			cp_tui_draw_text(2, 2, cols, "Backend %s | device %s "
 			    "| %s | %s", cp_audio_backend_string(
 			    config->backend), config->device_name == NULL ||
 			    config->device_name[0] == '\0' ? "auto" :
 			    config->device_name, report, view->audio_choices);
+		} else if (view->playlist_choices != NULL &&
+		    view->playlist_choices[0] != '\0') {
+			cp_tui_draw_text(2, 2, cols, "Backend %s | device %s "
+			    "| %s | %s", cp_audio_backend_string(
+			    config->backend), config->device_name == NULL ||
+			    config->device_name[0] == '\0' ? "auto" :
+			    config->device_name, report, view->playlist_choices);
 		} else {
 			cp_tui_draw_text(2, 2, cols,
 			    "Backend %s | device %s | %s",

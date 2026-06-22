@@ -19,8 +19,11 @@ static int	cp_selector_format_output_label(
 		    char *, size_t);
 static int	cp_selector_format_output_value(
 		    const struct cp_audio_device_candidate *, char *, size_t);
+static int	cp_selector_format_playlist_label(const char *, const char *,
+		    const char *, const char *, char *, size_t, int *);
 static int	cp_selector_has_enabled(const struct cp_selector *);
 static int	cp_selector_path_is_compressed(const char *);
+static int	cp_selector_path_is_playlist(const char *);
 static int	cp_selector_path_is_wav(const char *);
 static int	cp_selector_marker_append(char *, size_t, const char *);
 static int	cp_selector_move(struct cp_selector *, int);
@@ -71,6 +74,27 @@ cp_selector_add_audio_file(struct cp_selector *selector, const char *label,
 		return CP_ERR_RANGE;
 
 	status = cp_selector_format_audio_label(label, path, current_path,
+	    requested_path, item_label, sizeof(item_label), &enabled);
+	if (status != CP_OK)
+		return status;
+
+	return cp_selector_add(selector, item_label, path, enabled);
+}
+
+int
+cp_selector_add_playlist(struct cp_selector *selector, const char *label,
+	const char *path, const char *current_path, const char *requested_path)
+{
+	char item_label[CP_SELECTOR_LABEL_MAX];
+	int enabled;
+	int status;
+
+	if (selector == NULL || path == NULL)
+		return CP_ERR_NULL;
+	if (path[0] == '\0')
+		return CP_ERR_RANGE;
+
+	status = cp_selector_format_playlist_label(label, path, current_path,
 	    requested_path, item_label, sizeof(item_label), &enabled);
 	if (status != CP_OK)
 		return status;
@@ -277,6 +301,54 @@ cp_selector_load_audio_files(struct cp_selector *selector,
 }
 
 int
+cp_selector_load_playlists(struct cp_selector *selector,
+	const char *const *paths, size_t count, const char *current_path,
+	const char *requested_path)
+{
+	size_t index;
+	size_t loaded_index;
+	size_t selected_current;
+	size_t selected_requested;
+	int status;
+
+	if (selector == NULL)
+		return CP_ERR_NULL;
+	if (paths == NULL && count > 0)
+		return CP_ERR_NULL;
+
+	cp_selector_init(selector, CP_SELECTOR_PLAYLIST);
+	selected_current = (size_t)-1;
+	selected_requested = (size_t)-1;
+	for (index = 0; index < count; index++) {
+		if (paths[index] == NULL || paths[index][0] == '\0')
+			continue;
+		if (cp_selector_value_exists(selector, paths[index]))
+			continue;
+		if (selector->count >= CP_SELECTOR_ITEMS_MAX)
+			break;
+		status = cp_selector_add_playlist(selector, NULL,
+		    paths[index], current_path, requested_path);
+		if (status != CP_OK)
+			return status;
+		loaded_index = selector->count - 1;
+		if (selector->items[loaded_index].enabled &&
+		    current_path != NULL &&
+		    strcmp(paths[index], current_path) == 0)
+			selected_current = loaded_index;
+		if (selector->items[loaded_index].enabled &&
+		    requested_path != NULL &&
+		    strcmp(paths[index], requested_path) == 0)
+			selected_requested = loaded_index;
+	}
+	if (selected_requested != (size_t)-1)
+		selector->selected = selected_requested;
+	else if (selected_current != (size_t)-1)
+		selector->selected = selected_current;
+
+	return CP_OK;
+}
+
+int
 cp_selector_next(struct cp_selector *selector)
 {
 	return cp_selector_move(selector, 1);
@@ -392,6 +464,47 @@ cp_selector_format_output_value(
 }
 
 static int
+cp_selector_format_playlist_label(const char *label, const char *path,
+	const char *current_path, const char *requested_path, char *buffer,
+	size_t buffer_size, int *enabled)
+{
+	char markers[96];
+	char name[56];
+	const char *source_label;
+
+	if (path == NULL || buffer == NULL || buffer_size == 0 ||
+	    enabled == NULL)
+		return CP_ERR_NULL;
+	if (path[0] == '\0')
+		return CP_ERR_RANGE;
+
+	*enabled = cp_selector_path_is_playlist(path);
+	source_label = label != NULL && label[0] != '\0' ? label :
+	    cp_selector_path_label(path);
+	cp_selector_truncate_text(name, sizeof(name), source_label,
+	    sizeof(name) - 1);
+	markers[0] = '\0';
+	if (current_path != NULL && strcmp(path, current_path) == 0)
+		cp_selector_marker_append(markers, sizeof(markers),
+		    "current");
+	if (requested_path != NULL && strcmp(path, requested_path) == 0)
+		cp_selector_marker_append(markers, sizeof(markers),
+		    "requested");
+	if (!*enabled) {
+		cp_selector_marker_append(markers, sizeof(markers),
+		    cp_selector_path_is_wav(path) ||
+		    cp_selector_path_is_compressed(path) ?
+		    "not a playlist" : "unsupported");
+	}
+	if (markers[0] != '\0') {
+		return cp_selector_snprintf(buffer, buffer_size, "%s [%s]",
+		    name, markers);
+	}
+
+	return cp_selector_snprintf(buffer, buffer_size, "%s", name);
+}
+
+static int
 cp_selector_extension_matches(const char *path, const char *extension)
 {
 	size_t extension_length;
@@ -442,6 +555,13 @@ cp_selector_path_is_compressed(const char *path)
 	    cp_selector_extension_matches(path, ".opus") ||
 	    cp_selector_extension_matches(path, ".m4a") ||
 	    cp_selector_extension_matches(path, ".aac");
+}
+
+static int
+cp_selector_path_is_playlist(const char *path)
+{
+	return cp_selector_extension_matches(path, ".txt") ||
+	    cp_selector_extension_matches(path, ".playlist");
 }
 
 static int

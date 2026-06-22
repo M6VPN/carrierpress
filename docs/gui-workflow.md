@@ -83,9 +83,11 @@ The shared selector workflow is documented in
 [`selector-workflow.md`](selector-workflow.md). Output-device choices now use
 the selector model where candidates are already collected. Audio-file choices
 also use the selector model for explicit WAV candidates and recent cue slots.
-Playlist selectors remain future work. The selector path does not add native
-file dialogs, directory scanning, device opening, stream restart behavior, or
-compressed-audio decoding.
+Playlist choices use the selector model for explicit `.txt` and `.playlist`
+candidates and existing playlist validation before deferred requests are
+accepted. The selector path does not add native file dialogs, directory
+scanning, device opening, stream restart behavior, or compressed-audio
+decoding.
 
 ## Deferred Application
 
@@ -224,10 +226,14 @@ M25A evaluates sndio and keeps sndio GUI output-device restart deferred until a
 named-device request model, restart-result boundary, and OpenBSD manual
 validation evidence are available.
 
-P38 output-device selector work builds on the shared selector model for TUI and
-GUI display. Output-device choices are still collected outside callbacks, and
-file or playlist selector choices should still be validated before application
-when those later workflows are selected.
+P38 selector work builds on the shared selector model for TUI and GUI display.
+Output-device choices are collected outside callbacks where backend
+enumeration is available. Audio-file selectors use explicit WAV candidates.
+Playlist selectors use explicit `.txt` and `.playlist` candidates, then the
+existing playlist checker validates selected playlists before deferred
+workflow requests are accepted. File, playlist, and device changes stay
+outside GUI callbacks, TUI draw paths, real-time audio callbacks, and DSP block
+processing.
 
 Any GUI TRANSMIT or CAT control toggle is T5-only work. It must require the T5
 safety gates: compile-time opt-in, runtime arming, mock-only tests first,

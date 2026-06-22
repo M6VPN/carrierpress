@@ -47,10 +47,10 @@ Planned work:
 - Keep native file dialogs deferred unless selected later.
 - Keep compressed audio external-conversion by default.
 
-The first implementation slice adds a shared dependency-light selector model
-for output-device, audio-file, and playlist choices. It does not scan the file
-system, enumerate devices, open audio devices, process audio, or change UI
-behavior.
+The first implementation slices add a shared dependency-light selector model
+plus output-device, audio-file, and playlist selector workflow foundations.
+They do not scan the file system, open file dialogs, open audio devices,
+process audio, decode compressed formats, or add transmit behavior.
 
 ## D. T6 Mock TX Operator Controls
 

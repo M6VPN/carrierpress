@@ -95,3 +95,10 @@ slots only. WAV candidates are selectable. Compressed candidates such as
 disabled items with a convert-externally marker. The selector does not decode
 compressed files, scan directories, open file dialogs, or process audio from UI
 callbacks.
+
+Interactive playlist selectors use explicit candidate playlist paths or recent
+cue slots only. `.txt` and `.playlist` candidates can be selected, then the
+existing playlist checker validates them before a deferred cue request is
+accepted. Media paths such as `.wav`, `.mp3`, `.flac`, `.ogg`, `.opus`,
+`.m4a`, and `.aac` are disabled in the playlist selector because they are not
+playlist files.

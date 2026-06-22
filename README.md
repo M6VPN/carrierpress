@@ -195,8 +195,10 @@ The product roadmap is documented in
 foundation adds bounded selector state. Output-device selector display now uses
 that model where backend choices are already available. Audio-file selector
 display now uses explicit WAV candidates and recent cue slots; compressed
-formats remain disabled external-conversion workflows. Playlist selectors
-remain future work. Selector workflow notes are in
+formats remain disabled external-conversion workflows. Playlist selector
+display now uses explicit `.txt` and `.playlist` candidates and existing
+playlist validation before deferred requests are accepted. Selector workflow
+notes are in
 [`docs/selector-workflow.md`](docs/selector-workflow.md). TX operator controls
 remain future, guarded, and mock-only unless a later safety milestone selects
 more work.

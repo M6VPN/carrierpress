@@ -45,6 +45,9 @@ int		cp_gui_workflow_request_set_device(
 int		cp_gui_workflow_request_from_audio_selector(
 		    const struct cp_selector *,
 		    struct cp_gui_workflow_request *);
+int		cp_gui_workflow_request_from_playlist_selector(
+		    const struct cp_selector *,
+		    struct cp_gui_workflow_request *);
 int		cp_gui_workflow_request_set_path(
 		    struct cp_gui_workflow_request *,
 		    enum cp_gui_workflow_request_type, const char *);

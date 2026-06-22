@@ -29,6 +29,7 @@ struct cp_tui_view {
 	const struct cp_operator_state *operator_state;
 	const char *audio_choices;
 	const char *output_choices;
+	const char *playlist_choices;
 	const char *path;
 	size_t playlist_index;
 	size_t playlist_count;

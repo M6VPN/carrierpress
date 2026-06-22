@@ -176,6 +176,7 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	char mode[64];
 	char operator_status[512];
 	char output_choices[256];
+	char playlist_choices[256];
 	char transport[256];
 	char workflow[256];
 
@@ -231,6 +232,15 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 		(void)snprintf(audio_choices, sizeof(audio_choices),
 		    "audio selector: no candidates");
 	}
+	if (view->playlist_choices != NULL &&
+	    view->playlist_choices[0] != '\0') {
+		(void)cp_gui_format_truncate(view->playlist_choices,
+		    playlist_choices, sizeof(playlist_choices),
+		    sizeof(playlist_choices) - 1);
+	} else {
+		(void)snprintf(playlist_choices, sizeof(playlist_choices),
+		    "playlist selector: no candidates");
+	}
 
 	renderer = (SDL_Renderer *)gui->renderer;
 	(void)SDL_SetRenderDrawColor(renderer, 8, 12, 16, 255);
@@ -266,7 +276,7 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	cp_gui_draw_panel_text(renderer, 28.0f, 236.0f, 424.0f, 16.0f,
 	    "Level scale: linear 0.0 to 1.0");
 
-	cp_gui_draw_panel(renderer, 480.0f, 104.0f, 464.0f, 152.0f,
+	cp_gui_draw_panel(renderer, 480.0f, 104.0f, 464.0f, 168.0f,
 	    "Status");
 	cp_gui_draw_panel_text(renderer, 492.0f, 124.0f, 440.0f, 16.0f,
 	    agc);
@@ -283,6 +293,8 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	cp_gui_draw_panel_text(renderer, 492.0f, 220.0f, 440.0f, 16.0f,
 	    audio_choices);
 	cp_gui_draw_panel_text(renderer, 492.0f, 236.0f, 440.0f, 16.0f,
+	    playlist_choices);
+	cp_gui_draw_panel_text(renderer, 492.0f, 252.0f, 440.0f, 16.0f,
 	    output_choices);
 
 	cp_gui_draw_panel(renderer, CP_GUI_MARGIN, 276.0f, 928.0f, 92.0f,

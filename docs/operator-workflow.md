@@ -73,9 +73,11 @@ Interactive selectors are documented in
 be displayed through the shared selector model where backend enumeration is
 already available. Audio-file selector state can display explicit WAV
 candidates and recent cue slots, with compressed formats disabled for external
-conversion. Playlist selectors remain future work. The selector model does not
-scan directories, open file dialogs, open audio devices, open audio files, or
-change audio behavior.
+conversion. Playlist selector state can display explicit `.txt` and
+`.playlist` candidates and uses the existing playlist checker before applying
+deferred workflow requests. The selector model does not scan directories, open
+file dialogs, open audio devices, open audio files, parse playlists from draw
+callbacks, or change audio behavior.
 
 GUI text must remain bounded and clipped inside panels. Long paths, request
 reasons, output-device names, and help strings are truncated before drawing.

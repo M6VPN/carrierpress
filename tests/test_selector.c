@@ -17,6 +17,7 @@ static int	test_audio_file_selector(void);
 static int	test_long_text_bounds(void);
 static int	test_next_prev(void);
 static int	test_output_device_selector(void);
+static int	test_playlist_selector(void);
 
 int
 main(void)
@@ -34,6 +35,8 @@ main(void)
 	if (!test_audio_file_selector())
 		return 1;
 	if (!test_output_device_selector())
+		return 1;
+	if (!test_playlist_selector())
 		return 1;
 	if (!test_forbidden_text())
 		return 1;
@@ -280,6 +283,103 @@ test_forbidden_text(void)
 	    strstr(buffer, "flrig") != NULL) {
 		printf("test_selector: forbidden text: %s\n", buffer);
 		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_playlist_selector(void)
+{
+	struct cp_selector selector;
+	const char *paths[] = {
+		"playlists/show.txt",
+		"playlists/music.wav",
+		"playlists/morning.playlist",
+		"playlists/archive.flac",
+		"playlists/show.json",
+		"",
+		NULL,
+		"playlists/show.txt"
+	};
+	char buffer[256];
+	char menu[128];
+	char long_path[320];
+	size_t index;
+
+	if (cp_selector_load_playlists(NULL, paths, 1, NULL, NULL) !=
+	    CP_ERR_NULL)
+		return 0;
+	if (cp_selector_load_playlists(&selector, NULL, 1, NULL, NULL) !=
+	    CP_ERR_NULL)
+		return 0;
+	if (cp_selector_add_playlist(&selector, NULL, NULL, NULL, NULL) !=
+	    CP_ERR_NULL)
+		return 0;
+	if (cp_selector_add_playlist(&selector, NULL, "", NULL, NULL) !=
+	    CP_ERR_RANGE)
+		return 0;
+
+	if (cp_selector_load_playlists(&selector, paths, 8,
+	    "playlists/show.txt", "playlists/morning.playlist") != CP_OK)
+		return 0;
+	if (selector.kind != CP_SELECTOR_PLAYLIST || selector.count != 5 ||
+	    selector.selected != 2)
+		return 0;
+	if (!selector.items[0].enabled || selector.items[1].enabled ||
+	    !selector.items[2].enabled || selector.items[3].enabled ||
+	    selector.items[4].enabled)
+		return 0;
+	if (strstr(selector.items[0].label, "current") == NULL ||
+	    strstr(selector.items[2].label, "requested") == NULL ||
+	    strstr(selector.items[1].label, "not a playlist") == NULL ||
+	    strstr(selector.items[3].label, "not a playlist") == NULL ||
+	    strstr(selector.items[4].label, "unsupported") == NULL)
+		return 0;
+	if (strcmp(selector.items[2].value, "playlists/morning.playlist") !=
+	    0)
+		return 0;
+	if (cp_selector_format_line(&selector, buffer, sizeof(buffer)) !=
+	    CP_OK ||
+	    strstr(buffer, "selector=playlist") == NULL ||
+	    strstr(buffer, "selected=3/5") == NULL ||
+	    strstr(buffer, "morning.playlist") == NULL)
+		return 0;
+	if (cp_selector_format_menu_item(&selector, 1, menu,
+	    sizeof(menu)) != CP_OK ||
+	    strstr(menu, "music.wav") == NULL ||
+	    strstr(menu, "disabled") == NULL)
+		return 0;
+	if (cp_selector_select(&selector, 1) != CP_ERR_RANGE)
+		return 0;
+	if (cp_selector_next(&selector) != CP_OK || selector.selected != 0)
+		return 0;
+	if (cp_selector_prev(&selector) != CP_OK || selector.selected != 2)
+		return 0;
+
+	memset(long_path, 'p', sizeof(long_path) - 10);
+	(void)snprintf(long_path + sizeof(long_path) - 10, 10,
+	    ".playlist");
+	if (cp_selector_load_playlists(&selector,
+	    (const char *const *)&paths[0], 0, NULL, NULL) != CP_OK)
+		return 0;
+	if (cp_selector_add_playlist(&selector, NULL, long_path, NULL,
+	    NULL) != CP_OK)
+		return 0;
+	if (strlen(selector.items[0].label) >= CP_SELECTOR_LABEL_MAX ||
+	    strlen(selector.items[0].value) >= CP_SELECTOR_VALUE_MAX)
+		return 0;
+
+	for (index = 0; index < selector.count; index++) {
+		if (strstr(selector.items[index].label, "ptt") != NULL ||
+		    strstr(selector.items[index].label, "transmit") != NULL ||
+		    strstr(selector.items[index].label, "cat_ptt") != NULL ||
+		    strstr(selector.items[index].label, "rig_frequency") !=
+		    NULL ||
+		    strstr(selector.items[index].label, "rig_mode") != NULL ||
+		    strstr(selector.items[index].label, "hamlib") != NULL ||
+		    strstr(selector.items[index].label, "flrig") != NULL)
+			return 0;
 	}
 
 	return 1;

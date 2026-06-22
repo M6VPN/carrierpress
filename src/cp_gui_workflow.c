@@ -157,6 +157,24 @@ cp_gui_workflow_request_from_audio_selector(
 }
 
 int
+cp_gui_workflow_request_from_playlist_selector(
+	const struct cp_selector *selector, struct cp_gui_workflow_request *request)
+{
+	const struct cp_selector_item *item;
+
+	if (selector == NULL || request == NULL)
+		return CP_ERR_NULL;
+	if (selector->kind != CP_SELECTOR_PLAYLIST)
+		return CP_ERR_RANGE;
+	item = cp_selector_current(selector);
+	if (item == NULL || !item->enabled || item->value[0] == '\0')
+		return CP_ERR_RANGE;
+
+	return cp_gui_workflow_request_set_path(request,
+	    CP_GUI_WORKFLOW_REQUEST_LOAD_PLAYLIST, item->value);
+}
+
+int
 cp_gui_workflow_request_set_path(
 	struct cp_gui_workflow_request *request,
 	enum cp_gui_workflow_request_type type, const char *path)

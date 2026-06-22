@@ -71,6 +71,34 @@ workflow path, outside GUI callbacks, TUI draw paths, real-time audio
 callbacks, and DSP block processing. Disabled compressed or unsupported items
 cannot create a valid load request.
 
+## Playlist Selector
+
+P38D adds a playlist selector workflow foundation. Host code can map explicit
+playlist candidates into `cp_selector` with `cp_selector_load_playlists()`.
+The helper does not scan directories, open file dialogs, open playlist files,
+call libsndfile, process audio, or decode compressed formats. It only turns
+already-known paths, such as configured playlist cue paths or recent cue slots,
+into bounded selector labels and values.
+
+Playlist candidates with `.txt` or `.playlist` extensions are enabled. Audio
+or media paths such as `.wav`, `.mp3`, `.flac`, `.ogg`, `.opus`, `.m4a`, and
+`.aac` are shown disabled as not playlist files. Unknown extensions are shown
+disabled as unsupported. Current and requested playlist paths are marked when
+that state is known. Example lines:
+
+```text
+selector=playlist selected=2/3 label="morning.playlist [requested]" value="playlists/morning.playlist"
+> show.txt [current]
+  track.wav [not a playlist] disabled
+  morning.playlist [requested]
+```
+
+Selecting an enabled playlist item can create the existing deferred
+`load_playlist` workflow request. The existing playlist checker validates the
+playlist before the request is accepted. Applying the request still happens in
+the host workflow path, outside GUI callbacks, TUI draw paths, real-time audio
+callbacks, and DSP block processing.
+
 ## Navigation Rules
 
 Selectors are bounded and fixed-size:
@@ -96,8 +124,6 @@ selector=playlist selected=2/2 label="Show" value="playlists/show.txt"
 Future TUI and GUI selector work should reuse `cp_selector` for display and
 navigation state:
 
-- playlist selectors should use existing playlist validation before applying a
-  cue request
 - file and device changes must stay outside GUI callbacks, TUI draw paths,
   real-time audio callbacks, and DSP block processing
 - paths, labels, and reasons must remain bounded before display

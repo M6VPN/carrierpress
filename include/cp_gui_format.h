@@ -40,6 +40,8 @@ int	cp_gui_format_output_choices(
 	    char *, size_t);
 int	cp_gui_format_output_device(const struct cp_audio_config *, int,
 	    const struct cp_gui_workflow_request *, char *, size_t);
+int	cp_gui_format_playlist_choices(const char *const *, size_t,
+	    const char *, const char *, char *, size_t);
 int	cp_gui_format_truncate(const char *, char *, size_t, size_t);
 int	cp_gui_format_transport(enum cp_gui_mode,
 	    const struct cp_audio_config *, const char *, size_t, size_t, int,

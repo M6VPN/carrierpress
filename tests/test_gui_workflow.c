@@ -21,6 +21,7 @@ static int	test_format_bounds(void);
 static int	test_key_mapping(void);
 static int	test_audio_selector_request(void);
 static int	test_path_request(void);
+static int	test_playlist_selector_request(void);
 static int	test_rejected_request_display(void);
 static int	test_playlist_item_request(void);
 static int	test_playlist_validation(void);
@@ -60,6 +61,8 @@ main(void)
 		return 1;
 	if (!test_audio_selector_request())
 		return 1;
+	if (!test_playlist_selector_request())
+		return 1;
 	if (!test_restart_decision())
 		return 1;
 	if (!test_forbidden_text())
@@ -95,6 +98,47 @@ test_audio_selector_request(void)
 		return 0;
 	if (request.type != CP_GUI_WORKFLOW_REQUEST_LOAD_WAV ||
 	    strcmp(request.path, "audio/program.wav") != 0)
+		return 0;
+	if (cp_gui_workflow_request_validate(&request) != CP_OK ||
+	    request.validation_status != CP_OK)
+		return 0;
+
+	return 1;
+}
+
+static int
+test_playlist_selector_request(void)
+{
+	struct cp_gui_workflow_request request;
+	struct cp_selector selector;
+	const char *paths[] = {
+		"audio/program.wav",
+		TEST_GUI_WORKFLOW_GOOD
+	};
+
+	(void)mkdir("build", 0777);
+	(void)mkdir(TEST_GUI_WORKFLOW_DIR, 0777);
+	if (!write_file(TEST_GUI_WORKFLOW_GOOD,
+	    "# show\n"
+	    "audio/intro.wav\n"))
+		return 0;
+
+	cp_selector_init(&selector, CP_SELECTOR_AUDIO_FILE);
+	if (cp_gui_workflow_request_from_playlist_selector(&selector,
+	    &request) != CP_ERR_RANGE)
+		return 0;
+	if (cp_selector_load_playlists(&selector, paths, 1, NULL,
+	    NULL) != CP_OK ||
+	    cp_gui_workflow_request_from_playlist_selector(&selector,
+	    &request) != CP_ERR_RANGE)
+		return 0;
+	if (cp_selector_load_playlists(&selector, paths, 2, NULL,
+	    TEST_GUI_WORKFLOW_GOOD) != CP_OK ||
+	    cp_gui_workflow_request_from_playlist_selector(&selector,
+	    &request) != CP_OK)
+		return 0;
+	if (request.type != CP_GUI_WORKFLOW_REQUEST_LOAD_PLAYLIST ||
+	    strcmp(request.path, TEST_GUI_WORKFLOW_GOOD) != 0)
 		return 0;
 	if (cp_gui_workflow_request_validate(&request) != CP_OK ||
 	    request.validation_status != CP_OK)

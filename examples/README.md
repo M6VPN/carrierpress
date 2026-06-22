@@ -34,8 +34,10 @@ commands. Operator workflow boundaries are documented in
 `docs/selector-workflow.md`; output-device selector display uses the shared
 state model where backend choices are available. Audio-file selector display
 uses explicit WAV candidates or recent cue slots and keeps compressed formats
-disabled for external conversion. The selector model is not a file dialog,
-device opener, decoder, or transmit-control UI.
+disabled for external conversion. Playlist selector display uses explicit
+`.txt` and `.playlist` candidates and existing playlist validation before
+deferred requests are accepted. The selector model is not a file dialog,
+device opener, decoder, playlist auto-discovery tool, or transmit-control UI.
 
 ## Base Examples
 

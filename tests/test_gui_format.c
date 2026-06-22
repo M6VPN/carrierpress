@@ -23,6 +23,7 @@ static int	test_mode_format(void);
 static int	test_operator_format(void);
 static int	test_output_choices_format(void);
 static int	test_output_device_format(void);
+static int	test_playlist_choices_format(void);
 static int	test_truncate_format(void);
 static int	test_transport_format(void);
 static int	test_workflow_format(void);
@@ -53,6 +54,8 @@ main(void)
 	if (!test_output_choices_format())
 		return 1;
 	if (!test_output_device_format())
+		return 1;
+	if (!test_playlist_choices_format())
 		return 1;
 	if (!test_truncate_format())
 		return 1;
@@ -543,6 +546,64 @@ test_output_device_format(void)
 	    strstr(buffer, "rig_frequency") != NULL ||
 	    strstr(buffer, "rig_mode") != NULL) {
 		printf("test_gui_format: output forbidden text: %s\n",
+		    buffer);
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_playlist_choices_format(void)
+{
+	const char *paths[] = {
+		"playlists/show.txt",
+		"audio/track.wav",
+		"playlists/morning.playlist",
+		"audio/music.mp3"
+	};
+	char buffer[256];
+	char long_path[320];
+
+	if (cp_gui_format_playlist_choices(NULL, 0, NULL, NULL, buffer,
+	    sizeof(buffer)) != CP_OK ||
+	    strcmp(buffer, "playlist selector: no candidates") != 0) {
+		printf("test_gui_format: playlist no candidates mismatch: "
+		    "%s\n", buffer);
+		return 0;
+	}
+	if (cp_gui_format_playlist_choices(paths, 4, "playlists/show.txt",
+	    "playlists/morning.playlist", buffer, sizeof(buffer)) !=
+	    CP_OK ||
+	    strstr(buffer, "selector=playlist") == NULL ||
+	    strstr(buffer, "morning.playlist") == NULL ||
+	    strstr(buffer, "requested") == NULL ||
+	    strstr(buffer, "not a playlist") == NULL ||
+	    strstr(buffer, "disabled") == NULL) {
+		printf("test_gui_format: playlist choices mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	memset(long_path, 'p', sizeof(long_path) - 10);
+	(void)snprintf(long_path + sizeof(long_path) - 10, 10,
+	    ".playlist");
+	paths[0] = long_path;
+	if (cp_gui_format_playlist_choices(paths, 1, long_path, NULL,
+	    buffer, sizeof(buffer)) != CP_OK ||
+	    strlen(buffer) >= sizeof(buffer) ||
+	    strstr(buffer, "...") == NULL) {
+		printf("test_gui_format: long playlist choices mismatch: "
+		    "%s\n", buffer);
+		return 0;
+	}
+	if (strstr(buffer, "ptt") != NULL ||
+	    strstr(buffer, "transmit") != NULL ||
+	    strstr(buffer, "cat_ptt") != NULL ||
+	    strstr(buffer, "rig_frequency") != NULL ||
+	    strstr(buffer, "rig_mode") != NULL ||
+	    strstr(buffer, "hamlib") != NULL ||
+	    strstr(buffer, "flrig") != NULL) {
+		printf("test_gui_format: playlist forbidden text: %s\n",
 		    buffer);
 		return 0;
 	}

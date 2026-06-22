@@ -581,7 +581,7 @@ implemented until code, docs, and validation are complete.
 - [x] Add shared selector model for UI/TUI.
 - [x] Add output-device selector workflow.
 - [x] Add audio-file cue/load selector workflow.
-- [ ] Add playlist selector workflow.
+- [x] Add playlist selector workflow.
 - [x] Keep selector paths bounded and safe.
 
 ## P38A Selector Foundation
@@ -606,6 +606,14 @@ implemented until code, docs, and validation are complete.
 - [x] Display WAV cue/load selector state in operator UI surfaces where available.
 - [x] Keep compressed formats disabled and external-conversion only.
 - [x] Keep file loading/cueing outside callbacks and real-time paths.
+- [x] Keep native file dialogs and directory scanning deferred.
+
+## P38D Playlist Selector Workflow
+
+- [x] Map explicit playlist candidates into shared selector model.
+- [x] Display playlist selector state in operator UI surfaces where available.
+- [x] Validate playlist candidates before applying workflow requests.
+- [x] Keep playlist loading/cueing outside callbacks and real-time paths.
 - [x] Keep native file dialogs and directory scanning deferred.
 
 ## T6 Mock TX Operator Controls
