@@ -1577,6 +1577,11 @@ libraries to the base build.
 
 The v0.4.1 release notes are in
 [`docs/release-notes-v0.4.1.md`](docs/release-notes-v0.4.1.md).
+The v0.5 planning roadmap is documented in
+[`docs/roadmap-v0.5.md`](docs/roadmap-v0.5.md). v0.5 planning focuses on
+hardening, maintainability, operator workflow polish, and optional-feature
+boundaries. T5 remains mock-only safety-gate scaffolding, and no hardware PTT
+backend exists.
 
 ## License
 

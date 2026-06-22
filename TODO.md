@@ -457,3 +457,55 @@ implemented until code, docs, and validation are complete.
 - [x] Update release evidence helper for transmit-control safety audit.
 - [x] Keep T5 hardware backend absent.
 - [x] Keep release publication manual and local.
+
+## V5 v0.5 Roadmap Planning
+
+- [x] Add v0.5 roadmap document.
+- [x] Define post-v0.4.1 milestone groups.
+- [x] Keep hardware PTT backend out of v0.5 default scope.
+- [x] Keep decoder implementation out of v0.5 default scope.
+- [x] Keep release publication manual.
+
+## M30 Repository and CI Hygiene
+
+- [ ] Review validation targets after v0.4.1.
+- [ ] Document serial-only clean-mutating targets.
+- [ ] Improve local release evidence consistency.
+- [ ] Keep validation scripts mutation-safe unless explicitly documented.
+
+## M31 Test Matrix Hardening
+
+- [ ] Document ordinary and optional build matrix.
+- [ ] Add or refine guarded mock transmit-control test matrix notes.
+- [ ] Keep optional dependencies optional.
+- [ ] Keep base build dependency-light.
+
+## M32 Operator Workflow Polish
+
+- [ ] Review GUI/TUI/help consistency.
+- [ ] Review examples index and safe demo scripts.
+- [ ] Keep TRANSMIT/PTT absent from ordinary operator workflow.
+- [ ] Keep GUI/TUI text restrained and safe.
+
+## M33 Report and Evidence Workflow Polish
+
+- [ ] Review report summary and compare UX.
+- [ ] Review batch evidence examples.
+- [ ] Keep reports engineering-only.
+- [ ] Keep compliance/proof claims absent.
+
+## M34 API and Packaging Polish
+
+- [ ] Review public headers after v0.4.1.
+- [ ] Review install manifest and pkg-config smoke.
+- [ ] Review package maintainer notes.
+- [ ] Keep optional dependencies out of base package metadata.
+
+## M35 Future Optional Feature Research
+
+- [ ] Review optional decoder architecture without adding decoder libraries.
+- [ ] Review future transmit backend requirements without adding hardware
+      backend.
+- [ ] Keep base build WAV/PCM-native.
+- [ ] Keep hardware transmit backend deferred unless a separate safety milestone
+      is selected.
