@@ -96,7 +96,20 @@ evidence exists.
 - T5E: manual receive-only and dummy-load validation checklist.
 - T5F: optional hardware backend after all previous gates pass.
 
-T5A is documentation and safety planning only. T5F is not part of T5A.
+T5A is documentation and safety planning only. T5B adds a compile-time guard
+and disabled API stubs only. T5F is not part of T5A or T5B.
+
+## Current T5B Boundary
+
+The `cp_transmit_control` namespace is an inert boundary for future work. In an
+ordinary build, `cp_tx_control_available()` returns unavailable and requests
+return disabled. With `WITH_TRANSMIT_CONTROL=1`, the guarded scaffold can
+compile, but requests still return unsupported and no state can enter TX.
+
+T5B does not add a hardware backend, runtime arming, emergency RX/drop behavior,
+GUI controls, TUI controls, CLI options, profile keys, config keys, report
+fields, or batch fields. The next implementation step is mock-only state-machine
+testing, not hardware control.
 
 ## Future Architecture
 

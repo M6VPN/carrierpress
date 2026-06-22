@@ -86,7 +86,7 @@ implemented until code, docs, and validation are complete.
 
 ## T5 Optional PTT Control - Deferred
 
-- [ ] Implement an explicit compile-time PTT-control gate.
+- [x] Implement an explicit compile-time PTT-control gate.
 - [ ] Implement a runtime arming gate.
 - [ ] Implement mock-only PTT state-machine tests.
 - [ ] Implement emergency RX/drop command.
@@ -398,7 +398,7 @@ implemented until code, docs, and validation are complete.
 ## T5 Deferred TRANSMIT/PTT Safety Gate
 
 - [x] Keep TRANSMIT/PTT out of ordinary GUI workflow.
-- [ ] Require compile-time opt-in before any transmit-control build.
+- [x] Require compile-time opt-in before any transmit-control build.
 - [ ] Require runtime arming before any transmit-control action.
 - [ ] Add mock-only transmit-control tests before hardware backend work.
 - [ ] Add emergency RX/drop handling.
@@ -412,3 +412,11 @@ implemented until code, docs, and validation are complete.
 - [x] Add transmit-control architecture note.
 - [x] Keep this patch documentation-only with no working PTT or CAT
       write/control.
+
+## T5B Compile-Time Guard
+
+- [x] Add disabled-by-default transmit-control build guard.
+- [x] Add inert transmit-control API namespace.
+- [x] Add tests proving ordinary builds cannot transmit.
+- [x] Keep hardware PTT/CAT write backends absent.
+- [x] Keep GUI/TUI TRANSMIT controls absent.

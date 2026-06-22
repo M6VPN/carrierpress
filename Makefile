@@ -24,6 +24,7 @@ WITH_GUI ?= 0
 WITH_FFTW ?= 0
 WITH_HAMLIB ?= 0
 WITH_FLRIG ?= 0
+WITH_TRANSMIT_CONTROL ?= 0
 
 BUILD_DIR = build
 DIST_DIR = $(BUILD_DIR)/dist
@@ -69,6 +70,7 @@ CORE_SRCS = \
 	src/cp_restoration.c \
 	src/cp_resampler.c \
 	src/cp_ssb.c \
+	src/cp_transmit_control.c \
 	src/cp_waveform.c
 
 APP_SRCS = src/main.c
@@ -109,6 +111,7 @@ TEST_SRCS = \
 	tests/test_restoration.c \
 	tests/test_resampler.c \
 	tests/test_ssb.c \
+	tests/test_transmit_control.c \
 	tests/test_version.c \
 	tests/test_waveform.c
 
@@ -156,6 +159,11 @@ TEST_SRCS += tests/test_cat_hamlib.c
 HAMLIB_ORDER = check-hamlib
 endif
 
+ifeq ($(WITH_TRANSMIT_CONTROL),1)
+FEATURE_DIR := $(FEATURE_DIR)-tx-guard
+CPPFLAGS += -DCP_WITH_TRANSMIT_CONTROL
+endif
+
 ifeq ($(WITH_SNDFILE),1)
 ifeq ($(WITH_PORTAUDIO),1)
 CPPFLAGS += -DCP_WITH_PLAYOUT
@@ -194,7 +202,7 @@ FFTW_ORDER = check-fftw
 endif
 
 FEATURE_SUMMARY_ORDER =
-ifneq ($(WITH_SNDFILE)$(WITH_PORTAUDIO)$(WITH_SNDIO)$(WITH_TUI)$(WITH_GUI)$(WITH_FFTW)$(WITH_HAMLIB)$(WITH_FLRIG),00000000)
+ifneq ($(WITH_SNDFILE)$(WITH_PORTAUDIO)$(WITH_SNDIO)$(WITH_TUI)$(WITH_GUI)$(WITH_FFTW)$(WITH_HAMLIB)$(WITH_FLRIG)$(WITH_TRANSMIT_CONTROL),000000000)
 FEATURE_SUMMARY_ORDER = feature-summary
 endif
 
@@ -250,6 +258,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_restoration \
 	$(TEST_BIN_DIR)/test_resampler \
 	$(TEST_BIN_DIR)/test_ssb \
+	$(TEST_BIN_DIR)/test_transmit_control \
 	$(TEST_BIN_DIR)/test_version \
 	$(TEST_BIN_DIR)/test_waveform
 
@@ -511,6 +520,10 @@ $(TEST_BIN_DIR)/test_ssb: $(TEST_OBJ_DIR)/tests/test_ssb.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_ssb.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_transmit_control: $(TEST_OBJ_DIR)/tests/test_transmit_control.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_transmit_control.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_spectrum: $(TEST_OBJ_DIR)/tests/test_spectrum.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_spectrum.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -593,6 +606,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_restoration
 	./$(TEST_BIN_DIR)/test_resampler
 	./$(TEST_BIN_DIR)/test_ssb
+	./$(TEST_BIN_DIR)/test_transmit_control
 	./$(TEST_BIN_DIR)/test_version
 	./$(TEST_BIN_DIR)/test_waveform
 ifeq ($(WITH_SNDFILE),1)
@@ -686,6 +700,7 @@ feature-summary:
 	@printf '  sndio: %s%s\n' "$$([ "$(WITH_SNDIO)" = 1 ] && printf enabled || printf disabled)" "$$([ "$(WITH_SNDIO)" = 1 ] && printf ' (deferred Linux path)' || printf '')"
 	@printf '  hamlib CAT: %s%s\n' "$$([ "$(WITH_HAMLIB)" = 1 ] && printf enabled || printf disabled)" "$$([ "$(WITH_HAMLIB)" = 1 ] && printf ' (read-only)' || printf ' (manual WITH_HAMLIB=1)')"
 	@printf '  flrig CAT: %s%s\n' "$$([ "$(WITH_FLRIG)" = 1 ] && printf enabled || printf disabled)" "$$([ "$(WITH_FLRIG)" = 1 ] && printf ' (read-only XML-RPC)' || printf ' (manual WITH_FLRIG=1)')"
+	@printf '  transmit control: %s%s\n' "$$([ "$(WITH_TRANSMIT_CONTROL)" = 1 ] && printf guarded || printf disabled)" "$$([ "$(WITH_TRANSMIT_CONTROL)" = 1 ] && printf ' (scaffold only)' || printf ' (T5 gated)')"
 
 check-sndfile:
 	@mkdir -p $(BUILD_DIR)
@@ -765,6 +780,7 @@ clean:
 	rm -f tests/test_quality_report
 	rm -f tests/test_report_tool
 	rm -f tests/test_resampler tests/test_restoration tests/test_spectrum tests/test_ssb
+	rm -f tests/test_transmit_control
 	rm -f tests/test_waveform
 	rm -f tests/test_playout tests/test_tui tests/test_validation tests/test_wav
 	rm -f tests/playout_bad.txt tests/playout_good.txt

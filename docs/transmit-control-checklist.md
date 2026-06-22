@@ -14,6 +14,17 @@ future T5 safety-gated work only. It is not permission to test on air.
 - Confirm no transmit-control call can run from a DSP block, live audio
   callback, playout callback, GUI callback, or report path.
 
+## T5B Compile-Time Guard Checklist
+
+- Confirm ordinary builds report transmit-control unavailable.
+- Confirm `WITH_TRANSMIT_CONTROL=1` builds only guarded scaffolding.
+- Confirm guarded scaffolding has no hardware backend.
+- Confirm guarded scaffolding has no hamlib or flrig PTT calls.
+- Confirm request placeholders cannot enter TX.
+- Confirm no GUI or TUI key maps to active transmit control.
+- Confirm no CLI option, profile key, config key, report field, batch field, or
+  playlist directive can arm transmit.
+
 ## Mock-test Checklist
 
 - Start with a mock backend only.

@@ -58,6 +58,18 @@ These APIs are intended for command-line helpers, validation tools, and batch
 workflows. They are stable enough for scripts and examples, but field additions
 or stricter validation may appear in v0.x releases.
 
+## T5 Transmit-Control Stub
+
+`cp_transmit_control.h` is a T5 experimental safety boundary, not an
+operational station-control API. Ordinary builds report the namespace
+unavailable. `WITH_TRANSMIT_CONTROL=1` compiles guarded scaffolding only; it
+does not add PTT, CAT write/control, GUI TRANSMIT controls, TUI TRANSMIT
+controls, hardware backends, runtime arming, or emergency RX/drop behavior.
+
+Do not include `cp_transmit_control.h` through `carrierpress_core.h` or
+`carrierpress_tooling.h`. Include it directly only when testing the guarded T5
+stub boundary.
+
 ## Compatibility Umbrella
 
 `carrierpress.h` is the broad compatibility umbrella. It remains available for

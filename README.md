@@ -503,6 +503,10 @@ before any transmitter control is allowed. T5 documents future safety gates
 only. Ordinary CarrierPress remains baseband audio processing with read-only
 CAT status.
 
+`WITH_TRANSMIT_CONTROL=1` currently builds disabled T5 scaffolding only. It
+does not add PTT, CAT write/control, hardware backends, GUI TRANSMIT controls,
+runtime arming, or emergency RX/drop behavior.
+
 Build the read-only hamlib CAT backend:
 
 ```sh

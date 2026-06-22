@@ -31,6 +31,16 @@ Backend calls must stay outside:
 - profile or config parsing
 - batch processing
 
+## Current T5B Namespace
+
+T5B adds `cp_transmit_control` as a disabled API namespace for later mock-only
+state-machine work. Ordinary builds keep `cp_tx_control_available()` false and
+initialize the control state as `disabled`.
+
+With `WITH_TRANSMIT_CONTROL=1`, the scaffold reports that the guarded namespace
+was compiled, but it still has no backend and no transmit-capable transition.
+The current request placeholder returns unsupported and leaves state disabled.
+
 ## State Machine
 
 A future state machine should start in RX/off state and keep states explicit:
