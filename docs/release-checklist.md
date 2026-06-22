@@ -24,6 +24,13 @@ are documented in `docs/validation-targets.md`. The short local guide is:
 make validation-help
 ```
 
+Ordinary, guarded mock, and optional dependency build profiles are documented
+in `docs/test-matrix.md`. The short local matrix guide is:
+
+```sh
+make test-matrix-help
+```
+
 Run the default release validation profile:
 
 ```sh
@@ -77,10 +84,16 @@ scaffolding after v0.4.0.
 - Confirm `make transmit-control-safety-audit` passes.
 - Confirm `make transmit-control-mock-test` passes when run serially.
 - Confirm `make validation-help` prints the current target classes.
+- Confirm `make test-matrix-help` prints the current build/test matrix.
 - Confirm `docs/validation-targets.md` matches the release procedure.
+- Confirm `docs/test-matrix.md` documents ordinary, guarded mock, and optional
+  dependency profiles.
 - Confirm `scripts/release-evidence.sh` remains a non-mutating reporter.
 - Confirm ordinary builds keep transmit control unavailable.
 - Confirm guarded builds remain mock-only.
+- Confirm guarded mock transmit-control validation remains serial-only.
+- Confirm optional dependency builds remain opt-in and are not required for the
+  base build.
 - Confirm no hardware transmit backend exists.
 - Confirm no hamlib or flrig PTT calls exist.
 - Confirm no CAT write/control backend exists.

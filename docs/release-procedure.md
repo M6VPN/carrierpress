@@ -14,6 +14,13 @@ Validation target scheduling is documented in
 make validation-help
 ```
 
+Ordinary, guarded mock, and optional dependency build profiles are documented
+in `docs/test-matrix.md`. For a local matrix summary, run:
+
+```sh
+make test-matrix-help
+```
+
 Run the release profile from a clean working tree:
 
 ```sh
@@ -57,6 +64,7 @@ Before tagging:
 
 ```sh
 make validation-help
+make test-matrix-help
 make clean
 make
 make test

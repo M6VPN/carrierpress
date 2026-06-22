@@ -153,10 +153,18 @@ Print the local validation target guide:
 make validation-help
 ```
 
+Print the ordinary, guarded mock, and optional dependency test matrix:
+
+```sh
+make test-matrix-help
+```
+
 Release validation and manual tag checks are documented in
 [`docs/release-checklist.md`](docs/release-checklist.md).
 Validation target scheduling is documented in
 [`docs/validation-targets.md`](docs/validation-targets.md).
+The build and test matrix is documented in
+[`docs/test-matrix.md`](docs/test-matrix.md).
 GitHub Actions CI coverage is documented in [`docs/ci.md`](docs/ci.md).
 Release notes, the manual GitHub release procedure, and optional local release
 asset guidance are documented in

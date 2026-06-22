@@ -4,6 +4,13 @@ This guide classifies local validation targets after the v0.4.1 safety-gate
 work. It is focused on scheduling and mutation boundaries, not release
 publication.
 
+Ordinary and optional build profiles are documented in `docs/test-matrix.md`.
+For a concise matrix summary, run:
+
+```sh
+make test-matrix-help
+```
+
 Run clean-mutating targets serially. Do not run them alongside `make -j test`
 or any other build or test target.
 
@@ -27,6 +34,7 @@ outputs when those prerequisites are absent.
 - `make pkg-config-smoke`
 - `make transmit-control-safety-audit`
 - `make validation-help`
+- `make test-matrix-help`
 
 `make transmit-control-safety-audit` is intended to be mutation-safe. It scans
 source paths and prints a pass or failure result. It does not build, clean,
@@ -149,4 +157,5 @@ For a concise target guide:
 
 ```sh
 make validation-help
+make test-matrix-help
 ```

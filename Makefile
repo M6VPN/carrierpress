@@ -411,7 +411,42 @@ validation-help:
 	@printf '  make dist-check\n'
 	@printf '  sha256sum -c build/dist/carrierpress-*.tar.gz.sha256\n'
 	@printf '\nDo not run clean-mutating targets concurrently with build or test targets.\n'
+	@printf 'Detailed test matrix: make test-matrix-help\n'
 	@printf 'Release publication remains manual.\n'
+
+test-matrix-help:
+	@printf 'CarrierPress test matrix\n'
+	@printf '\nBase validation:\n'
+	@printf '  make clean\n'
+	@printf '  make\n'
+	@printf '  make test\n'
+	@printf '  make -j test\n'
+	@printf '  make validate\n'
+	@printf '  make quality\n'
+	@printf '  make quality-json\n'
+	@printf '  make professional-check\n'
+	@printf '  make public-header-smoke\n'
+	@printf '  make example-libcarrierpress\n'
+	@printf '  ./build/examples/libcarrierpress-minimal\n'
+	@printf '  make transmit-control-safety-audit\n'
+	@printf '\nGuarded mock transmit-control validation, run serially:\n'
+	@printf '  make clean\n'
+	@printf '  make WITH_TRANSMIT_CONTROL=1\n'
+	@printf '  make WITH_TRANSMIT_CONTROL=1 test\n'
+	@printf '  make transmit-control-safety-audit\n'
+	@printf '  make transmit-control-mock-test\n'
+	@printf '\nOptional dependency validation, run only when installed:\n'
+	@printf '  make WITH_SNDFILE=1 test\n'
+	@printf '  make WITH_SNDFILE=1 WITH_PORTAUDIO=1 test\n'
+	@printf '  make WITH_GUI=1 test\n'
+	@printf '  make WITH_GUI=1 WITH_FFTW=1 test\n'
+	@printf '  make WITH_TUI=1 test\n'
+	@printf '  make WITH_SNDIO=1 test\n'
+	@printf '  make WITH_FLRIG=1 test\n'
+	@printf '  make WITH_HAMLIB=1 test\n'
+	@printf '\nDo not run clean-mutating targets in parallel.\n'
+	@printf 'Optional dependencies are opt-in and must not affect base validation.\n'
+	@printf 'Details: docs/test-matrix.md\n'
 
 transmit-control-safety-audit:
 	sh scripts/transmit-control-safety-audit.sh
@@ -839,4 +874,4 @@ clean:
 	rm -f tests/playlist_check.txt tests/playlist_too_long.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check example-libcarrierpress feature-summary install install-manifest install-smoke pkg-config-smoke professional-check public-compat-header-smoke public-core-header-smoke public-header-smoke public-tooling-header-smoke quality quality-json release-check test transmit-control-mock-test transmit-control-safety-audit uninstall validate validation-help
+.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check example-libcarrierpress feature-summary install install-manifest install-smoke pkg-config-smoke professional-check public-compat-header-smoke public-core-header-smoke public-header-smoke public-tooling-header-smoke quality quality-json release-check test test-matrix-help transmit-control-mock-test transmit-control-safety-audit uninstall validate validation-help

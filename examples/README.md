@@ -17,6 +17,7 @@ make
 ./examples/profile-self-test.sh
 ./examples/cat-mock-status.sh
 make validation-help
+make test-matrix-help
 ./examples/release-check-local.sh
 ```
 
@@ -30,9 +31,11 @@ checks AM and SSB command-line profile overrides.
 `print-effective-config.sh` inspect profile/config files without opening audio
 devices.
 
-`make validation-help` prints the local validation target classes. Release
-evidence is reported by `scripts/release-evidence.sh`; it does not tag, push,
-publish, install packages, or run transmit actions.
+`make validation-help` prints the local validation target classes.
+`make test-matrix-help` prints the ordinary, guarded mock, and optional
+dependency test matrix. Release evidence is reported by
+`scripts/release-evidence.sh`; it does not tag, push, publish, install
+packages, or run transmit actions.
 
 ## Library Example
 

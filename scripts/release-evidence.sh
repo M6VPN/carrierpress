@@ -28,6 +28,10 @@ git describe --tags --abbrev=0 2>/dev/null || printf 'none\n'
 printf '\nvalidation target guide:\n'
 make validation-help
 
+printf '\ntest matrix guide:\n'
+make test-matrix-help
+printf 'full test matrix: docs/test-matrix.md\n'
+
 printf '\nquality JSON evidence:\n'
 if [ -f build/quality-report.json ]; then
 	printf 'build/quality-report.json\n'

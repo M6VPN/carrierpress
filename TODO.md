@@ -484,10 +484,18 @@ implemented until code, docs, and validation are complete.
 
 ## M31 Test Matrix Hardening
 
-- [ ] Document ordinary and optional build matrix.
-- [ ] Add or refine guarded mock transmit-control test matrix notes.
-- [ ] Keep optional dependencies optional.
-- [ ] Keep base build dependency-light.
+- [x] Document ordinary and optional build matrix.
+- [x] Add or refine guarded mock transmit-control test matrix notes.
+- [x] Keep optional dependencies optional.
+- [x] Keep base build dependency-light.
+
+## M31A Test Matrix Hardening
+
+- [x] Add test matrix guide.
+- [x] Add non-mutating test matrix help target.
+- [x] Document guarded mock transmit-control validation.
+- [x] Document optional dependency validation boundaries.
+- [x] Keep optional dependency failures out of base build requirements.
 
 ## M32 Operator Workflow Polish
 
