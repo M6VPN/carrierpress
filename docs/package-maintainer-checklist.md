@@ -66,6 +66,7 @@ Check the staged pkg-config metadata:
 ```sh
 PKG_CONFIG_PATH="$PWD/build/stage/usr/lib/pkgconfig" pkg-config --modversion carrierpress
 PKG_CONFIG_PATH="$PWD/build/stage/usr/lib/pkgconfig" pkg-config --cflags --libs carrierpress
+make pkg-config-smoke
 ```
 
 The base `carrierpress.pc` metadata should expose only the base static library
@@ -76,6 +77,21 @@ Libs: -L${libdir} -lcarrierpress -lm
 ```
 
 Optional dependencies must not leak into the base pkg-config file.
+
+## Public Headers
+
+Check the dependency-light public header tiers:
+
+```sh
+make public-core-header-smoke
+make public-tooling-header-smoke
+make public-compat-header-smoke
+make public-header-smoke
+```
+
+Use `carrierpress_core.h` for new in-memory DSP library users and
+`carrierpress_tooling.h` for profile, config, batch, and report tooling.
+`carrierpress.h` remains the broad compatibility umbrella.
 
 ## Optional Feature Packages
 

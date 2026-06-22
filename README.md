@@ -325,7 +325,11 @@ make example-libcarrierpress
 Check that the umbrella public header links without optional dependencies:
 
 ```sh
+make public-core-header-smoke
+make public-tooling-header-smoke
+make public-compat-header-smoke
 make public-header-smoke
+make pkg-config-smoke
 ```
 
 The active Linux-host validation path is:

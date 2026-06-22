@@ -85,6 +85,15 @@ The base `carrierpress.pc` file should expose the installed headers, static
 library, and `-lm` only. Optional host dependencies should not be added to the
 base pkg-config metadata.
 
+The in-tree metadata smoke check verifies the generated base file:
+
+```sh
+make pkg-config-smoke
+```
+
+This check rejects libsndfile, PortAudio, sndio, ncurses, SDL3, FFTW, hamlib,
+and flrig references in the base pkg-config metadata.
+
 ## Man Page
 
 Check the staged man page with:

@@ -43,6 +43,8 @@ make validate
 make quality
 make quality-json
 make professional-check
+make public-header-smoke
+make pkg-config-smoke
 ```
 
 Optional features remain explicit:
@@ -59,6 +61,11 @@ make WITH_FLRIG=1
 
 If an optional dependency is missing, install it manually with the platform
 tools. CarrierPress project scripts do not install packages.
+
+The base pkg-config metadata should expose only `-lcarrierpress -lm`.
+New library examples should prefer `carrierpress_core.h` for in-memory DSP
+processing and `carrierpress_tooling.h` for profile, config, batch, and report
+tooling.
 
 ## Staged Install
 

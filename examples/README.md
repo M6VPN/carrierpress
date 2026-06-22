@@ -39,6 +39,16 @@ make example-libcarrierpress
 ./build/examples/libcarrierpress-minimal
 ```
 
+Additional public-header smoke examples check the recommended core, tooling,
+and compatibility umbrellas:
+
+```sh
+make public-core-header-smoke
+make public-tooling-header-smoke
+make public-compat-header-smoke
+make public-header-smoke
+```
+
 After installing CarrierPress, the same example can be built with pkg-config:
 
 ```sh

@@ -102,6 +102,19 @@ make example-libcarrierpress
 ./build/examples/libcarrierpress-minimal
 ```
 
+Run public-header smoke examples for each installed umbrella:
+
+```sh
+make public-core-header-smoke
+make public-tooling-header-smoke
+make public-compat-header-smoke
+make public-header-smoke
+```
+
+These examples build and run against the in-tree static library. They do not
+open audio devices, require optional host backends, use CAT/PTT control, or
+depend on libsndfile, PortAudio, sndio, ncurses, SDL3, FFTW, hamlib, or flrig.
+
 After a staged or local install, an installed build can use pkg-config:
 
 ```sh

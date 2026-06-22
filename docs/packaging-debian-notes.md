@@ -42,10 +42,17 @@ Use a staged install:
 make clean
 make
 make DESTDIR="$PWD/debian/tmp" PREFIX=/usr install
+make public-header-smoke
+make pkg-config-smoke
 ```
 
 Package scripts should not install packages, use `sudo`, publish releases, or
 modify system audio configuration.
+
+The base pkg-config metadata should expose only `-lcarrierpress -lm`.
+`carrierpress_core.h` is the recommended header for new in-memory DSP users,
+`carrierpress_tooling.h` is the recommended header for tooling users, and
+`carrierpress.h` remains the broad compatibility umbrella.
 
 ## Package Metadata Wording
 

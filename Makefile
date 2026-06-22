@@ -343,22 +343,27 @@ example-libcarrierpress: libcarrierpress.a
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $(EXAMPLE_BIN_DIR)/libcarrierpress-minimal examples/libcarrierpress-minimal.c libcarrierpress.a $(LDLIBS)
 
 public-core-header-smoke: libcarrierpress.a
-	@mkdir -p $(BUILD_DIR)
-	@printf '#include "carrierpress_core.h"\nint main(void) { struct cp_block_config c; cp_block_default_config(&c, CP_CHANNELS_MONO); return c.channels == CP_CHANNELS_MONO ? 0 : 1; }\n' > $(BUILD_DIR)/public-core-header-smoke.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $(BUILD_DIR)/public-core-header-smoke.o $(BUILD_DIR)/public-core-header-smoke.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BUILD_DIR)/public-core-header-smoke $(BUILD_DIR)/public-core-header-smoke.o libcarrierpress.a $(LDLIBS)
+	@mkdir -p $(EXAMPLE_BIN_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $(EXAMPLE_BIN_DIR)/libcarrierpress-core-smoke examples/libcarrierpress-core-smoke.c libcarrierpress.a $(LDLIBS)
+	./$(EXAMPLE_BIN_DIR)/libcarrierpress-core-smoke
 
 public-tooling-header-smoke: libcarrierpress.a
-	@mkdir -p $(BUILD_DIR)
-	@printf '#include "carrierpress_tooling.h"\nint main(void) { struct cp_profile p; cp_profile_init(&p); return p.name[0] == 0 ? 0 : 1; }\n' > $(BUILD_DIR)/public-tooling-header-smoke.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $(BUILD_DIR)/public-tooling-header-smoke.o $(BUILD_DIR)/public-tooling-header-smoke.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BUILD_DIR)/public-tooling-header-smoke $(BUILD_DIR)/public-tooling-header-smoke.o libcarrierpress.a $(LDLIBS)
+	@mkdir -p $(EXAMPLE_BIN_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $(EXAMPLE_BIN_DIR)/libcarrierpress-tooling-smoke examples/libcarrierpress-tooling-smoke.c libcarrierpress.a $(LDLIBS)
+	./$(EXAMPLE_BIN_DIR)/libcarrierpress-tooling-smoke
 
-public-header-smoke: public-core-header-smoke public-tooling-header-smoke
-	@mkdir -p $(BUILD_DIR)
-	@printf '#include "carrierpress.h"\nint main(void) { struct cp_block_config c; cp_block_default_config(&c, CP_CHANNELS_MONO); return c.channels == CP_CHANNELS_MONO ? 0 : 1; }\n' > $(BUILD_DIR)/public-compat-header-smoke.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $(BUILD_DIR)/public-compat-header-smoke.o $(BUILD_DIR)/public-compat-header-smoke.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BUILD_DIR)/public-compat-header-smoke $(BUILD_DIR)/public-compat-header-smoke.o libcarrierpress.a $(LDLIBS)
+public-compat-header-smoke: libcarrierpress.a
+	@mkdir -p $(EXAMPLE_BIN_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $(EXAMPLE_BIN_DIR)/libcarrierpress-compat-smoke examples/libcarrierpress-compat-smoke.c libcarrierpress.a $(LDLIBS)
+	./$(EXAMPLE_BIN_DIR)/libcarrierpress-compat-smoke
+
+public-header-smoke: public-core-header-smoke public-tooling-header-smoke public-compat-header-smoke
+
+pkg-config-smoke: $(BUILD_DIR)/carrierpress.pc
+	grep '^Version: $(VERSION)$$' $(BUILD_DIR)/carrierpress.pc
+	grep '^Libs: -L$${libdir} -lcarrierpress -lm$$' $(BUILD_DIR)/carrierpress.pc
+	grep '^Cflags: -I$${includedir}/carrierpress$$' $(BUILD_DIR)/carrierpress.pc
+	! grep -E 'sndfile|portaudio|sndio|SDL|sdl|fftw|hamlib|ncurses|flrig' $(BUILD_DIR)/carrierpress.pc
 
 $(BUILD_DIR)/carrierpress.pc: carrierpress.pc.in
 	@mkdir -p $(BUILD_DIR)
@@ -759,4 +764,4 @@ clean:
 	rm -f tests/playlist_check.txt tests/playlist_too_long.txt
 	rm -f tests/wav_input.wav tests/wav_output.wav
 
-.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check example-libcarrierpress feature-summary install install-manifest install-smoke professional-check public-core-header-smoke public-header-smoke public-tooling-header-smoke quality quality-json release-check test uninstall validate
+.PHONY: all autodetect check-fftw check-flrig check-gui check-hamlib check-portaudio check-sndfile check-sndio check-tui clean dist dist-check example-libcarrierpress feature-summary install install-manifest install-smoke pkg-config-smoke professional-check public-compat-header-smoke public-core-header-smoke public-header-smoke public-tooling-header-smoke quality quality-json release-check test uninstall validate

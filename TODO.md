@@ -372,10 +372,10 @@ implemented until code, docs, and validation are complete.
 
 ## M28 API and Packaging Hardening
 
-- [ ] Review `carrierpress_core.h` after example use.
-- [ ] Add more public-header smoke examples.
-- [ ] Review package-maintainer notes after v0.3.
-- [ ] Keep optional dependencies out of base pkg-config metadata.
+- [x] Review `carrierpress_core.h` after example use.
+- [x] Add more public-header smoke examples.
+- [x] Review package-maintainer notes after v0.3.
+- [x] Keep optional dependencies out of base pkg-config metadata.
 
 ## M29 Optional Decoder Architecture Research
 

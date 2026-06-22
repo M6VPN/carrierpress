@@ -40,10 +40,16 @@ Use `DESTDIR` and `PREFIX`:
 ```sh
 make DESTDIR="$PWD/build/stage" PREFIX=/usr/local install
 make install-manifest
+make public-header-smoke
+make pkg-config-smoke
 ```
 
 Do not add scripts that change system audio configuration. Do not add
 services, daemons, setuid, setcap, or post-install behavior.
+
+The base pkg-config metadata should expose only `-lcarrierpress -lm`.
+`carrierpress_core.h` is the recommended dependency-light DSP header, and
+`carrierpress_tooling.h` is the recommended dependency-light tooling header.
 
 ## Source Archive and Checksum
 

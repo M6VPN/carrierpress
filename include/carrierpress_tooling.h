@@ -4,6 +4,8 @@
 #ifndef CARRIERPRESS_TOOLING_H
 #define CARRIERPRESS_TOOLING_H
 
+/* Dependency-light tooling umbrella for profiles, config, batch, and reports. */
+
 #include "cp_batch.h"
 #include "cp_config_file.h"
 #include "cp_profile.h"
