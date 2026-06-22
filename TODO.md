@@ -397,10 +397,18 @@ implemented until code, docs, and validation are complete.
 
 ## T5 Deferred TRANSMIT/PTT Safety Gate
 
-- [ ] Keep TRANSMIT/PTT out of ordinary GUI workflow.
+- [x] Keep TRANSMIT/PTT out of ordinary GUI workflow.
 - [ ] Require compile-time opt-in before any transmit-control build.
 - [ ] Require runtime arming before any transmit-control action.
 - [ ] Add mock-only transmit-control tests before hardware backend work.
 - [ ] Add emergency RX/drop handling.
 - [ ] Keep CAT control out of real-time callbacks.
 - [ ] Require manual dummy-load or receive-only validation checklist.
+
+## T5A Safety-Gate Design
+
+- [x] Expand CAT/PTT safety design.
+- [x] Add transmit-control checklist.
+- [x] Add transmit-control architecture note.
+- [x] Keep this patch documentation-only with no working PTT or CAT
+      write/control.

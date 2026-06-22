@@ -213,4 +213,7 @@ Any GUI TRANSMIT or CAT control toggle is T5-only work. It must require the T5
 safety gates: compile-time opt-in, runtime arming, mock-only tests first,
 emergency RX/drop handling, no real-time callback CAT control, and manual
 dummy-load or receive-only validation. It must not be added by ordinary GUI
-workflow or polish milestones.
+workflow or polish milestones. The future-only boundary is documented in
+[`cat-ptt-safety.md`](cat-ptt-safety.md),
+[`transmit-control-architecture.md`](transmit-control-architecture.md), and
+[`transmit-control-checklist.md`](transmit-control-checklist.md).

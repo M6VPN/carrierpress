@@ -99,6 +99,7 @@ TEST_SRCS = \
 	tests/test_monitor.c \
 	tests/test_multiband.c \
 	tests/test_natural_dynamics.c \
+	tests/test_no_transmit_controls.c \
 	tests/test_operator_state.c \
 	tests/test_playlist_check.c \
 	tests/test_profile.c \
@@ -240,6 +241,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_monitor \
 	$(TEST_BIN_DIR)/test_multiband \
 	$(TEST_BIN_DIR)/test_natural_dynamics \
+	$(TEST_BIN_DIR)/test_no_transmit_controls \
 	$(TEST_BIN_DIR)/test_operator_state \
 	$(TEST_BIN_DIR)/test_playlist_check \
 	$(TEST_BIN_DIR)/test_profile \
@@ -485,6 +487,10 @@ $(TEST_BIN_DIR)/test_natural_dynamics: $(TEST_OBJ_DIR)/tests/test_natural_dynami
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_natural_dynamics.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_no_transmit_controls: $(TEST_OBJ_DIR)/tests/test_no_transmit_controls.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_no_transmit_controls.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_operator_state: $(TEST_OBJ_DIR)/tests/test_operator_state.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_operator_state.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -578,6 +584,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_monitor
 	./$(TEST_BIN_DIR)/test_multiband
 	./$(TEST_BIN_DIR)/test_natural_dynamics
+	./$(TEST_BIN_DIR)/test_no_transmit_controls
 	./$(TEST_BIN_DIR)/test_operator_state
 	./$(TEST_BIN_DIR)/test_playlist_check
 	./$(TEST_BIN_DIR)/test_profile
@@ -751,7 +758,8 @@ clean:
 	rm -f tests/test_gui_format tests/test_gui_workflow
 	rm -f tests/test_limiter tests/test_low_level_boost tests/test_meter
 	rm -f tests/test_monitor tests/test_multiband
-	rm -f tests/test_natural_dynamics tests/test_operator_state
+	rm -f tests/test_natural_dynamics tests/test_no_transmit_controls
+	rm -f tests/test_operator_state
 	rm -f tests/test_playlist_check
 	rm -f tests/test_professional_check
 	rm -f tests/test_quality_report

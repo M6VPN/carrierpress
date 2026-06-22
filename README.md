@@ -496,8 +496,12 @@ or key a radio.
 CAT support is read-only in the current code. flrig and hamlib PTT state is
 readback only, and no PTT control exists. Any future PTT-control feature must be
 compiled explicitly, enabled explicitly at runtime, and follow
-[`docs/cat-ptt-safety.md`](docs/cat-ptt-safety.md) before any transmitter
-control is allowed.
+[`docs/cat-ptt-safety.md`](docs/cat-ptt-safety.md),
+[`docs/transmit-control-architecture.md`](docs/transmit-control-architecture.md),
+and [`docs/transmit-control-checklist.md`](docs/transmit-control-checklist.md)
+before any transmitter control is allowed. T5 documents future safety gates
+only. Ordinary CarrierPress remains baseband audio processing with read-only
+CAT status.
 
 Build the read-only hamlib CAT backend:
 

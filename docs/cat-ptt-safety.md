@@ -39,9 +39,11 @@ tested:
 
 - Compile-time opt-in such as `WITH_CAT_PTT=1`.
 - Runtime opt-in with an explicit dangerous option.
+- Runtime arming before any transmit-control action is accepted.
 - PTT control disabled by default.
 - No PTT auto-enable from `make autodetect`.
 - PTT control disabled in GUI and TUI unless explicitly enabled.
+- Mock-only transmit-control state-machine tests before any hardware backend.
 - Read-only CAT status must work before any PTT command is accepted.
 - Frequency, mode, and PTT readback must be displayed before any PTT action.
 - A clear user-responsibility warning must be shown before arming transmit
@@ -54,11 +56,47 @@ tested:
 - PTT must never be keyed from an audio callback.
 - CAT control must never block an audio callback.
 - Audio presence must never automatically key transmit.
+- Profiles, config files, reports, batch files, GUI workflow requests, and
+  playout playlists must not arm transmit or request transmit.
 - Scheduled or remote unattended transmit must not be implemented.
 - CAT control over untrusted network endpoints must require an explicit warning.
 - Automated tests must use mock backends only unless a manual hardware test is
   explicitly selected.
 - Manual hardware testing must start with a dummy load or receive-only mock path.
+
+## Forbidden in Ordinary Builds
+
+Ordinary CarrierPress builds must not expose active station-control features.
+These items stay outside normal profiles, configs, reports, batch files, GUI
+workflow requests, TUI controls, and CLI audio workflow commands:
+
+- PTT control.
+- TRANSMIT controls.
+- CAT write or control commands.
+- Rig frequency setting.
+- Rig mode setting.
+- Automatic transmit.
+- Audio-triggered transmit.
+- Hidden transmit control in config or profile files.
+- Transmit actions from live audio, playout, batch processing, report tools, or
+  real-time callbacks.
+
+Read-only CAT status remains allowed. Displaying read-only PTT state is not the
+same as controlling PTT.
+
+## T5 Implementation Phases
+
+T5 work must stay phased. A later phase must not start until earlier gate
+evidence exists.
+
+- T5A: safety-gate design and test plan.
+- T5B: compile-time guard and disabled-by-default API stubs.
+- T5C: mock-only transmit-control state-machine tests.
+- T5D: runtime arming model and emergency RX/drop semantics.
+- T5E: manual receive-only and dummy-load validation checklist.
+- T5F: optional hardware backend after all previous gates pass.
+
+T5A is documentation and safety planning only. T5F is not part of T5A.
 
 ## Future Architecture
 
