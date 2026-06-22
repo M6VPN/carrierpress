@@ -384,6 +384,17 @@ implemented until code, docs, and validation are complete.
 - [x] Do not add decoder libraries unless selected later.
 - [x] Keep base build WAV/PCM-native.
 
+## R9 v0.4.0 Release Prep
+
+- [x] Bump project version to 0.4.0.
+- [x] Add v0.4.0 release notes.
+- [x] Update manual v0.4.0 release procedure.
+- [x] Update release checklist for v0.4.0.
+- [x] Preserve historical release notes.
+- [x] Keep PTT/TRANSMIT control deferred.
+- [x] Keep decoder implementation deferred.
+- [x] Keep release publication manual and local.
+
 ## T5 Deferred TRANSMIT/PTT Safety Gate
 
 - [ ] Keep TRANSMIT/PTT out of ordinary GUI workflow.

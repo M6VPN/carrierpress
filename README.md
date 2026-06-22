@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/M6VPN/carrierpress/actions/workflows/ci.yml/badge.svg)](https://github.com/M6VPN/carrierpress/actions/workflows/ci.yml)
 
-CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.3 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, optional dehummer, optional natural dynamics and low-level boost stages, optional multiband compressor foundations, optional static bass EQ, optional restoration and auto EQ analysis taps, an optional conservative declipper research stage, a safe peak limiter, strict profile/config workflows, batch WAV processing, report tools, operator UI polish, and library/API examples.
+CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.4 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, optional dehummer, optional natural dynamics and low-level boost stages, optional multiband compressor foundations, optional static bass EQ, optional restoration and auto EQ analysis taps, an optional conservative declipper research stage, a safe peak limiter, strict profile/config workflows, batch WAV processing, report tools, operator UI polish, library/API examples, packaging hardening, and optional decoder architecture research.
 
 The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
 
@@ -156,10 +156,11 @@ asset guidance are documented in
 [`docs/release-notes-v0.1.1.md`](docs/release-notes-v0.1.1.md),
 [`docs/release-notes-v0.2.0.md`](docs/release-notes-v0.2.0.md),
 [`docs/release-notes-v0.3.0.md`](docs/release-notes-v0.3.0.md),
+[`docs/release-notes-v0.4.0.md`](docs/release-notes-v0.4.0.md),
 [`docs/release-procedure.md`](docs/release-procedure.md), and
 [`docs/release-assets-v0.1.md`](docs/release-assets-v0.1.md).
 The current release notes are in
-[`docs/release-notes-v0.3.0.md`](docs/release-notes-v0.3.0.md). Safe example
+[`docs/release-notes-v0.4.0.md`](docs/release-notes-v0.4.0.md). Safe example
 wrappers are documented in [`examples/README.md`](examples/README.md). Manual
 release commands remain documented in
 [`docs/release-procedure.md`](docs/release-procedure.md).
@@ -1561,8 +1562,8 @@ workflow parity, safer playout and device operations, report automation, API
 and packaging hardening, and optional decoder research without adding decoder
 libraries to the base build.
 
-The v0.3.0 release notes are in
-[`docs/release-notes-v0.3.0.md`](docs/release-notes-v0.3.0.md).
+The v0.4.0 release notes are in
+[`docs/release-notes-v0.4.0.md`](docs/release-notes-v0.4.0.md).
 
 ## License
 

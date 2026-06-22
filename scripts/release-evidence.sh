@@ -37,6 +37,14 @@ else
 	printf 'not present; run: make public-header-smoke && make example-libcarrierpress\n'
 fi
 
+printf '\nbatch/report evidence:\n'
+if [ -f build/quality-report.json ]; then
+	printf 'summary: ./carrierpress --report-summary build/quality-report.json\n'
+	printf 'compare: ./carrierpress --report-compare build/quality-report.json build/quality-report.json\n'
+else
+	printf 'not present; run: make -s quality-json > build/quality-report.json\n'
+fi
+
 printf '\nsource archive evidence:\n'
 if [ -d build/dist ]; then
 	find build/dist -type f -print | sort

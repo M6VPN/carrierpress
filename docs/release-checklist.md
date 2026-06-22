@@ -54,6 +54,43 @@ operation.
 GitHub Actions CI must also be green before a release tag is created. CI
 coverage is documented in `docs/ci.md`.
 
+## v0.4.0 Release Checks
+
+Use this section when preparing `v0.4.0`, the release for v0.4 workflow-polish
+milestones M24 through M29.
+
+- Confirm `./carrierpress --version` prints `CarrierPress 0.4.0`.
+- Confirm staged install pkg-config metadata reports `Version: 0.4.0`.
+- Confirm `docs/release-notes-v0.4.0.md` is the release body.
+- Confirm historical release notes remain historical and unchanged except for
+  index-style links elsewhere.
+- Confirm GUI playout output-device restart and fallback docs are present in
+  `docs/gui-workflow.md`.
+- Confirm sndio GUI and device evaluation docs are present in
+  `docs/sndio-gui-device-workflow.md`.
+- Confirm GUI request, status, and device display docs are present in
+  `docs/gui-workflow.md`.
+- Confirm batch summary and evidence workflow docs are present in
+  `docs/batch-workflow.md`.
+- Confirm batch summary comparison is documented in
+  `docs/measurement-reports.md` and `docs/batch-workflow.md`.
+- Confirm optional decoder architecture docs are present in
+  `docs/optional-decoder-architecture.md`.
+- Confirm `make public-header-smoke` passes.
+- Confirm `make pkg-config-smoke` passes and optional dependencies are absent
+  from base pkg-config metadata.
+- Confirm `make dist-check` creates and verifies the source tarball checksum.
+- Confirm GitHub Actions CI is green before tagging.
+- Confirm no decoder libraries or native compressed-audio support were added.
+- Confirm no CAT write/control commands were added.
+- Confirm T5 PTT and TRANSMIT control remain deferred and unchecked in
+  `TODO.md`.
+- Confirm no release docs or package metadata claim RF generation, transmitter
+  compliance, licence compliance, regulatory approval, legal bandwidth, or
+  broadcast quality.
+- Confirm release publication remains manual and local per
+  `docs/release-procedure.md`.
+
 ## v0.3.0 Release Checks
 
 Use this section when preparing `v0.3.0`, the release for v0.3 operator-polish
