@@ -11,6 +11,7 @@
 #include "cp_gui_format.h"
 #include "cp_monitor.h"
 #include "cp_operator_state.h"
+#include "cp_transmit_control.h"
 
 static int	test_cat_format(void);
 static int	test_chain_format(void);
@@ -27,6 +28,7 @@ static int	test_output_device_format(void);
 static int	test_playlist_choices_format(void);
 static int	test_truncate_format(void);
 static int	test_transport_format(void);
+static int	test_tx_status_format(void);
 static int	test_workflow_format(void);
 
 int
@@ -51,6 +53,8 @@ main(void)
 	if (!test_help_format())
 		return 1;
 	if (!test_transport_format())
+		return 1;
+	if (!test_tx_status_format())
 		return 1;
 	if (!test_operator_format())
 		return 1;
@@ -694,6 +698,118 @@ test_transport_format(void)
 	    strstr(buffer, "input.wav") == NULL ||
 	    strstr(buffer, "output=7") == NULL) {
 		printf("test_gui_format: playlist transport mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+test_tx_status_format(void)
+{
+	struct cp_tx_control control;
+	char buffer[128];
+	char small[12];
+
+	if (cp_gui_format_tx_status(NULL, buffer, sizeof(buffer)) != CP_OK ||
+	    strcmp(buffer, "Safety: tx_mock unavailable") != 0) {
+		printf("test_gui_format: null tx status mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	if (cp_gui_format_tx_status(NULL, small, sizeof(small)) !=
+	    CP_ERR_RANGE || small[sizeof(small) - 1] != '\0') {
+		printf("test_gui_format: small tx status mismatch: %s\n",
+		    small);
+		return 0;
+	}
+
+	cp_tx_control_init(&control);
+	if (cp_gui_format_tx_status(&control, buffer, sizeof(buffer)) !=
+	    CP_OK) {
+		printf("test_gui_format: initial tx status failed\n");
+		return 0;
+	}
+#ifdef CP_WITH_TRANSMIT_CONTROL
+	if (strstr(buffer, "tx_mock") == NULL ||
+	    strstr(buffer, "state=disarmed") == NULL ||
+	    strstr(buffer, "armed=no") == NULL ||
+	    strstr(buffer, "active=no") == NULL) {
+		printf("test_gui_format: guarded tx status mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	if (cp_tx_control_arm(&control) != CP_TX_OK ||
+	    cp_gui_format_tx_status(&control, buffer, sizeof(buffer)) !=
+	    CP_OK ||
+	    strstr(buffer, "state=armed_rx") == NULL ||
+	    strstr(buffer, "armed=yes") == NULL ||
+	    strstr(buffer, "active=no") == NULL) {
+		printf("test_gui_format: armed tx status mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	if (cp_tx_control_request_transmit(&control) != CP_TX_OK ||
+	    cp_gui_format_tx_status(&control, buffer, sizeof(buffer)) !=
+	    CP_OK ||
+	    strstr(buffer, "state=tx_requested") == NULL ||
+	    strstr(buffer, "active=no") == NULL) {
+		printf("test_gui_format: requested tx status mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	if (cp_tx_control_mock_step(&control) != CP_TX_OK ||
+	    cp_gui_format_tx_status(&control, buffer, sizeof(buffer)) !=
+	    CP_OK ||
+	    strstr(buffer, "state=tx_active") == NULL ||
+	    strstr(buffer, "active=yes") == NULL) {
+		printf("test_gui_format: active tx status mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+	if (cp_tx_control_request_rx(&control) != CP_TX_OK ||
+	    cp_gui_format_tx_status(&control, buffer, sizeof(buffer)) !=
+	    CP_OK ||
+	    strstr(buffer, "state=rx_requested") == NULL ||
+	    strstr(buffer, "active=no") == NULL) {
+		printf("test_gui_format: rx tx status mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+#else
+	if (strcmp(buffer, "Safety: tx_mock unavailable") != 0) {
+		printf("test_gui_format: ordinary tx status mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+#endif
+	control.state = CP_TX_STATE_FAULT;
+	control.compile_time_enabled = cp_tx_control_available();
+	if (cp_gui_format_tx_status(&control, buffer, sizeof(buffer)) !=
+	    CP_OK) {
+		printf("test_gui_format: fault tx status failed\n");
+		return 0;
+	}
+#ifdef CP_WITH_TRANSMIT_CONTROL
+	if (strstr(buffer, "state=fault") == NULL) {
+		printf("test_gui_format: fault tx status mismatch: %s\n",
+		    buffer);
+		return 0;
+	}
+#else
+	if (strcmp(buffer, "Safety: tx_mock unavailable") != 0) {
+		printf("test_gui_format: ordinary fault tx status mismatch: "
+		    "%s\n", buffer);
+		return 0;
+	}
+#endif
+	if (strstr(buffer, "hamlib") != NULL ||
+	    strstr(buffer, "flrig") != NULL ||
+	    strstr(buffer, "cat_ptt") != NULL ||
+	    strstr(buffer, "rig_frequency") != NULL ||
+	    strstr(buffer, "rig_mode") != NULL) {
+		printf("test_gui_format: tx backend text leaked: %s\n",
 		    buffer);
 		return 0;
 	}

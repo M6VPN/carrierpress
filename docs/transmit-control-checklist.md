@@ -84,6 +84,16 @@ future T5 safety-gated work only. It is not permission to test on air.
 - Run targets that execute `make clean`, including
   `make transmit-control-mock-test`, serially.
 
+## T6A Mock TX Status Display Checklist
+
+- Confirm ordinary builds do not show active TX controls.
+- Confirm `WITH_TRANSMIT_CONTROL=1` can display mock state only.
+- Confirm the status line shows state, armed flag, and active flag.
+- Confirm no arm, disarm, transmit-request, or emergency key is added.
+- Confirm no CAT, hamlib, flrig, serial, GPIO, VOX, or hardware backend is
+  called by the display path.
+- Confirm the safety audits still pass.
+
 ## Runtime-arming Checklist
 
 - Require an explicit runtime arming command after process start.

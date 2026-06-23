@@ -89,6 +89,9 @@ cp_gui_init(struct cp_gui *gui)
 	gui->control_bank = CP_CONTROL_BANK_AM;
 	cp_control_command_clear(&gui->pending_command);
 	cp_gui_workflow_request_clear(&gui->pending_workflow);
+#ifdef CP_WITH_TRANSMIT_CONTROL
+	cp_tx_control_init(&gui->tx_control);
+#endif
 	gui->window = window;
 	gui->renderer = renderer;
 
@@ -178,7 +181,11 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	char operator_status[512];
 	char output_choices[256];
 	char playlist_choices[256];
+	char safety[384];
 	char transport[256];
+#ifdef CP_WITH_TRANSMIT_CONTROL
+	char tx_status[128];
+#endif
 	char workflow[256];
 
 	if (gui == NULL || view == NULL || view->config == NULL ||
@@ -212,6 +219,14 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	    cp_gui_format_cat(view->cat_snapshot, cat, sizeof(cat)) !=
 	    CP_OK)
 		return CP_ERR_RANGE;
+#ifdef CP_WITH_TRANSMIT_CONTROL
+	if (cp_gui_format_tx_status(&gui->tx_control, tx_status,
+	    sizeof(tx_status)) != CP_OK)
+		return CP_ERR_RANGE;
+	(void)snprintf(safety, sizeof(safety), "%s | %s", tx_status, help);
+#else
+	(void)snprintf(safety, sizeof(safety), "%s", help);
+#endif
 	if (view->output_choices != NULL && view->output_choices[0] != '\0') {
 		(void)cp_gui_format_truncate(view->output_choices,
 		    output_choices, sizeof(output_choices),
@@ -324,7 +339,7 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	cp_gui_draw_panel(renderer, CP_GUI_MARGIN, 506.0f, 928.0f, 28.0f,
 	    cp_dashboard_section_title(CP_DASHBOARD_SAFETY));
 	cp_gui_draw_panel_text(renderer, 28.0f, 520.0f, 904.0f, 12.0f,
-	    help);
+	    safety);
 
 	(void)SDL_RenderPresent(renderer);
 

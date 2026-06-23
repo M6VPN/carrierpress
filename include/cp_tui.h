@@ -9,11 +9,17 @@
 #include "cp_control.h"
 #include "cp_monitor.h"
 #include "cp_operator_state.h"
+#ifdef CP_WITH_TRANSMIT_CONTROL
+#include "cp_transmit_control.h"
+#endif
 
 struct cp_tui {
 	int active;
 	int control_bank_set;
 	enum cp_control_bank control_bank;
+#ifdef CP_WITH_TRANSMIT_CONTROL
+	struct cp_tx_control tx_control;
+#endif
 };
 
 enum cp_tui_mode {
@@ -27,6 +33,9 @@ struct cp_tui_view {
 	const struct cp_monitor_snapshot *snapshot;
 	const struct cp_cat_snapshot *cat_snapshot;
 	const struct cp_operator_state *operator_state;
+#ifdef CP_WITH_TRANSMIT_CONTROL
+	const struct cp_tx_control *tx_control;
+#endif
 	const char *audio_choices;
 	const char *output_choices;
 	const char *playlist_choices;

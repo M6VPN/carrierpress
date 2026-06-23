@@ -14,6 +14,8 @@
 #include "cp_monitor.h"
 #include "cp_operator_state.h"
 
+struct cp_tx_control;
+
 enum cp_gui_mode {
 	CP_GUI_MODE_LIVE = 0,
 	CP_GUI_MODE_PLAYOUT,
@@ -47,6 +49,8 @@ int	cp_gui_format_truncate(const char *, char *, size_t, size_t);
 int	cp_gui_format_transport(enum cp_gui_mode,
 	    const struct cp_audio_config *, const char *, size_t, size_t, int,
 	    char *, size_t);
+int	cp_gui_format_tx_status(const struct cp_tx_control *, char *,
+	    size_t);
 int	cp_gui_format_workflow(const struct cp_gui_workflow_request *,
 	    char *, size_t);
 int	cp_gui_control_command_from_key(int, enum cp_control_bank, int,

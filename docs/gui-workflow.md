@@ -246,5 +246,10 @@ workflow or polish milestones. The future-only boundary is documented in
 [`transmit-control-architecture.md`](transmit-control-architecture.md), and
 [`transmit-control-checklist.md`](transmit-control-checklist.md).
 
+T6A adds a guarded mock-only status line to the operator safety/status surface
+when `WITH_TRANSMIT_CONTROL=1` is built. The line displays mock state only. It
+does not add GUI buttons, keybindings, arm/disarm actions, transmit requests,
+emergency actions, CAT write/control, or hardware backends.
+
 Ordinary CLI, TUI, GUI, CAT status, and example workflow boundaries are
 summarized in [`operator-workflow.md`](operator-workflow.md).

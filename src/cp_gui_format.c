@@ -10,6 +10,7 @@
 #include "cp_agc.h"
 #include "cp_gui_format.h"
 #include "cp_selector.h"
+#include "cp_transmit_control.h"
 
 static const char	*cp_gui_onoff(unsigned int);
 static void		cp_gui_append_text(char *, size_t, const char *);
@@ -424,6 +425,26 @@ cp_gui_format_transport(enum cp_gui_mode mode,
 	    "Playout: mode=%s path=%s rate=%.0fHz channels=%zu output=%d",
 	    label, path == NULL ? "" : path, config->sample_rate,
 	    config->channels, output_device);
+}
+
+int
+cp_gui_format_tx_status(const struct cp_tx_control *control, char *buffer,
+	size_t buffer_size)
+{
+	if (buffer == NULL || buffer_size == 0)
+		return CP_ERR_NULL;
+	if (control == NULL || !cp_tx_control_available() ||
+	    !control->compile_time_enabled ||
+	    cp_tx_control_state(control) == CP_TX_STATE_DISABLED) {
+		return cp_gui_snprintf(buffer, buffer_size,
+		    "Safety: tx_mock unavailable");
+	}
+
+	return cp_gui_snprintf(buffer, buffer_size,
+	    "Safety: tx_mock state=%s armed=%s active=%s",
+	    cp_tx_state_string(cp_tx_control_state(control)),
+	    cp_tx_control_is_armed(control) ? "yes" : "no",
+	    cp_tx_control_is_tx_active(control) ? "yes" : "no");
 }
 
 int

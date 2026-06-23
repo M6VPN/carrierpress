@@ -51,9 +51,15 @@ check_example_scripts_no_matches()
 
 check_no_matches \
 	"ordinary GUI/TUI/control workflow exposes active transmit controls" \
-	'cp_tx_control_|cp_transmit_control\.h|request_transmit|tx_active|tx_requested|TRANSMIT|PTT|set_ptt|ptt_on|ptt_off|rig_set' \
+	'(^|[^A-Za-z0-9_])(request_transmit|tx_active|tx_requested|TRANSMIT|PTT)([^A-Za-z0-9_]|$)|set_ptt|ptt_on|ptt_off|rig_set' \
 	include/cp_control.h src/cp_control.c \
 	include/cp_gui_workflow.h src/cp_gui_workflow.c \
+	src/cp_gui_format.c src/cp_gui_sdl3.c src/cp_tui.c
+
+check_no_matches \
+	"operator display paths expose state-changing transmit-control calls" \
+	'cp_tx_control_(arm|disarm|request_transmit|request_rx|emergency_rx|mock_step)[[:space:]]*\(' \
+	include/cp_gui.h include/cp_tui.h include/cp_gui_format.h \
 	src/cp_gui_format.c src/cp_gui_sdl3.c src/cp_tui.c
 
 check_example_scripts_no_matches \

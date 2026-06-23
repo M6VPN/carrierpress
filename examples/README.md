@@ -42,6 +42,10 @@ playlist validation before deferred requests are accepted. The selector model
 is not a file dialog, device opener, decoder, playlist auto-discovery tool, or
 transmit-control UI.
 
+T6A can show guarded mock TX status in operator surfaces when
+`WITH_TRANSMIT_CONTROL=1` is built. Examples do not arm, request, emergency
+drop, key, or control transmit paths.
+
 ## Base Examples
 
 ```sh

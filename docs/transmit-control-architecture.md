@@ -74,6 +74,18 @@ again.
 No backend exists. The guarded mock state machine does not call CAT, hamlib,
 flrig, serial, GPIO, VOX, or any other hardware-control path.
 
+## T6A Mock Status Display
+
+T6A makes the guarded mock state visible to operator surfaces as a status line
+only. When `WITH_TRANSMIT_CONTROL=1` is built, GUI and TUI safety/status areas
+may show the current mock state, arming flag, and active flag from the guarded
+state machine.
+
+The T6A display path does not add arm, disarm, transmit-request, or emergency
+controls. It does not call CAT, hamlib, flrig, serial, GPIO, VOX, or hardware
+backends. Ordinary builds keep transmit control unavailable and do not expose
+active TX controls.
+
 ## State Machine
 
 A future state machine should start in RX/off state and keep states explicit:

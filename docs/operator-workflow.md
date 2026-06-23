@@ -113,6 +113,11 @@ safety docs, checklist, and static audit:
 - [`transmit-control-architecture.md`](transmit-control-architecture.md)
 - [`transmit-control-checklist.md`](transmit-control-checklist.md)
 
+T6A adds a guarded mock-only status line for operator surfaces. It appears only
+when the guarded mock build is enabled and shows mock state, armed state, and
+active state. It does not add arm, disarm, transmit-request, emergency, CAT
+write/control, or hardware backend actions.
+
 ## Examples and Demos
 
 Examples are local wrappers for safe inspection and validation. They must not

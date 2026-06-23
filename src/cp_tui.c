@@ -20,6 +20,9 @@
 #include "cp_restoration.h"
 #include "cp_ssb.h"
 #include "cp_tui.h"
+#ifdef CP_WITH_TRANSMIT_CONTROL
+#include "cp_gui_format.h"
+#endif
 
 #define CP_TUI_BAR_WIDTH	16
 #define CP_TUI_MIN_ROWS		24
@@ -84,6 +87,9 @@ cp_tui_init(struct cp_tui *tui)
 	tui->active = 1;
 	tui->control_bank_set = 0;
 	tui->control_bank = CP_CONTROL_BANK_AM;
+#ifdef CP_WITH_TRANSMIT_CONTROL
+	cp_tx_control_init(&tui->tx_control);
+#endif
 
 	return 0;
 }
@@ -108,6 +114,9 @@ int
 cp_tui_update_view(struct cp_tui *tui, const struct cp_tui_view *view,
 	struct cp_control_command *command)
 {
+#ifdef CP_WITH_TRANSMIT_CONTROL
+	struct cp_tui_view display_view;
+#endif
 	int cols;
 	int key;
 	int rows;
@@ -121,6 +130,12 @@ cp_tui_update_view(struct cp_tui *tui, const struct cp_tui_view *view,
 		tui->control_bank = cp_tui_initial_bank(view);
 		tui->control_bank_set = 1;
 	}
+#ifdef CP_WITH_TRANSMIT_CONTROL
+	display_view = *view;
+	if (display_view.tx_control == NULL)
+		display_view.tx_control = &tui->tx_control;
+	view = &display_view;
+#endif
 
 	getmaxyx(stdscr, rows, cols);
 	erase();
@@ -400,6 +415,9 @@ cp_tui_draw_details(int rows, int cols, const struct cp_tui_view *view)
 	const char *bass_preset;
 	const char *ssb_preset;
 	char cat_text[CP_TUI_TEXT_SIZE];
+#ifdef CP_WITH_TRANSMIT_CONTROL
+	char tx_text[CP_TUI_TEXT_SIZE];
+#endif
 	size_t band;
 
 	(void)rows;
@@ -467,12 +485,24 @@ cp_tui_draw_details(int rows, int cols, const struct cp_tui_view *view)
 	if (cp_tui_format_cat_status(view->cat_snapshot, cat_text,
 	    sizeof(cat_text)) != CP_OK)
 		cat_text[0] = '\0';
+#ifdef CP_WITH_TRANSMIT_CONTROL
+	if (cp_gui_format_tx_status(view->tx_control, tx_text,
+	    sizeof(tx_text)) != CP_OK)
+		tx_text[0] = '\0';
+	if (view->output_choices != NULL && view->output_choices[0] != '\0') {
+		cp_tui_draw_text(22, 2, cols, "%s | %s | %s", cat_text,
+		    view->output_choices, tx_text);
+	} else {
+		cp_tui_draw_text(22, 2, cols, "%s | %s", cat_text, tx_text);
+	}
+#else
 	if (view->output_choices != NULL && view->output_choices[0] != '\0') {
 		cp_tui_draw_text(22, 2, cols, "%s | %s", cat_text,
 		    view->output_choices);
 	} else {
 		cp_tui_draw_text(22, 2, cols, "%s", cat_text);
 	}
+#endif
 }
 
 static void

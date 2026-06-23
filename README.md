@@ -570,6 +570,11 @@ station-control behavior. T5D adds mock-only emergency RX/drop tests in that
 guarded state machine. T5E adds static callback and path isolation audit
 coverage through `make transmit-control-safety-audit`.
 
+T6A adds a guarded mock-only status display for GUI/TUI safety surfaces when
+`WITH_TRANSMIT_CONTROL=1` is built. It shows mock state only. It does not add
+arm/disarm controls, transmit-request controls, emergency controls, hardware
+backends, or CAT write/control.
+
 Build the read-only hamlib CAT backend:
 
 ```sh

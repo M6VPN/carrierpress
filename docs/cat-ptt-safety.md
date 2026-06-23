@@ -127,6 +127,17 @@ radio.
 No CAT write/control backend exists. Read-only CAT status remains separate from
 the guarded mock transmit-control namespace.
 
+## Current T6A Boundary
+
+T6A adds a guarded mock-only status display for operator surfaces. In a
+`WITH_TRANSMIT_CONTROL=1` build, the GUI and TUI may show the mock state,
+whether the mock object is armed, and whether the mock state is active.
+
+T6A is display-only. It does not add arm/disarm controls, transmit-request
+controls, emergency controls, hardware backends, CAT write/control, hamlib or
+flrig PTT calls, profile/config arming, or report/batch/playlist transmit
+fields. Ordinary builds remain unavailable and free of active TX controls.
+
 ## Future Architecture
 
 Any future implementation should use a separate PTT command boundary, for

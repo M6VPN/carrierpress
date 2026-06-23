@@ -42,8 +42,14 @@ check_tx_symbols_outside_boundary()
 	if matches=$(find include src tests examples -type f \
 	    \( -name '*.c' -o -name '*.h' \) \
 	    ! -path 'include/cp_transmit_control.h' \
+	    ! -path 'include/cp_gui.h' \
+	    ! -path 'include/cp_tui.h' \
+	    ! -path 'src/cp_gui_format.c' \
+	    ! -path 'src/cp_gui_sdl3.c' \
+	    ! -path 'src/cp_tui.c' \
 	    ! -path 'src/cp_transmit_control.c' \
 	    ! -path 'tests/test_transmit_control.c' \
+	    ! -path 'tests/test_gui_format.c' \
 	    -exec grep -nE 'cp_tx_control_|cp_transmit_control\.h' {} + \
 	    2>/dev/null); then
 		fail "transmit-control-safety-audit: transmit-control API used outside guarded boundary"
@@ -60,10 +66,16 @@ check_no_matches \
 
 check_no_matches \
 	"ordinary GUI/TUI/control workflow exposes active transmit terms" \
-	'cp_tx_control_|cp_transmit_control\.h|request_transmit|tx_active|tx_requested|TRANSMIT|PTT' \
+	'(^|[^A-Za-z0-9_])(request_transmit|tx_active|tx_requested|TRANSMIT|PTT)([^A-Za-z0-9_]|$)' \
 	include/cp_control.h src/cp_control.c \
 	include/cp_gui_workflow.h src/cp_gui_workflow.c \
 	src/cp_gui_sdl3.c src/cp_tui.c
+
+check_no_matches \
+	"operator display paths expose state-changing transmit-control calls" \
+	'cp_tx_control_(arm|disarm|request_transmit|request_rx|emergency_rx|mock_step)[[:space:]]*\(' \
+	include/cp_gui.h include/cp_tui.h include/cp_gui_format.h \
+	src/cp_gui_format.c src/cp_gui_sdl3.c src/cp_tui.c
 
 check_no_matches \
 	"host/audio/report/batch/config/profile paths reference transmit-control API" \

@@ -10,6 +10,9 @@
 #ifdef CP_WITH_FFTW
 #include "cp_spectrum.h"
 #endif
+#ifdef CP_WITH_TRANSMIT_CONTROL
+#include "cp_transmit_control.h"
+#endif
 #include "cp_waveform.h"
 
 struct cp_gui {
@@ -21,6 +24,9 @@ struct cp_gui {
 	enum cp_control_bank control_bank;
 	struct cp_control_command pending_command;
 	struct cp_gui_workflow_request pending_workflow;
+#ifdef CP_WITH_TRANSMIT_CONTROL
+	struct cp_tx_control tx_control;
+#endif
 	void *window;
 	void *renderer;
 };
