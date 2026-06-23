@@ -635,7 +635,7 @@ implemented until code, docs, and validation are complete.
 ## T6 Mock TX Operator Controls
 
 - [x] Add guarded mock-only TX status panel.
-- [ ] Add guarded mock-only runtime arm/disarm controls.
+- [x] Add guarded mock-only runtime arm/disarm controls.
 - [ ] Add guarded mock-only TX request and emergency RX/drop controls.
 - [ ] Keep ordinary builds free of TX controls.
 - [ ] Keep hardware backend absent.
@@ -646,6 +646,15 @@ implemented until code, docs, and validation are complete.
 - [x] Display mock TX state in operator safety/status surfaces when guarded build is enabled.
 - [x] Keep this patch display-only with no arm/disarm/TX request controls.
 - [x] Keep ordinary builds free of active TX controls.
+- [x] Keep hardware backend absent.
+
+## T6B Mock Arm/Disarm Controls
+
+- [x] Add guarded mock-only arm/disarm operator commands.
+- [x] Show guarded mock-only arm/disarm help text only when `WITH_TRANSMIT_CONTROL=1`.
+- [x] Keep arm/disarm controls mock-state-only.
+- [x] Keep this patch free of TX request and emergency UI controls.
+- [x] Keep ordinary builds free of arm/disarm TX controls.
 - [x] Keep hardware backend absent.
 
 ## T7 Future Hardware TX Backend

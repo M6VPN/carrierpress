@@ -94,6 +94,18 @@ future T5 safety-gated work only. It is not permission to test on air.
   called by the display path.
 - Confirm the safety audits still pass.
 
+## T6B Mock Arm/Disarm Controls Checklist
+
+- Confirm ordinary builds do not expose mock arm/disarm keys.
+- Confirm guarded builds show `r` mock arm and `u` mock disarm help text.
+- Confirm guarded arm moves only to the mock `armed_rx` state.
+- Confirm guarded disarm moves mock arming back to `disarmed`.
+- Confirm guarded arm/disarm cannot enter `tx_requested` or `tx_active`.
+- Confirm no transmit-request or emergency RX/drop UI control is added.
+- Confirm no CAT, hamlib, flrig, serial, GPIO, VOX, or hardware backend is
+  called by the guarded operator path.
+- Confirm the safety audits still pass.
+
 ## Runtime-arming Checklist
 
 - Require an explicit runtime arming command after process start.

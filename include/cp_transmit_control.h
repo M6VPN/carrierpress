@@ -30,6 +30,14 @@ struct cp_tx_control {
 	int compile_time_enabled;
 };
 
+#ifdef CP_WITH_TRANSMIT_CONTROL
+enum cp_tx_operator_command {
+	CP_TX_OPERATOR_NONE = 0,
+	CP_TX_OPERATOR_ARM,
+	CP_TX_OPERATOR_DISARM
+};
+#endif
+
 int			cp_tx_control_available(void);
 int			cp_tx_control_arm(struct cp_tx_control *);
 int			cp_tx_control_disarm(struct cp_tx_control *);
@@ -46,5 +54,14 @@ int			cp_tx_control_request_transmit(
 enum cp_tx_state	cp_tx_control_state(const struct cp_tx_control *);
 const char		*cp_tx_state_string(enum cp_tx_state);
 const char		*cp_tx_status_string(int);
+#ifdef CP_WITH_TRANSMIT_CONTROL
+int			cp_tx_operator_command_apply(
+			    struct cp_tx_control *,
+			    enum cp_tx_operator_command);
+int			cp_tx_operator_command_from_key(int,
+			    enum cp_tx_operator_command *);
+const char		*cp_tx_operator_command_string(
+			    enum cp_tx_operator_command);
+#endif
 
 #endif

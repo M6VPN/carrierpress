@@ -251,5 +251,11 @@ when `WITH_TRANSMIT_CONTROL=1` is built. The line displays mock state only. It
 does not add GUI buttons, keybindings, arm/disarm actions, transmit requests,
 emergency actions, CAT write/control, or hardware backends.
 
+T6B adds guarded mock-only arm/disarm key handling for that same mock state:
+`r` arms the mock state machine and `u` disarms it when
+`WITH_TRANSMIT_CONTROL=1` is built. The keys do not exist in ordinary builds.
+They do not request transmit, trigger emergency RX/drop, call CAT
+write/control, or call any hardware backend.
+
 Ordinary CLI, TUI, GUI, CAT status, and example workflow boundaries are
 summarized in [`operator-workflow.md`](operator-workflow.md).

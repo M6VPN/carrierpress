@@ -138,6 +138,19 @@ controls, emergency controls, hardware backends, CAT write/control, hamlib or
 flrig PTT calls, profile/config arming, or report/batch/playlist transmit
 fields. Ordinary builds remain unavailable and free of active TX controls.
 
+## Current T6B Boundary
+
+T6B adds guarded mock-only runtime arm/disarm controls. In a
+`WITH_TRANSMIT_CONTROL=1` build, operator surfaces may use `r` to arm the mock
+state machine and `u` to disarm it. These keys affect only the in-memory mock
+state and do not call CAT, hamlib, flrig, serial, GPIO, VOX, or hardware
+backends.
+
+T6B does not add transmit-request controls, emergency RX/drop UI controls,
+profile/config arming, report/batch/playlist transmit fields, or
+frequency/mode control. Ordinary builds do not expose the guarded mock
+arm/disarm keys.
+
 ## Future Architecture
 
 Any future implementation should use a separate PTT command boundary, for

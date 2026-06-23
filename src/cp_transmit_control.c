@@ -251,3 +251,56 @@ cp_tx_status_string(int status)
 		return "unknown";
 	}
 }
+
+#ifdef CP_WITH_TRANSMIT_CONTROL
+int
+cp_tx_operator_command_apply(struct cp_tx_control *control,
+	enum cp_tx_operator_command command)
+{
+	switch (command) {
+	case CP_TX_OPERATOR_ARM:
+		return cp_tx_control_arm(control);
+	case CP_TX_OPERATOR_DISARM:
+		return cp_tx_control_disarm(control);
+	case CP_TX_OPERATOR_NONE:
+		return CP_TX_OK;
+	default:
+		return CP_TX_ERR_INVALID_STATE;
+	}
+}
+
+int
+cp_tx_operator_command_from_key(int key,
+	enum cp_tx_operator_command *command)
+{
+	if (command == NULL)
+		return CP_TX_ERR_NULL;
+
+	*command = CP_TX_OPERATOR_NONE;
+	switch (key) {
+	case 'r':
+		*command = CP_TX_OPERATOR_ARM;
+		return CP_TX_OK;
+	case 'u':
+		*command = CP_TX_OPERATOR_DISARM;
+		return CP_TX_OK;
+	default:
+		return CP_TX_ERR_UNSUPPORTED;
+	}
+}
+
+const char *
+cp_tx_operator_command_string(enum cp_tx_operator_command command)
+{
+	switch (command) {
+	case CP_TX_OPERATOR_NONE:
+		return "none";
+	case CP_TX_OPERATOR_ARM:
+		return "mock_arm";
+	case CP_TX_OPERATOR_DISARM:
+		return "mock_disarm";
+	default:
+		return "unknown";
+	}
+}
+#endif

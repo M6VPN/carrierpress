@@ -116,6 +116,7 @@ cp_tui_update_view(struct cp_tui *tui, const struct cp_tui_view *view,
 {
 #ifdef CP_WITH_TRANSMIT_CONTROL
 	struct cp_tui_view display_view;
+	enum cp_tx_operator_command tx_command;
 #endif
 	int cols;
 	int key;
@@ -153,6 +154,13 @@ cp_tui_update_view(struct cp_tui *tui, const struct cp_tui_view *view,
 	key = getch();
 	if (key == ERR)
 		return 0;
+#ifdef CP_WITH_TRANSMIT_CONTROL
+	if (cp_tx_operator_command_from_key(key, &tx_command) == CP_TX_OK) {
+		(void)cp_tx_operator_command_apply(&tui->tx_control,
+		    tx_command);
+		return 0;
+	}
+#endif
 	if (cp_control_command_from_key(key, tui->control_bank, command) !=
 	    CP_OK)
 		return 0;
@@ -218,6 +226,9 @@ cp_tui_format_key_help(const struct cp_tui_view *view,
 
 	return cp_tui_snprintf(buffer, buffer_size,
 	    "Help: q stop%s | a AM bank s SSB bank | d hum m MB1 b MB2 | "
+#ifdef CP_WITH_TRANSMIT_CONTROL
+	    "r mock arm u mock disarm | "
+#endif
 	    "%s | %s | mode %s",
 	    next_text, bank_name, preset_text, mode_name);
 }

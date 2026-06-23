@@ -184,6 +184,7 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	char safety[384];
 	char transport[256];
 #ifdef CP_WITH_TRANSMIT_CONTROL
+	char help_short[224];
 	char tx_status[128];
 #endif
 	char workflow[256];
@@ -223,7 +224,10 @@ cp_gui_update(struct cp_gui *gui, const struct cp_gui_view *view)
 	if (cp_gui_format_tx_status(&gui->tx_control, tx_status,
 	    sizeof(tx_status)) != CP_OK)
 		return CP_ERR_RANGE;
-	(void)snprintf(safety, sizeof(safety), "%s | %s", tx_status, help);
+	(void)cp_gui_format_truncate(help, help_short, sizeof(help_short),
+	    sizeof(help_short) - 1);
+	(void)snprintf(safety, sizeof(safety), "%s | %s", tx_status,
+	    help_short);
 #else
 	(void)snprintf(safety, sizeof(safety), "%s", help);
 #endif
@@ -546,6 +550,9 @@ cp_gui_poll_events(struct cp_gui *gui, const struct cp_gui_view *view)
 	struct cp_control_command command;
 	struct cp_gui_workflow_request workflow_request;
 	SDL_Event event;
+#ifdef CP_WITH_TRANSMIT_CONTROL
+	enum cp_tx_operator_command tx_command;
+#endif
 	int next_enabled;
 
 	if (gui == NULL)
@@ -566,6 +573,13 @@ cp_gui_poll_events(struct cp_gui *gui, const struct cp_gui_view *view)
 		    &workflow_request) == CP_OK) {
 			gui->pending_workflow = workflow_request;
 			gui->pending_workflow_set = 1;
+#ifdef CP_WITH_TRANSMIT_CONTROL
+		} else if (event.type == SDL_EVENT_KEY_DOWN &&
+		    cp_tx_operator_command_from_key((int)event.key.key,
+		    &tx_command) == CP_TX_OK) {
+			(void)cp_tx_operator_command_apply(&gui->tx_control,
+			    tx_command);
+#endif
 		} else if (event.type == SDL_EVENT_KEY_DOWN &&
 		    (event.key.key == SDLK_ESCAPE ||
 		    cp_gui_control_command_from_key((int)event.key.key,

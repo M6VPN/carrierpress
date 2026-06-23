@@ -50,7 +50,7 @@ check_tx_symbols_outside_boundary()
 	    ! -path 'src/cp_transmit_control.c' \
 	    ! -path 'tests/test_transmit_control.c' \
 	    ! -path 'tests/test_gui_format.c' \
-	    -exec grep -nE 'cp_tx_control_|cp_transmit_control\.h' {} + \
+	    -exec grep -nE 'cp_tx_control_|cp_tx_operator_command_|cp_transmit_control\.h' {} + \
 	    2>/dev/null); then
 		fail "transmit-control-safety-audit: transmit-control API used outside guarded boundary"
 		printf '%s\n' "$matches" >&2
@@ -74,6 +74,12 @@ check_no_matches \
 check_no_matches \
 	"operator display paths expose state-changing transmit-control calls" \
 	'cp_tx_control_(arm|disarm|request_transmit|request_rx|emergency_rx|mock_step)[[:space:]]*\(' \
+	include/cp_gui.h include/cp_tui.h include/cp_gui_format.h \
+	src/cp_gui_format.c src/cp_gui_sdl3.c src/cp_tui.c
+
+check_no_matches \
+	"operator UI paths expose transmit request or emergency controls before T6C" \
+	'cp_tx_control_(request_transmit|request_rx|emergency_rx|mock_step)[[:space:]]*\(' \
 	include/cp_gui.h include/cp_tui.h include/cp_gui_format.h \
 	src/cp_gui_format.c src/cp_gui_sdl3.c src/cp_tui.c
 

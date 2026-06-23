@@ -62,6 +62,12 @@ check_no_matches \
 	include/cp_gui.h include/cp_tui.h include/cp_gui_format.h \
 	src/cp_gui_format.c src/cp_gui_sdl3.c src/cp_tui.c
 
+check_no_matches \
+	"operator UI paths expose transmit request or emergency controls before T6C" \
+	'cp_tx_control_(request_transmit|request_rx|emergency_rx|mock_step)[[:space:]]*\(' \
+	include/cp_gui.h include/cp_tui.h include/cp_gui_format.h \
+	src/cp_gui_format.c src/cp_gui_sdl3.c src/cp_tui.c
+
 check_example_scripts_no_matches \
 	"examples contain release publication, package install, or sudo actions" \
 	'sudo|apt-get|apt install|dnf install|yum install|pacman|pkg_add|brew install|git tag|git push|gh release|upload-artifact'

@@ -118,6 +118,12 @@ when the guarded mock build is enabled and shows mock state, armed state, and
 active state. It does not add arm, disarm, transmit-request, emergency, CAT
 write/control, or hardware backend actions.
 
+T6B adds guarded mock-only `r` arm and `u` disarm controls for the same
+in-memory mock state. These controls only exist when
+`WITH_TRANSMIT_CONTROL=1` is built. They do not request transmit, expose an
+emergency RX/drop UI action, call CAT write/control, or call a hardware
+backend. Ordinary builds remain free of the guarded mock keys.
+
 ## Examples and Demos
 
 Examples are local wrappers for safe inspection and validation. They must not

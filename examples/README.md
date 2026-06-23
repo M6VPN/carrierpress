@@ -46,6 +46,10 @@ T6A can show guarded mock TX status in operator surfaces when
 `WITH_TRANSMIT_CONTROL=1` is built. Examples do not arm, request, emergency
 drop, key, or control transmit paths.
 
+T6B adds guarded mock-only operator arm/disarm keys for GUI/TUI surfaces in
+`WITH_TRANSMIT_CONTROL=1` builds. Example scripts still do not arm, request,
+emergency drop, key, or control transmit paths.
+
 ## Base Examples
 
 ```sh

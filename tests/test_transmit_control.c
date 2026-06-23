@@ -11,6 +11,7 @@
 static int	text_has_backend_name(const char *);
 static int	test_availability(void);
 static int	test_guarded_emergency_rx(void);
+static int	test_guarded_operator_commands(void);
 static int	test_guarded_state_machine(void);
 static int	test_initial_state(void);
 static int	test_null_inputs(void);
@@ -31,6 +32,8 @@ main(void)
 	if (!test_guarded_state_machine())
 		return 1;
 	if (!test_guarded_emergency_rx())
+		return 1;
+	if (!test_guarded_operator_commands())
 		return 1;
 	if (!test_strings())
 		return 1;
@@ -284,6 +287,70 @@ test_guarded_state_machine(void)
 	    cp_tx_control_is_armed(&control) ||
 	    cp_tx_control_is_tx_active(&control)) {
 		printf("test_transmit_control: disarm failed\n");
+		return 0;
+	}
+#endif
+
+	return 1;
+}
+
+static int
+test_guarded_operator_commands(void)
+{
+#ifdef CP_WITH_TRANSMIT_CONTROL
+	enum cp_tx_operator_command command;
+	struct cp_tx_control control;
+
+	if (cp_tx_operator_command_from_key('r', &command) != CP_TX_OK ||
+	    command != CP_TX_OPERATOR_ARM ||
+	    strcmp(cp_tx_operator_command_string(command), "mock_arm") !=
+	    0) {
+		printf("test_transmit_control: arm command mismatch\n");
+		return 0;
+	}
+	if (cp_tx_operator_command_from_key('u', &command) != CP_TX_OK ||
+	    command != CP_TX_OPERATOR_DISARM ||
+	    strcmp(cp_tx_operator_command_string(command), "mock_disarm") !=
+	    0) {
+		printf("test_transmit_control: disarm command mismatch\n");
+		return 0;
+	}
+	if (cp_tx_operator_command_from_key('T', &command) !=
+	    CP_TX_ERR_UNSUPPORTED ||
+	    cp_tx_operator_command_from_key('E', &command) !=
+	    CP_TX_ERR_UNSUPPORTED ||
+	    cp_tx_operator_command_from_key('r', NULL) != CP_TX_ERR_NULL) {
+		printf("test_transmit_control: unsupported command accepted\n");
+		return 0;
+	}
+	cp_tx_control_init(&control);
+	if (cp_tx_operator_command_apply(&control, CP_TX_OPERATOR_ARM) !=
+	    CP_TX_OK ||
+	    control.state != CP_TX_STATE_ARMED_RX ||
+	    cp_tx_control_is_tx_active(&control)) {
+		printf("test_transmit_control: operator arm failed\n");
+		return 0;
+	}
+	if (cp_tx_operator_command_apply(&control, CP_TX_OPERATOR_DISARM) !=
+	    CP_TX_OK ||
+	    control.state != CP_TX_STATE_DISARMED ||
+	    cp_tx_control_is_armed(&control) ||
+	    cp_tx_control_is_tx_active(&control)) {
+		printf("test_transmit_control: operator disarm failed\n");
+		return 0;
+	}
+	if (cp_tx_operator_command_apply(NULL, CP_TX_OPERATOR_ARM) !=
+	    CP_TX_ERR_NULL ||
+	    cp_tx_operator_command_apply(&control,
+	    (enum cp_tx_operator_command)99) != CP_TX_ERR_INVALID_STATE) {
+		printf("test_transmit_control: operator error mismatch\n");
+		return 0;
+	}
+	if (text_has_backend_name(cp_tx_operator_command_string(
+	    CP_TX_OPERATOR_ARM)) ||
+	    text_has_backend_name(cp_tx_operator_command_string(
+	    CP_TX_OPERATOR_DISARM))) {
+		printf("test_transmit_control: operator backend text leaked\n");
 		return 0;
 	}
 #endif

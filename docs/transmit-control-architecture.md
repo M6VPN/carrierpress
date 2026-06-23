@@ -86,6 +86,18 @@ controls. It does not call CAT, hamlib, flrig, serial, GPIO, VOX, or hardware
 backends. Ordinary builds keep transmit control unavailable and do not expose
 active TX controls.
 
+## T6B Mock Arm/Disarm Controls
+
+T6B adds guarded operator commands for the mock runtime arming boundary. When
+`WITH_TRANSMIT_CONTROL=1` is built, operator surfaces may map `r` to mock arm
+and `u` to mock disarm. These commands call only the in-memory mock
+`cp_tx_control_arm()` and `cp_tx_control_disarm()` state transitions.
+
+T6B does not add transmit-request controls, emergency RX/drop UI controls, CAT
+write/control, hardware backends, hamlib or flrig PTT calls, profile/config
+arming, report/batch/playlist transmit fields, or frequency/mode control.
+Ordinary builds do not include the mock arm/disarm keys or command namespace.
+
 ## State Machine
 
 A future state machine should start in RX/off state and keep states explicit:

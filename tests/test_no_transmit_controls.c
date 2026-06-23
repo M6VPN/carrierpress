@@ -117,6 +117,21 @@ test_no_transmit_key_mapping(void)
 		printf("test_no_transmit_controls: control T accepted\n");
 		return 0;
 	}
+	if (cp_control_command_from_key('r', CP_CONTROL_BANK_AM,
+	    &command) != CP_ERR_RANGE) {
+		printf("test_no_transmit_controls: control r accepted\n");
+		return 0;
+	}
+	if (cp_control_command_from_key('u', CP_CONTROL_BANK_AM,
+	    &command) != CP_ERR_RANGE) {
+		printf("test_no_transmit_controls: control u accepted\n");
+		return 0;
+	}
+	if (cp_control_command_from_key('E', CP_CONTROL_BANK_AM,
+	    &command) != CP_ERR_RANGE) {
+		printf("test_no_transmit_controls: control E accepted\n");
+		return 0;
+	}
 	if (cp_gui_workflow_request_from_key('t', "audio/program.wav",
 	    "playlist.txt", "audio/current.wav", 0, 1, 0,
 	    &request) != CP_ERR_RANGE) {
@@ -127,6 +142,18 @@ test_no_transmit_key_mapping(void)
 	    "playlist.txt", "audio/current.wav", 0, 1, 0,
 	    &request) != CP_ERR_RANGE) {
 		printf("test_no_transmit_controls: workflow T accepted\n");
+		return 0;
+	}
+	if (cp_gui_workflow_request_from_key('r', "audio/program.wav",
+	    "playlist.txt", "audio/current.wav", 0, 1, 0,
+	    &request) != CP_ERR_RANGE) {
+		printf("test_no_transmit_controls: workflow r accepted\n");
+		return 0;
+	}
+	if (cp_gui_workflow_request_from_key('u', "audio/program.wav",
+	    "playlist.txt", "audio/current.wav", 0, 1, 0,
+	    &request) != CP_ERR_RANGE) {
+		printf("test_no_transmit_controls: workflow u accepted\n");
 		return 0;
 	}
 
