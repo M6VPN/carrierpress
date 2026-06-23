@@ -4,6 +4,8 @@ This guide documents ordinary and optional build/test coverage after v0.4.1.
 It complements `docs/validation-targets.md`, which remains the source of
 truth for serial versus parallel scheduling.
 
+For a shorter first-run guide, see `docs/enthusiast-quickstart.md`.
+
 ## Base Build Matrix
 
 The base build is the required dependency-light path:

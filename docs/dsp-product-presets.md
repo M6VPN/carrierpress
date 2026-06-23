@@ -5,6 +5,8 @@ speech and music cleanup, AM/SSB preparation, monitoring, and offline report
 comparison. They are intended for radio and audio enthusiasts who want
 repeatable baseband audio-chain settings.
 
+For a concise first-run path, see `docs/enthusiast-quickstart.md`.
+
 CarrierPress reports and listening notes are engineering and regression
 evidence only. They are not RF measurements, transmitter compliance proof,
 licence-compliance proof, occupied-bandwidth proof, regulatory certification,

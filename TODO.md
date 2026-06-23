@@ -677,7 +677,16 @@ implemented until code, docs, and validation are complete.
 
 ## P39 Enthusiast Onboarding
 
-- [ ] Add quick-start guide.
-- [ ] Improve safe demo flows.
-- [ ] Document recommended enthusiast validation commands.
-- [ ] Keep optional dependency setup manual and explicit.
+- [x] Add quick-start guide.
+- [x] Improve safe demo flows.
+- [x] Document recommended enthusiast validation commands.
+- [x] Keep optional dependency setup manual and explicit.
+
+## P39A Enthusiast Quick-Start and Safe Demos
+
+- [x] Add enthusiast quick-start guide.
+- [x] Add or refresh safe first-run demo script.
+- [x] Refresh examples index for enthusiast workflows.
+- [x] Document ordinary, optional, and guarded mock validation commands.
+- [x] Keep optional dependency setup manual and explicit.
+- [x] Keep hardware TX backend absent.

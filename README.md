@@ -13,6 +13,7 @@ Offline WAV processing is available as an optional M1 foundation when built with
 - [Requirements](#requirements)
 - [Setup](#setup)
 - [Examples](#examples)
+- [Enthusiast Quick Start](#enthusiast-quick-start)
 - [Profiles](#profiles)
 - [Config Files](#config-files)
 - [Usage](#usage)
@@ -203,6 +204,21 @@ validation before deferred requests are accepted. Selector workflow notes are in
 [`docs/selector-workflow.md`](docs/selector-workflow.md). TX operator controls
 remain future, guarded, and mock-only unless a later safety milestone selects
 more work.
+
+## Enthusiast Quick Start
+
+Start with [`docs/enthusiast-quickstart.md`](docs/enthusiast-quickstart.md)
+and the local first-run helper:
+
+```sh
+make
+./examples/enthusiast-quickstart.sh
+```
+
+The guide covers base DSP/profile review, report comparison, safe operator
+demos, optional GUI/TUI/audio builds, and guarded mock TX validation. Optional
+dependencies are manual. Ordinary builds cannot transmit, and no hardware TX
+backend exists.
 
 Build with optional WAV support:
 

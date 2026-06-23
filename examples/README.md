@@ -14,6 +14,7 @@ or need optional libraries. The table below summarizes the expected boundary.
 | Area | Mutates build output | Optional dependencies | Serial-only | Hardware access |
 | ---- | -------------------- | --------------------- | ----------- | --------------- |
 | Base validation and config/profile examples | no | no | no | no |
+| `enthusiast-quickstart.sh` | writes `build/quality-report.json` | no | no | no |
 | `operator-safe-demo.sh` | no | no | no | no |
 | Library and public-header smoke examples | writes `build/examples` | no | no | no |
 | WAV processing and batch processing | writes requested outputs | libsndfile | no | no |
@@ -59,6 +60,7 @@ not arm, request, emergency drop, key, or control transmit paths.
 ```sh
 make
 ./examples/self-test.sh
+./examples/enthusiast-quickstart.sh
 ./examples/operator-safe-demo.sh
 ./examples/validate-profile.sh
 ./examples/validate-config.sh
@@ -74,6 +76,11 @@ make packaging-help
 
 `self-test.sh` runs the built-in tone through the default chain plus AM, SSB,
 and dehummer/multiband examples.
+
+`enthusiast-quickstart.sh` is the first-run helper for local profile and
+report review. It writes `build/quality-report.json`, summarizes it, compares
+it with itself, and prints guarded mock validation commands to run serially.
+The full guide is `docs/enthusiast-quickstart.md`.
 
 `profile-self-test.sh` runs each bundled profile through self-test and then
 checks AM and SSB command-line profile overrides.

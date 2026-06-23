@@ -6,6 +6,9 @@ playlist paths, plus deferred output-device selection requests. It does not
 implement GUI file dialogs. Live PortAudio and WAV playout can consume
 deferred GUI output-device requests outside callbacks.
 
+The enthusiast first-run path is documented in
+`docs/enthusiast-quickstart.md`. This page focuses on GUI workflow details.
+
 CarrierPress is baseband audio processing software. The GUI workflow path must
 not add RF generation, transmitter compliance claims, licence-compliance
 claims, regulatory approval claims, legal-bandwidth claims, CAT write/control

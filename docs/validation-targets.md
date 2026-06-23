@@ -5,6 +5,8 @@ work. It is focused on scheduling and mutation boundaries, not release
 publication.
 
 Ordinary and optional build profiles are documented in `docs/test-matrix.md`.
+The enthusiast first-run path is documented in
+`docs/enthusiast-quickstart.md`.
 For a concise matrix summary, run:
 
 ```sh

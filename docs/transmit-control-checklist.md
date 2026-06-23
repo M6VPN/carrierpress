@@ -3,6 +3,9 @@
 CarrierPress does not implement PTT or TRANSMIT control. This checklist is for
 future T5 safety-gated work only. It is not permission to test on air.
 
+The guarded mock workflow is introduced for enthusiasts in
+`docs/enthusiast-quickstart.md`. This checklist remains the safety reference.
+
 ## Pre-build Checklist
 
 - Confirm the selected work is part of T5, not ordinary GUI, TUI, profile,

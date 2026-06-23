@@ -4,6 +4,9 @@ This guide describes ordinary operator-facing CarrierPress workflows. It covers
 CLI, TUI, GUI, CAT status, examples, and demo scripts. Ordinary operator
 workflow does not include active transmit control.
 
+For a first-run enthusiast path, start with
+`docs/enthusiast-quickstart.md` and `./examples/enthusiast-quickstart.sh`.
+
 CarrierPress remains a baseband audio processor. It does not provide hardware
 PTT, CAT write/control, rig frequency setting, rig mode setting, or an active
 TRANSMIT UI in ordinary builds.

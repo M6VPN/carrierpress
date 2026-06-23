@@ -5,6 +5,9 @@ operator inspection. They are not RF measurements, transmitter compliance
 proof, licence-compliance proof, occupied-bandwidth proof, regulatory
 certification, or broadcast-quality proof.
 
+For a short enthusiast first-run flow, see
+`docs/enthusiast-quickstart.md`.
+
 ## Quality Report Evidence
 
 Generate a deterministic quality JSON report:
