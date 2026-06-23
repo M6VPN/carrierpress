@@ -189,7 +189,7 @@ cp_gui_format_help(enum cp_control_bank bank, int next_enabled,
 	return cp_gui_snprintf(buffer, buffer_size,
 	    "Help: q/Esc stop | %s | a AM s SSB | d hum | m MB1 b MB2 | "
 #ifdef CP_WITH_TRANSMIT_CONTROL
-	    "r mock arm u mock disarm | "
+	    "r mock arm u mock disarm t mock tx x emergency rx | "
 #endif
 	    "l WAV p playlist c cue | o/O output | %s | %s",
 	    next_enabled ? "n next" : "n next locked", bank_label,

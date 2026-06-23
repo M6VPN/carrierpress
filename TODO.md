@@ -636,9 +636,9 @@ implemented until code, docs, and validation are complete.
 
 - [x] Add guarded mock-only TX status panel.
 - [x] Add guarded mock-only runtime arm/disarm controls.
-- [ ] Add guarded mock-only TX request and emergency RX/drop controls.
-- [ ] Keep ordinary builds free of TX controls.
-- [ ] Keep hardware backend absent.
+- [x] Add guarded mock-only TX request and emergency RX/drop controls.
+- [x] Keep ordinary builds free of TX controls.
+- [x] Keep hardware backend absent.
 
 ## T6A Mock TX Status Panel
 
@@ -656,6 +656,16 @@ implemented until code, docs, and validation are complete.
 - [x] Keep this patch free of TX request and emergency UI controls.
 - [x] Keep ordinary builds free of arm/disarm TX controls.
 - [x] Keep hardware backend absent.
+
+## T6C Mock TX Request and Emergency RX Controls
+
+- [x] Add guarded mock-only TX request operator command.
+- [x] Add guarded mock-only emergency RX/drop operator command.
+- [x] Show guarded mock-only help text only when `WITH_TRANSMIT_CONTROL=1`.
+- [x] Keep TX request and emergency controls mock-state-only.
+- [x] Keep ordinary builds free of TX controls.
+- [x] Keep hardware backend absent.
+- [x] Keep CAT write/control absent.
 
 ## T7 Future Hardware TX Backend
 

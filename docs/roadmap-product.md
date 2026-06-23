@@ -65,7 +65,7 @@ process audio, decode compressed formats, or add transmit behavior.
 
 ## D. T6 Mock TX Operator Controls
 
-Planned work:
+T6 mock operator controls:
 
 - Build only under `WITH_TRANSMIT_CONTROL=1`.
 - Use the existing mock transmit-control state machine only.

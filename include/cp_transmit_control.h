@@ -34,7 +34,9 @@ struct cp_tx_control {
 enum cp_tx_operator_command {
 	CP_TX_OPERATOR_NONE = 0,
 	CP_TX_OPERATOR_ARM,
-	CP_TX_OPERATOR_DISARM
+	CP_TX_OPERATOR_DISARM,
+	CP_TX_OPERATOR_REQUEST_TX,
+	CP_TX_OPERATOR_EMERGENCY_RX
 };
 #endif
 

@@ -50,6 +50,10 @@ T6B adds guarded mock-only operator arm/disarm keys for GUI/TUI surfaces in
 `WITH_TRANSMIT_CONTROL=1` builds. Example scripts still do not arm, request,
 emergency drop, key, or control transmit paths.
 
+T6C adds guarded mock-only operator TX request and emergency RX/drop keys for
+GUI/TUI surfaces in `WITH_TRANSMIT_CONTROL=1` builds. Example scripts still do
+not arm, request, emergency drop, key, or control transmit paths.
+
 ## Base Examples
 
 ```sh

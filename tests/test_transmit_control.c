@@ -315,7 +315,23 @@ test_guarded_operator_commands(void)
 		printf("test_transmit_control: disarm command mismatch\n");
 		return 0;
 	}
+	if (cp_tx_operator_command_from_key('t', &command) != CP_TX_OK ||
+	    command != CP_TX_OPERATOR_REQUEST_TX ||
+	    strcmp(cp_tx_operator_command_string(command),
+	    "mock_request_tx") != 0) {
+		printf("test_transmit_control: request command mismatch\n");
+		return 0;
+	}
+	if (cp_tx_operator_command_from_key('x', &command) != CP_TX_OK ||
+	    command != CP_TX_OPERATOR_EMERGENCY_RX ||
+	    strcmp(cp_tx_operator_command_string(command),
+	    "mock_emergency_rx") != 0) {
+		printf("test_transmit_control: emergency command mismatch\n");
+		return 0;
+	}
 	if (cp_tx_operator_command_from_key('T', &command) !=
+	    CP_TX_ERR_UNSUPPORTED ||
+	    cp_tx_operator_command_from_key('X', &command) !=
 	    CP_TX_ERR_UNSUPPORTED ||
 	    cp_tx_operator_command_from_key('E', &command) !=
 	    CP_TX_ERR_UNSUPPORTED ||
@@ -324,11 +340,72 @@ test_guarded_operator_commands(void)
 		return 0;
 	}
 	cp_tx_control_init(&control);
+	if (cp_tx_operator_command_apply(&control,
+	    CP_TX_OPERATOR_REQUEST_TX) != CP_TX_ERR_DISARMED ||
+	    control.state != CP_TX_STATE_DISARMED ||
+	    cp_tx_control_is_armed(&control) ||
+	    cp_tx_control_is_tx_active(&control)) {
+		printf("test_transmit_control: disarmed operator request "
+		    "accepted\n");
+		return 0;
+	}
 	if (cp_tx_operator_command_apply(&control, CP_TX_OPERATOR_ARM) !=
 	    CP_TX_OK ||
 	    control.state != CP_TX_STATE_ARMED_RX ||
 	    cp_tx_control_is_tx_active(&control)) {
 		printf("test_transmit_control: operator arm failed\n");
+		return 0;
+	}
+	if (cp_tx_operator_command_apply(&control,
+	    CP_TX_OPERATOR_REQUEST_TX) != CP_TX_OK ||
+	    control.state != CP_TX_STATE_TX_REQUESTED ||
+	    !cp_tx_control_is_armed(&control) ||
+	    cp_tx_control_is_tx_active(&control)) {
+		printf("test_transmit_control: operator request failed\n");
+		return 0;
+	}
+	if (cp_tx_operator_command_apply(&control,
+	    CP_TX_OPERATOR_EMERGENCY_RX) != CP_TX_OK ||
+	    control.state != CP_TX_STATE_DISARMED ||
+	    cp_tx_control_is_armed(&control) ||
+	    cp_tx_control_is_tx_active(&control) ||
+	    cp_tx_operator_command_apply(&control,
+	    CP_TX_OPERATOR_REQUEST_TX) != CP_TX_ERR_DISARMED) {
+		printf("test_transmit_control: operator emergency failed\n");
+		return 0;
+	}
+	if (cp_tx_operator_command_apply(&control, CP_TX_OPERATOR_ARM) !=
+	    CP_TX_OK ||
+	    cp_tx_operator_command_apply(&control,
+	    CP_TX_OPERATOR_REQUEST_TX) != CP_TX_OK ||
+	    cp_tx_control_mock_step(&control) != CP_TX_OK ||
+	    control.state != CP_TX_STATE_TX_ACTIVE ||
+	    cp_tx_operator_command_apply(&control,
+	    CP_TX_OPERATOR_EMERGENCY_RX) != CP_TX_OK ||
+	    control.state != CP_TX_STATE_DISARMED ||
+	    cp_tx_control_is_armed(&control) ||
+	    cp_tx_control_is_tx_active(&control)) {
+		printf("test_transmit_control: active operator emergency "
+		    "failed\n");
+		return 0;
+	}
+	if (cp_tx_operator_command_apply(&control, CP_TX_OPERATOR_ARM) !=
+	    CP_TX_OK ||
+	    cp_tx_operator_command_apply(&control,
+	    CP_TX_OPERATOR_REQUEST_TX) != CP_TX_OK ||
+	    cp_tx_control_request_rx(&control) != CP_TX_OK ||
+	    control.state != CP_TX_STATE_RX_REQUESTED ||
+	    cp_tx_operator_command_apply(&control,
+	    CP_TX_OPERATOR_EMERGENCY_RX) != CP_TX_OK ||
+	    control.state != CP_TX_STATE_DISARMED ||
+	    cp_tx_operator_command_apply(&control,
+	    CP_TX_OPERATOR_REQUEST_TX) != CP_TX_ERR_DISARMED) {
+		printf("test_transmit_control: rx operator emergency failed\n");
+		return 0;
+	}
+	if (cp_tx_operator_command_apply(&control, CP_TX_OPERATOR_ARM) !=
+	    CP_TX_OK) {
+		printf("test_transmit_control: second operator arm failed\n");
 		return 0;
 	}
 	if (cp_tx_operator_command_apply(&control, CP_TX_OPERATOR_DISARM) !=
@@ -349,7 +426,11 @@ test_guarded_operator_commands(void)
 	if (text_has_backend_name(cp_tx_operator_command_string(
 	    CP_TX_OPERATOR_ARM)) ||
 	    text_has_backend_name(cp_tx_operator_command_string(
-	    CP_TX_OPERATOR_DISARM))) {
+	    CP_TX_OPERATOR_DISARM)) ||
+	    text_has_backend_name(cp_tx_operator_command_string(
+	    CP_TX_OPERATOR_REQUEST_TX)) ||
+	    text_has_backend_name(cp_tx_operator_command_string(
+	    CP_TX_OPERATOR_EMERGENCY_RX))) {
 		printf("test_transmit_control: operator backend text leaked\n");
 		return 0;
 	}

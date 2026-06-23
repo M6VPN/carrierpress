@@ -134,14 +134,18 @@ test_key_help(void)
 	}
 #ifdef CP_WITH_TRANSMIT_CONTROL
 	if (strstr(buffer, "r mock arm") == NULL ||
-	    strstr(buffer, "u mock disarm") == NULL) {
+	    strstr(buffer, "u mock disarm") == NULL ||
+	    strstr(buffer, "t mock tx") == NULL ||
+	    strstr(buffer, "x emergency rx") == NULL) {
 		printf("test_tui: guarded mock help missing: %s\n",
 		    buffer);
 		return 0;
 	}
 #else
 	if (strstr(buffer, "mock arm") != NULL ||
-	    strstr(buffer, "mock disarm") != NULL) {
+	    strstr(buffer, "mock disarm") != NULL ||
+	    strstr(buffer, "mock tx") != NULL ||
+	    strstr(buffer, "emergency rx") != NULL) {
 		printf("test_tui: ordinary mock help leaked: %s\n", buffer);
 		return 0;
 	}

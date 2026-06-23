@@ -106,6 +106,23 @@ future T5 safety-gated work only. It is not permission to test on air.
   called by the guarded operator path.
 - Confirm the safety audits still pass.
 
+## T6C Mock TX Request and Emergency RX Controls Checklist
+
+- Confirm ordinary builds do not expose mock TX request or emergency RX/drop
+  keys.
+- Confirm guarded builds show `t` mock TX and `x` emergency RX help text.
+- Confirm guarded mock TX request from `disarmed` stays `disarmed`.
+- Confirm guarded mock TX request from `armed_rx` moves only to
+  `tx_requested`.
+- Confirm guarded emergency RX/drop moves mock TX states directly to
+  `disarmed`.
+- Confirm guarded emergency RX/drop clears arming and requires re-arm before
+  another mock TX request.
+- Confirm the UI path does not call `cp_tx_control_mock_step()` automatically.
+- Confirm no CAT, hamlib, flrig, serial, GPIO, VOX, or hardware backend is
+  called by the guarded operator path.
+- Confirm the safety audits still pass.
+
 ## Runtime-arming Checklist
 
 - Require an explicit runtime arming command after process start.

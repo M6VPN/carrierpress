@@ -151,6 +151,24 @@ profile/config arming, report/batch/playlist transmit fields, or
 frequency/mode control. Ordinary builds do not expose the guarded mock
 arm/disarm keys.
 
+## Current T6C Boundary
+
+T6C adds guarded mock-only TX request and emergency RX/drop controls. In a
+`WITH_TRANSMIT_CONTROL=1` build, operator surfaces may use `t` to request mock
+TX and `x` to request mock emergency RX/drop. These keys affect only the
+in-memory mock state machine and do not call CAT, hamlib, flrig, serial, GPIO,
+VOX, or hardware backends.
+
+The mock TX request requires prior mock arming and moves only to
+`tx_requested`. The UI path does not auto-step to `tx_active`. Mock emergency
+RX/drop clears arming, returns directly to `disarmed`, and requires re-arming
+before another mock TX request.
+
+T6C does not add hardware backends, CAT write/control, hamlib or flrig PTT
+calls, profile/config arming, report/batch/playlist transmit fields, or
+frequency/mode control. Ordinary builds do not expose the guarded mock TX or
+emergency RX/drop keys.
+
 ## Future Architecture
 
 Any future implementation should use a separate PTT command boundary, for

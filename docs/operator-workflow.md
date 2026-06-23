@@ -124,6 +124,13 @@ in-memory mock state. These controls only exist when
 emergency RX/drop UI action, call CAT write/control, or call a hardware
 backend. Ordinary builds remain free of the guarded mock keys.
 
+T6C adds guarded mock-only `t` TX request and `x` emergency RX/drop controls
+for the same in-memory mock state. These controls only exist when
+`WITH_TRANSMIT_CONTROL=1` is built. The TX request requires prior mock arming
+and moves only to `tx_requested`; emergency RX/drop clears mock arming and
+returns to `disarmed`. The controls do not call CAT write/control or hardware
+backends, and ordinary builds remain free of the guarded mock keys.
+
 ## Examples and Demos
 
 Examples are local wrappers for safe inspection and validation. They must not

@@ -63,7 +63,7 @@ check_no_matches \
 	src/cp_gui_format.c src/cp_gui_sdl3.c src/cp_tui.c
 
 check_no_matches \
-	"operator UI paths expose transmit request or emergency controls before T6C" \
+	"operator UI paths call direct transmit request or emergency functions" \
 	'cp_tx_control_(request_transmit|request_rx|emergency_rx|mock_step)[[:space:]]*\(' \
 	include/cp_gui.h include/cp_tui.h include/cp_gui_format.h \
 	src/cp_gui_format.c src/cp_gui_sdl3.c src/cp_tui.c

@@ -580,6 +580,11 @@ T6B adds guarded mock-only `r` arm and `u` disarm controls when
 Ordinary builds still have no TX controls, and no transmit-request, emergency
 RX/drop, CAT write/control, or hardware backend is added.
 
+T6C adds guarded mock-only `t` TX request and `x` emergency RX/drop controls
+when `WITH_TRANSMIT_CONTROL=1` is built. They affect only the mock state
+machine. Ordinary builds still have no TX controls, and no CAT write/control
+or hardware backend is added.
+
 Build the read-only hamlib CAT backend:
 
 ```sh

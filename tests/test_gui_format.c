@@ -237,6 +237,10 @@ test_control_mapping(void)
 	if (cp_gui_control_command_from_key('r', CP_CONTROL_BANK_AM, 1,
 	    &command) != CP_ERR_RANGE ||
 	    cp_gui_control_command_from_key('u', CP_CONTROL_BANK_AM, 1,
+	    &command) != CP_ERR_RANGE ||
+	    cp_gui_control_command_from_key('t', CP_CONTROL_BANK_AM, 1,
+	    &command) != CP_ERR_RANGE ||
+	    cp_gui_control_command_from_key('x', CP_CONTROL_BANK_AM, 1,
 	    &command) != CP_ERR_RANGE) {
 		printf("test_gui_format: mock key leaked into control map\n");
 		return 0;
@@ -393,14 +397,18 @@ test_help_format(void)
 	}
 #ifdef CP_WITH_TRANSMIT_CONTROL
 	if (strstr(buffer, "r mock arm") == NULL ||
-	    strstr(buffer, "u mock disarm") == NULL) {
+	    strstr(buffer, "u mock disarm") == NULL ||
+	    strstr(buffer, "t mock tx") == NULL ||
+	    strstr(buffer, "x emergency rx") == NULL) {
 		printf("test_gui_format: guarded tx help missing: %s\n",
 		    buffer);
 		return 0;
 	}
 #else
 	if (strstr(buffer, "mock arm") != NULL ||
-	    strstr(buffer, "mock disarm") != NULL) {
+	    strstr(buffer, "mock disarm") != NULL ||
+	    strstr(buffer, "mock tx") != NULL ||
+	    strstr(buffer, "emergency rx") != NULL) {
 		printf("test_gui_format: ordinary tx help leaked: %s\n",
 		    buffer);
 		return 0;

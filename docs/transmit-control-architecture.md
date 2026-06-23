@@ -98,6 +98,28 @@ write/control, hardware backends, hamlib or flrig PTT calls, profile/config
 arming, report/batch/playlist transmit fields, or frequency/mode control.
 Ordinary builds do not include the mock arm/disarm keys or command namespace.
 
+## T6C Mock TX Request and Emergency RX Controls
+
+T6C adds guarded operator commands for the remaining mock-only control path.
+When `WITH_TRANSMIT_CONTROL=1` is built, operator surfaces may map `t` to a
+mock TX request and `x` to mock emergency RX/drop. These commands call only the
+in-memory mock `cp_tx_control_request_transmit()` and
+`cp_tx_control_emergency_rx()` state transitions through the guarded operator
+command wrapper.
+
+The mock TX request requires prior mock arming. From `disarmed`, the request is
+rejected and the state remains `disarmed`. From `armed_rx`, it may move only to
+`tx_requested`; the UI path does not auto-step to `tx_active`.
+
+Mock emergency RX/drop clears runtime arming and returns directly to
+`disarmed` from mock TX or RX request states. A later mock TX request requires
+the operator to arm the mock object again.
+
+T6C does not add hardware backends, CAT write/control, hamlib or flrig PTT
+calls, profile/config arming, report/batch/playlist transmit fields, or
+frequency/mode control. Ordinary builds do not include the mock TX request or
+emergency RX/drop keys.
+
 ## State Machine
 
 A future state machine should start in RX/off state and keep states explicit:

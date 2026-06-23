@@ -262,6 +262,10 @@ cp_tx_operator_command_apply(struct cp_tx_control *control,
 		return cp_tx_control_arm(control);
 	case CP_TX_OPERATOR_DISARM:
 		return cp_tx_control_disarm(control);
+	case CP_TX_OPERATOR_REQUEST_TX:
+		return cp_tx_control_request_transmit(control);
+	case CP_TX_OPERATOR_EMERGENCY_RX:
+		return cp_tx_control_emergency_rx(control);
 	case CP_TX_OPERATOR_NONE:
 		return CP_TX_OK;
 	default:
@@ -284,6 +288,12 @@ cp_tx_operator_command_from_key(int key,
 	case 'u':
 		*command = CP_TX_OPERATOR_DISARM;
 		return CP_TX_OK;
+	case 't':
+		*command = CP_TX_OPERATOR_REQUEST_TX;
+		return CP_TX_OK;
+	case 'x':
+		*command = CP_TX_OPERATOR_EMERGENCY_RX;
+		return CP_TX_OK;
 	default:
 		return CP_TX_ERR_UNSUPPORTED;
 	}
@@ -299,6 +309,10 @@ cp_tx_operator_command_string(enum cp_tx_operator_command command)
 		return "mock_arm";
 	case CP_TX_OPERATOR_DISARM:
 		return "mock_disarm";
+	case CP_TX_OPERATOR_REQUEST_TX:
+		return "mock_request_tx";
+	case CP_TX_OPERATOR_EMERGENCY_RX:
+		return "mock_emergency_rx";
 	default:
 		return "unknown";
 	}

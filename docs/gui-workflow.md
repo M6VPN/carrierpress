@@ -257,5 +257,12 @@ T6B adds guarded mock-only arm/disarm key handling for that same mock state:
 They do not request transmit, trigger emergency RX/drop, call CAT
 write/control, or call any hardware backend.
 
+T6C adds guarded mock-only TX request and emergency RX/drop key handling for
+that same mock state: `t` requests mock TX and `x` requests mock emergency
+RX/drop when `WITH_TRANSMIT_CONTROL=1` is built. The keys do not exist in
+ordinary builds. The TX request requires prior mock arming and moves only to
+`tx_requested`; emergency RX/drop clears mock arming and returns to
+`disarmed`. These keys do not call CAT write/control or any hardware backend.
+
 Ordinary CLI, TUI, GUI, CAT status, and example workflow boundaries are
 summarized in [`operator-workflow.md`](operator-workflow.md).

@@ -456,6 +456,12 @@ test_command_keys(void)
 	if (cp_control_command_from_key('x', CP_CONTROL_BANK_AM,
 	    &command) != CP_ERR_RANGE)
 		return 0;
+	if (cp_control_command_from_key('X', CP_CONTROL_BANK_AM,
+	    &command) != CP_ERR_RANGE)
+		return 0;
+	if (cp_control_command_from_key('t', CP_CONTROL_BANK_AM,
+	    &command) != CP_ERR_RANGE)
+		return 0;
 	if (cp_control_command_from_key('r', CP_CONTROL_BANK_AM,
 	    &command) != CP_ERR_RANGE)
 		return 0;
