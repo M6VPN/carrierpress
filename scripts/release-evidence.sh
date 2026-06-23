@@ -56,6 +56,9 @@ fi
 printf '\nbatch/report evidence:\n'
 printf 'workflow guide: docs/report-evidence-workflow.md\n'
 printf 'local demo: ./examples/report-evidence-demo.sh\n'
+printf 'DSP preset guide: docs/dsp-product-presets.md\n'
+printf 'DSP preset review: ./examples/dsp-preset-review.sh\n'
+printf 'listening notes template: docs/listening-notes-template.md\n'
 if [ -f build/quality-report.json ]; then
 	printf 'summary: ./carrierpress --report-summary build/quality-report.json\n'
 	printf 'compare: ./carrierpress --report-compare build/quality-report.json build/quality-report.json\n'

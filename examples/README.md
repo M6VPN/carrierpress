@@ -24,6 +24,7 @@ or need optional libraries. The table below summarizes the expected boundary.
 | Release and evidence helpers | no | no | no | no |
 | Packaging surface checks | no | no | no | no |
 | Report evidence demo | writes `build/quality-report.json` | no | no | no |
+| DSP preset review | writes `build/quality-report.json` | no | no | no |
 | Batch evidence workflow | writes requested `build/` outputs | libsndfile for processing | no | no |
 | Guarded mock transmit-control validation | writes build outputs | no | yes for mock wrapper | no |
 
@@ -52,6 +53,7 @@ make
 ./examples/print-effective-config.sh
 ./examples/profile-self-test.sh
 ./examples/cat-mock-status.sh
+./examples/dsp-preset-review.sh
 make validation-help
 make test-matrix-help
 make packaging-help
@@ -79,6 +81,11 @@ packages, or run transmit actions.
 help, test matrix help, and the transmit-control safety audit. It does not run
 `make clean`, open audio devices, require optional dependencies, access
 hardware, or publish anything.
+
+`dsp-preset-review.sh` prints resolved settings for the shipped AM, SSB, and
+cleanup profiles, writes `build/quality-report.json`, and summarizes that
+report. It does not run `make clean`, open audio devices, require optional
+dependencies, access hardware, publish releases, or run transmit actions.
 
 ## Library Example
 
@@ -168,6 +175,9 @@ The report evidence demo writes `build/quality-report.json`, summarizes it, and
 compares it with itself. It does not run `make clean`, use optional
 dependencies, open audio devices, publish releases, or run transmit actions.
 The full workflow is documented in `docs/report-evidence-workflow.md`.
+
+DSP preset review and listening notes are documented in
+`docs/dsp-product-presets.md` and `docs/listening-notes-template.md`.
 
 ## Playout
 

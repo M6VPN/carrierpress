@@ -22,6 +22,11 @@ Planned work:
 - Keep DSP changes measurable and regression-tested.
 - Keep report and preset docs free of compliance claims.
 
+The first implementation slice adds an enthusiast-facing preset guide,
+listening notes template, safe preset review script, and clearer shipped
+profile comments. It does not change DSP algorithms or profile parameter
+values.
+
 ## B. P37 Professional TUI and GUI Layout Polish
 
 Planned work:

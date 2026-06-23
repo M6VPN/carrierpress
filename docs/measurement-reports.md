@@ -160,7 +160,9 @@ Batch summary comparison is exact for stable count fields and ordered item
 counts, changed item count, and a compact reason line.
 
 See [`report-evidence-workflow.md`](report-evidence-workflow.md) for local
-quality, processed-file, and batch evidence examples.
+quality, processed-file, and batch evidence examples. See
+[`dsp-product-presets.md`](dsp-product-presets.md) for preset review and
+listening-note workflow.
 
 ## Report Shape
 

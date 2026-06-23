@@ -401,7 +401,8 @@ make WITH_SNDFILE=1 WITH_PORTAUDIO=1 test
 Safe example wrappers are in [`examples/`](examples/). They cover self-test,
 WAV processing, WAV playout, GUI demo, GUI screenshot capture, mock CAT,
 read-only flrig CAT, read-only hamlib CAT, local Hamlib 4.7.1 validation, and
-local release validation.
+local release validation. `./examples/dsp-preset-review.sh` prints resolved
+settings for the shipped DSP profiles and creates local quality report evidence.
 
 The examples do not use `sudo`, install packages, create tags, publish GitHub
 releases, key PTT, change rig frequency, change rig mode, or send CAT
@@ -426,7 +427,11 @@ make
 Profile files are documented in
 [`docs/profile-format.md`](docs/profile-format.md). Safe starting profiles are
 in [`profiles/`](profiles/), including AM-safe, AM-shortwave, SSB-speech, and
-file-cleanup examples.
+file-cleanup examples. Enthusiast-facing preset notes, listening workflow, and
+A/B comparison guidance are documented in
+[`docs/dsp-product-presets.md`](docs/dsp-product-presets.md). A subjective
+listening notes template is available in
+[`docs/listening-notes-template.md`](docs/listening-notes-template.md).
 
 Profiles are audio-chain settings only. They do not control CAT, PTT, rig
 frequency, rig mode, transmit state, flrig, hamlib, or station-control state.
@@ -454,6 +459,12 @@ Validate a profile without running DSP:
 
 ```sh
 ./carrierpress --validate-profile profiles/am-safe.profile
+```
+
+Review the shipped profile descriptions and deterministic quality evidence:
+
+```sh
+./examples/dsp-preset-review.sh
 ```
 
 ## Config Files

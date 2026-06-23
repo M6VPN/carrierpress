@@ -95,6 +95,18 @@ For a compact report evidence smoke check:
 ./examples/report-evidence-demo.sh
 ```
 
+For DSP preset review, resolved profile inspection, and listening-note setup:
+
+```sh
+./examples/dsp-preset-review.sh
+```
+
+The DSP preset guide is
+[`dsp-product-presets.md`](dsp-product-presets.md). Subjective listening notes
+can use [`listening-notes-template.md`](listening-notes-template.md). Listening
+notes and JSON reports are regression evidence only, not RF or regulatory
+evidence.
+
 ## Validation Links
 
 Related validation guides:
@@ -103,3 +115,4 @@ Related validation guides:
 - [`test-matrix.md`](test-matrix.md)
 - [`measurement-reports.md`](measurement-reports.md)
 - [`batch-workflow.md`](batch-workflow.md)
+- [`dsp-product-presets.md`](dsp-product-presets.md)

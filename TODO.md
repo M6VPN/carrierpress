@@ -564,10 +564,18 @@ implemented until code, docs, and validation are complete.
 
 ## P36 DSP Product Polish
 
-- [ ] Review AM/SSB preset descriptions and defaults.
-- [ ] Add listening/regression notes for DSP changes.
-- [ ] Improve DSP preset UX without compliance claims.
-- [ ] Keep DSP changes measurable and tested.
+- [x] Review AM/SSB preset descriptions and defaults.
+- [x] Add listening/regression notes for DSP changes.
+- [x] Improve DSP preset UX without compliance claims.
+- [x] Keep DSP changes measurable and tested.
+
+## P36A DSP Preset UX and Listening Notes
+
+- [x] Add DSP preset/product guide.
+- [x] Add listening notes template.
+- [x] Review shipped AM/SSB/profile comments.
+- [x] Add safe DSP preset review workflow.
+- [x] Keep DSP reports and notes free of compliance/proof claims.
 
 ## P37 TUI and GUI Layout Polish
 

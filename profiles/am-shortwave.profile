@@ -1,8 +1,12 @@
 # CarrierPress - Developed by M6VPN (M6VPN@tuta.com)
 # carrierpress/profiles/am-shortwave.profile
 
-# Shortwave-style AM audio-chain starting profile.
-# This is a practical starting point, not a compliance certificate.
+# Shortwave-style AM audio-chain starting profile for denser speech-forward
+# local processing. Enables dehummer, two speech multiband stages, speech bass
+# EQ, natural dynamics, low-level boost, restoration analysis, and
+# am-shortwave shaping.
+# Listen for intelligibility, density, bass control, and harshness. This is a
+# practical starting point, not a compliance certificate.
 name = AM Shortwave
 description = Conservative shortwave AM processing starting point
 mode = am

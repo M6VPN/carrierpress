@@ -57,6 +57,24 @@ custom bass EQ parameter set yet.
 - `mode = neutral` and `mode = file-cleanup` must not force AM or SSB.
 - `am_preset = off` and `ssb_preset = off` are allowed to make intent explicit.
 
+## Profile Index
+
+The shipped profiles are conservative starting points:
+
+- `profiles/am-safe.profile`: conservative AM speech or mixed-audio starting
+  point.
+- `profiles/am-shortwave.profile`: denser shortwave-style AM starting point.
+- `profiles/ssb-speech.profile`: speech-focused SSB audio starting point.
+- `profiles/file-cleanup.profile`: offline WAV cleanup and restoration review
+  starting point.
+
+Use `profiles/am-safe.profile` first for AM review,
+`profiles/am-shortwave.profile` when a denser AM comparison is useful,
+`profiles/ssb-speech.profile` for speech-focused SSB audio, and
+`profiles/file-cleanup.profile` for offline cleanup work. The profile product
+notes and listening workflow are documented in
+[`dsp-product-presets.md`](dsp-product-presets.md).
+
 ## Forbidden Keys
 
 Profiles reject station-control and radio-control keys. The forbidden list

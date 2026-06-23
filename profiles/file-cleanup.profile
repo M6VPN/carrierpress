@@ -1,7 +1,10 @@
 # CarrierPress - Developed by M6VPN (M6VPN@tuta.com)
 # carrierpress/profiles/file-cleanup.profile
 
-# Offline file cleanup starting profile.
+# Offline WAV cleanup starting profile for light restoration and level
+# management. Enables dehummer, music multiband, warm bass EQ, natural
+# dynamics, restoration analysis, and conservative declipper.
+# Listen for reduced hum, natural dynamics, and lack of declipper artifacts.
 # This does not prove restoration quality or legal transmission bandwidth.
 name = File Cleanup
 description = Gentle offline cleanup and level-management starting point
