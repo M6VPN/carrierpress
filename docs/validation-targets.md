@@ -1,12 +1,14 @@
 # CarrierPress Validation Targets
 
-This guide classifies local validation targets after the v0.4.1 safety-gate
-work. It is focused on scheduling and mutation boundaries, not release
-publication.
+This guide classifies local validation targets for the v0.5.0
+release-readiness line. It is focused on scheduling and mutation boundaries,
+not release publication.
 
 Ordinary and optional build profiles are documented in `docs/test-matrix.md`.
 The enthusiast first-run path is documented in
 `docs/enthusiast-quickstart.md`.
+The v0.5.0 release-readiness checklist is documented in
+`docs/release-readiness-v0.5.0.md`.
 For a concise matrix summary, run:
 
 ```sh

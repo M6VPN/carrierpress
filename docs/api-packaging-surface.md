@@ -1,6 +1,6 @@
 # API and Packaging Surface
 
-This guide records the v0.4.1 public API and package surface that packagers and
+This guide records the v0.5.0 public API and package surface that packagers and
 library users should expect. It is an inspection guide, not a packaging recipe.
 
 CarrierPress is baseband audio processing software. It does not generate RF,

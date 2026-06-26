@@ -700,3 +700,14 @@ implemented until code, docs, and validation are complete.
 - [x] Document ordinary, optional, and guarded mock validation commands.
 - [x] Keep optional dependency setup manual and explicit.
 - [x] Keep hardware TX backend absent.
+
+## R12 v0.5.0 Release Prep
+
+- [x] Bump project version to 0.5.0.
+- [x] Refresh README for v0.5.0 scope.
+- [x] Add v0.5.0 release notes.
+- [x] Add v0.5.0 release-readiness checklist.
+- [x] Update changelog.
+- [x] Keep release publication and tagging manual.
+- [x] Keep hardware TX backend absent.
+- [x] Keep CAT write/control absent.

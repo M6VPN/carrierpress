@@ -1,10 +1,12 @@
 # CarrierPress Test Matrix
 
-This guide documents ordinary and optional build/test coverage after v0.4.1.
+This guide documents ordinary and optional build/test coverage for v0.5.0.
 It complements `docs/validation-targets.md`, which remains the source of
 truth for serial versus parallel scheduling.
 
 For a shorter first-run guide, see `docs/enthusiast-quickstart.md`.
+For the v0.5.0 release-readiness command set, see
+`docs/release-readiness-v0.5.0.md`.
 
 ## Base Build Matrix
 

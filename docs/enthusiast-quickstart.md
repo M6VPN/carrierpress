@@ -5,6 +5,11 @@ audio enthusiasts. It provides AM, SSB, and cleanup profiles, optional GUI and
 TUI operator surfaces, output-device and cue selectors, report tools, and safe
 demo flows for local review.
 
+The v0.5.0 release notes are in
+[`release-notes-v0.5.0.md`](release-notes-v0.5.0.md), and the local
+release-readiness checklist is in
+[`release-readiness-v0.5.0.md`](release-readiness-v0.5.0.md).
+
 CarrierPress is not an RF generator, transmitter compliance tool, legal
 bandwidth proof, licence-compliance proof, regulatory certification path, or
 operational hardware PTT controller. No hardware TX backend exists.

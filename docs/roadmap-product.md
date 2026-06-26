@@ -4,6 +4,11 @@ CarrierPress is moving toward an enthusiast-friendly audio processing and
 station-operator tool while keeping safety gates, optional dependencies, and
 host workflow boundaries clear.
 
+The product-roadmap pivot is packaged for v0.5.0 in
+[`release-notes-v0.5.0.md`](release-notes-v0.5.0.md). Local readiness checks
+are listed in
+[`release-readiness-v0.5.0.md`](release-readiness-v0.5.0.md).
+
 This roadmap is planning plus foundation work. It does not implement DSP
 algorithm changes, hardware PTT, CAT write/control commands, hamlib or flrig
 PTT calls, active TX controls in ordinary builds, native compressed-audio

@@ -78,6 +78,44 @@ operation.
 GitHub Actions CI must also be green before a release tag is created. CI
 coverage is documented in `docs/ci.md`.
 
+## v0.5.0 Release Checks
+
+Use this section when preparing `v0.5.0`, the product-readiness release after
+v0.4.1.
+
+- Confirm `./carrierpress --version` prints `CarrierPress 0.5.0`.
+- Confirm staged install pkg-config metadata reports `Version: 0.5.0`.
+- Confirm `docs/release-notes-v0.5.0.md` is the release body.
+- Confirm `docs/release-readiness-v0.5.0.md` lists the local validation set.
+- Confirm `CHANGELOG.md` has a `0.5.0 - unreleased` section.
+- Confirm ordinary build tests pass.
+- Confirm guarded mock build tests pass with `WITH_TRANSMIT_CONTROL=1`.
+- Confirm `make transmit-control-safety-audit` passes.
+- Confirm `make transmit-control-mock-test` passes when run serially.
+- Confirm `make operator-workflow-safety-audit` passes.
+- Confirm `make packaging-surface-audit` passes.
+- Confirm `make pkg-config-smoke` passes and optional dependencies are absent
+  from base pkg-config metadata.
+- Confirm DSP preset UX docs and listening notes are present.
+- Confirm TUI/GUI dashboard grouping docs are present.
+- Confirm output-device, audio-file, and playlist selector docs are present.
+- Confirm enthusiast quick-start and safe demos are present.
+- Confirm guarded mock-only TX controls remain mock-only.
+- Confirm T7 hardware TX safety design is design-only.
+- Confirm no hardware TX backend exists.
+- Confirm no CAT write/control backend exists.
+- Confirm no hamlib or flrig PTT calls exist.
+- Confirm no serial, GPIO, or VOX TX control exists.
+- Confirm no GUI, TUI, CLI, profile, config, report, batch, playlist, selector,
+  or example path can arm hardware transmit.
+- Confirm `make dist-check` creates and verifies the source tarball checksum.
+- Confirm GitHub Actions CI is green before tagging.
+- Confirm no release docs or package metadata claim RF generation, transmitter
+  compliance, licence compliance, regulatory approval, legal bandwidth,
+  occupied bandwidth, or broadcast quality.
+- Confirm release publication remains manual and local per
+  `docs/release-procedure.md`.
+
 ## v0.4.1 Release Checks
 
 Use this section when preparing `v0.4.1`, the patch release for T5 safety-gate

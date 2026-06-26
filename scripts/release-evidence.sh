@@ -27,6 +27,8 @@ git describe --tags --abbrev=0 2>/dev/null || printf 'none\n'
 
 printf '\nvalidation target guide:\n'
 make validation-help
+printf 'release readiness: docs/release-readiness-v%s.md\n' "$version"
+printf 'release notes: docs/release-notes-v%s.md\n' "$version"
 
 printf '\ntest matrix guide:\n'
 make test-matrix-help

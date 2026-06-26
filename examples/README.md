@@ -5,6 +5,8 @@ do not install packages, use sudo, publish releases, create tags, key a radio,
 or send CAT write/control commands.
 
 Run examples from the repository root after building `./carrierpress`.
+The v0.5.0 release notes are in `docs/release-notes-v0.5.0.md`, and the local
+release-readiness checklist is in `docs/release-readiness-v0.5.0.md`.
 
 ## Example Safety Index
 

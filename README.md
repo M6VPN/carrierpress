@@ -2,11 +2,24 @@
 
 [![CI](https://github.com/M6VPN/carrierpress/actions/workflows/ci.yml/badge.svg)](https://github.com/M6VPN/carrierpress/actions/workflows/ci.yml)
 
-CarrierPress is a portable C DSP skeleton for real-time and offline AM and SSB audio processing. v0.4 provides a clean-room core with block processing, float32 samples, a DC blocker, RMS and peak meters, a gated input AGC, optional dehummer, optional natural dynamics and low-level boost stages, optional multiband compressor foundations, optional static bass EQ, optional restoration and auto EQ analysis taps, an optional conservative declipper research stage, a safe peak limiter, strict profile/config workflows, batch WAV processing, report tools, operator UI polish, library/API examples, packaging hardening, and optional decoder architecture research.
+CarrierPress is a portable C DSP core and operator tool for local AM, SSB,
+and cleanup audio workflows. v0.5.0 adds enthusiast-facing DSP preset notes,
+listening and regression guidance, professional TUI/GUI dashboard grouping,
+output-device selectors, explicit WAV cue/load selectors, playlist selectors,
+safe demo flows, report/evidence tooling, and guarded mock-only
+transmit-control UI work.
 
-The long-term goal is AM/SSB audio processing for legal transmitters and test loads. Users are responsible for complying with radio regulations, transmitter licence limits, occupied bandwidth limits, and local operating rules.
+CarrierPress is not an RF generator, transmitter compliance tool,
+licence-compliance proof, legal-bandwidth proof, regulatory certification
+path, or operational hardware PTT controller. No hardware TX backend exists.
 
-Offline WAV processing is available as an optional M1 foundation when built with libsndfile. Experimental live sound-card I/O is available as an optional M2 foundation when built with PortAudio. Optional sndio support exists as an OpenBSD-style foundation, but remaining sndio work is deferred while Linux-host core processing quality is the active focus. Optional WAV playout to a sound-card output is available when both libsndfile and PortAudio are enabled. The ncurses TUI and SDL3 GUI monitor are optional host interfaces. AM output-chain shaping is available as an M6 foundation. SSB output-chain shaping is available as an M7 foundation. Static bass EQ is available as an M8.1 foundation. M9.4 adds optional conservative natural dynamics and low-level boost stages before AGC. M10.2 adds an optional second conservative multiband polish stage after bass EQ and before AM or SSB shaping. M10.3 adds an optional analysis-only auto EQ tap for tonal-balance diagnostics. M10.4 adds bounded bass EQ recommendations from the auto EQ analyzer without applying them automatically. MP3 playout and STM32H753 support are planned but are not part of v0.1. Unsupported playlist entries are reported with line details. CarrierPress stays WAV/PCM-native internally for this milestone.
+Offline WAV processing is optional when built with libsndfile. Live audio and
+playout paths are optional when built with PortAudio and matching host
+dependencies. The ncurses TUI and SDL3 GUI monitor are optional host
+interfaces. Guarded transmit-control state is mock-only under
+`WITH_TRANSMIT_CONTROL=1`; ordinary builds remain non-transmit. T7A documents
+future hardware TX safety gates only. CarrierPress remains WAV/PCM-native by
+default, and compressed audio stays an external-conversion workflow.
 
 ## Table of Contents
 
@@ -183,10 +196,11 @@ asset guidance are documented in
 [`docs/release-notes-v0.3.0.md`](docs/release-notes-v0.3.0.md),
 [`docs/release-notes-v0.4.0.md`](docs/release-notes-v0.4.0.md),
 [`docs/release-notes-v0.4.1.md`](docs/release-notes-v0.4.1.md),
+[`docs/release-notes-v0.5.0.md`](docs/release-notes-v0.5.0.md),
 [`docs/release-procedure.md`](docs/release-procedure.md), and
 [`docs/release-assets-v0.1.md`](docs/release-assets-v0.1.md).
 The current release notes are in
-[`docs/release-notes-v0.4.1.md`](docs/release-notes-v0.4.1.md). Safe example
+[`docs/release-notes-v0.5.0.md`](docs/release-notes-v0.5.0.md). Safe example
 wrappers are documented in [`examples/README.md`](examples/README.md). The
 local safe operator demo is `./examples/operator-safe-demo.sh`. Manual release
 commands remain documented in
@@ -1693,6 +1707,10 @@ The product roadmap is documented in
 [`docs/roadmap-product.md`](docs/roadmap-product.md). It tracks DSP product
 polish, professional TUI/GUI layout work, interactive selectors, mock-only TX
 operator-control planning, and future hardware TX as a separate safety track.
+The v0.5.0 release notes are in
+[`docs/release-notes-v0.5.0.md`](docs/release-notes-v0.5.0.md), and the local
+release-readiness checklist is in
+[`docs/release-readiness-v0.5.0.md`](docs/release-readiness-v0.5.0.md).
 
 ## License
 
