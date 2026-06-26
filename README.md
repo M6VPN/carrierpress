@@ -601,6 +601,14 @@ when `WITH_TRANSMIT_CONTROL=1` is built. They affect only the mock state
 machine. Ordinary builds still have no TX controls, and no CAT write/control
 or hardware backend is added.
 
+T7A is design-only for a future hardware TX backend. It adds safety gates and
+a manual validation evidence template, but no backend, CAT write/control,
+hamlib/flrig PTT calls, serial/GPIO/VOX control, frequency setting, or mode
+setting. See
+[`docs/hardware-tx-backend-safety-design.md`](docs/hardware-tx-backend-safety-design.md)
+and
+[`docs/hardware-tx-validation-template.md`](docs/hardware-tx-validation-template.md).
+
 Build the read-only hamlib CAT backend:
 
 ```sh

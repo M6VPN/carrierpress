@@ -112,6 +112,12 @@ in parallel with other build or test targets.
 Hardware TX backend work is deferred to T7 and requires a separate safety
 milestone before implementation.
 
+T7A is design-only. It documents future hardware backend gates in
+[`hardware-tx-backend-safety-design.md`](hardware-tx-backend-safety-design.md)
+and a future manual evidence template in
+[`hardware-tx-validation-template.md`](hardware-tx-validation-template.md).
+No hardware backend exists, and guarded builds remain mock-only.
+
 ## Recommended Validation
 
 Ordinary enthusiast validation:
@@ -128,4 +134,3 @@ For target scheduling and optional build paths, see:
 
 - `docs/validation-targets.md`
 - `docs/test-matrix.md`
-

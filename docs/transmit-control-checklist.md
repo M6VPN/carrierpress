@@ -5,6 +5,9 @@ future T5 safety-gated work only. It is not permission to test on air.
 
 The guarded mock workflow is introduced for enthusiasts in
 `docs/enthusiast-quickstart.md`. This checklist remains the safety reference.
+Future hardware backend gates are documented in
+`docs/hardware-tx-backend-safety-design.md`, with manual evidence fields in
+`docs/hardware-tx-validation-template.md`.
 
 ## Pre-build Checklist
 
@@ -178,3 +181,14 @@ The guarded mock workflow is introduced for enthusiasts in
   compliance, certification, legal bandwidth, or regulatory approval.
 - Confirm on-air testing is not suggested unless the operator is legally
   permitted and intentionally configured for that test.
+
+## T7A Hardware Backend Safety Design Checklist
+
+- Confirm T7A changes are design-only.
+- Confirm no hardware backend source files are added.
+- Confirm no CAT write/control, hamlib/flrig PTT, serial, GPIO, VOX,
+  frequency-setting, or mode-setting code is added.
+- Confirm future hardware backend work requires compile-time opt-in, runtime
+  arming, explicit operator confirmation, receive-only evidence, dummy-load
+  evidence, and emergency RX/drop evidence.
+- Confirm T6 remains mock-only and ordinary builds remain non-transmit.

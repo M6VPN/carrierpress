@@ -55,6 +55,12 @@ T6C adds guarded mock-only operator TX request and emergency RX/drop keys for
 GUI/TUI surfaces in `WITH_TRANSMIT_CONTROL=1` builds. Example scripts still do
 not arm, request, emergency drop, key, or control transmit paths.
 
+There is no hardware TX demo. T7A documents future hardware backend safety
+gates only in `docs/hardware-tx-backend-safety-design.md` and
+`docs/hardware-tx-validation-template.md`. Example scripts do not call CAT
+write/control, hamlib/flrig PTT, serial/GPIO/VOX control, or hardware transmit
+paths.
+
 ## Base Examples
 
 ```sh

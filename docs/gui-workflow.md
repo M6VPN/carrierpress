@@ -267,5 +267,11 @@ ordinary builds. The TX request requires prior mock arming and moves only to
 `tx_requested`; emergency RX/drop clears mock arming and returns to
 `disarmed`. These keys do not call CAT write/control or any hardware backend.
 
+T7A documents a future hardware TX backend safety track. It is design-only.
+No GUI hardware transmit control, CAT write/control, hamlib/flrig PTT,
+serial/GPIO/VOX control, frequency setting, or mode setting is added. See
+[`hardware-tx-backend-safety-design.md`](hardware-tx-backend-safety-design.md)
+and [`hardware-tx-validation-template.md`](hardware-tx-validation-template.md).
+
 Ordinary CLI, TUI, GUI, CAT status, and example workflow boundaries are
 summarized in [`operator-workflow.md`](operator-workflow.md).

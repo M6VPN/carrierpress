@@ -134,6 +134,13 @@ and moves only to `tx_requested`; emergency RX/drop clears mock arming and
 returns to `disarmed`. The controls do not call CAT write/control or hardware
 backends, and ordinary builds remain free of the guarded mock keys.
 
+T7A documents the future hardware TX backend safety gates only. No hardware
+backend exists, and the guarded build remains mock-only. The design and future
+evidence template are:
+
+- [`hardware-tx-backend-safety-design.md`](hardware-tx-backend-safety-design.md)
+- [`hardware-tx-validation-template.md`](hardware-tx-validation-template.md)
+
 ## Examples and Demos
 
 Examples are local wrappers for safe inspection and validation. They must not

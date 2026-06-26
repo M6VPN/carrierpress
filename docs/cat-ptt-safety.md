@@ -169,6 +169,22 @@ calls, profile/config arming, report/batch/playlist transmit fields, or
 frequency/mode control. Ordinary builds do not expose the guarded mock TX or
 emergency RX/drop keys.
 
+## Current T7A Boundary
+
+T7A starts the future hardware TX backend track with design and gate
+documentation only:
+
+- [`hardware-tx-backend-safety-design.md`](hardware-tx-backend-safety-design.md)
+- [`hardware-tx-validation-template.md`](hardware-tx-validation-template.md)
+
+T7A does not add a hardware backend, CAT write/control, hamlib or flrig PTT
+calls, serial/GPIO/VOX control, frequency setting, mode setting, GUI/TUI/CLI
+hardware transmit controls, or hidden arming from profile, config, report,
+batch, playlist, or selector paths.
+
+Ordinary builds remain non-transmit. `WITH_TRANSMIT_CONTROL=1` remains
+guarded and mock-only.
+
 ## Future Architecture
 
 Any future implementation should use a separate PTT command boundary, for

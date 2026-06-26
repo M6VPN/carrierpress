@@ -92,6 +92,13 @@ Required boundaries before any future implementation:
 - No frequency or mode automation unless separately designed.
 - No on-air claims or compliance claims.
 
+T7A adds the safety design and validation evidence template only:
+
+- [`hardware-tx-backend-safety-design.md`](hardware-tx-backend-safety-design.md)
+- [`hardware-tx-validation-template.md`](hardware-tx-validation-template.md)
+
+No hardware backend exists after T7A.
+
 ## F. P39 Enthusiast Onboarding
 
 Planned work:

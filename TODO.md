@@ -669,11 +669,21 @@ implemented until code, docs, and validation are complete.
 
 ## T7 Future Hardware TX Backend
 
-- [ ] Keep deferred until explicitly selected.
-- [ ] Require separate safety design before implementation.
-- [ ] Require receive-only and dummy-load validation evidence.
-- [ ] Keep CAT write/control outside callbacks.
-- [ ] Keep frequency/mode automation out of scope unless separately designed.
+- [x] Keep deferred until explicitly selected.
+- [x] Require separate safety design before implementation.
+- [x] Require receive-only and dummy-load validation evidence.
+- [x] Keep CAT write/control outside callbacks.
+- [x] Keep frequency/mode automation out of scope unless separately designed.
+
+## T7A Hardware TX Backend Safety Design
+
+- [x] Add hardware TX backend safety design.
+- [x] Add hardware TX validation evidence template.
+- [x] Define future implementation gates.
+- [x] Keep this patch design-only.
+- [x] Keep hardware backend absent.
+- [x] Keep CAT write/control absent.
+- [x] Keep frequency/mode automation deferred.
 
 ## P39 Enthusiast Onboarding
 

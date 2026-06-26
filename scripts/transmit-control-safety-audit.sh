@@ -37,6 +37,21 @@ check_find_no_matches()
 	fi
 }
 
+check_no_hardware_backend_files()
+{
+	if matches=$(find include src -type f \
+	    \( -name 'cp_tx_hardware*.[ch]' \
+	    -o -name 'cp_hardware_tx*.[ch]' \
+	    -o -name 'cp_*ptt*.[ch]' \
+	    -o -name 'cp_*gpio*tx*.[ch]' \
+	    -o -name 'cp_*serial*tx*.[ch]' \) 2>/dev/null); then
+		if [ -n "$matches" ]; then
+			fail "transmit-control-safety-audit: hardware TX backend files exist"
+			printf '%s\n' "$matches" >&2
+		fi
+	fi
+}
+
 check_tx_symbols_outside_boundary()
 {
 	if matches=$(find include src tests examples -type f \
@@ -57,6 +72,7 @@ check_tx_symbols_outside_boundary()
 	fi
 }
 
+check_no_hardware_backend_files
 check_tx_symbols_outside_boundary
 
 check_no_matches \

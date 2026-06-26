@@ -158,3 +158,15 @@ exist.
 
 No future backend should set rig frequency or rig mode as part of ordinary
 audio processing.
+
+## T7 Hardware Backend Design Boundary
+
+T7A records the future hardware backend safety gates in
+[`hardware-tx-backend-safety-design.md`](hardware-tx-backend-safety-design.md).
+The companion evidence template is
+[`hardware-tx-validation-template.md`](hardware-tx-validation-template.md).
+
+T7A is design-only. It does not add a backend interface, hardware calls, CAT
+write/control, hamlib or flrig PTT calls, serial/GPIO/VOX control, frequency
+setting, or mode setting. T6 remains guarded and mock-only, and ordinary builds
+remain non-transmit.
