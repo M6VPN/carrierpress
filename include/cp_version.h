@@ -5,8 +5,8 @@
 #define CP_VERSION_H
 
 #define CP_VERSION_MAJOR	0
-#define CP_VERSION_MINOR	5
+#define CP_VERSION_MINOR	6
 #define CP_VERSION_PATCH	0
-#define CP_VERSION_STRING	"0.5.0"
+#define CP_VERSION_STRING	"0.6.0-dev"
 
 #endif

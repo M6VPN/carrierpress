@@ -732,20 +732,24 @@ implemented until code, docs, and validation are complete.
 - [x] Keep hardware TX backend absent.
 - [x] Keep CAT write/control absent.
 
-## B40 SSB Bulletin and Audio Playout Pivot
+## R13 Post-v0.5.0 Development Cycle
 
-- [x] Reframe CarrierPress as an SSB voice bulletin and audio playout processor.
-- [x] Document that CarrierPress transmits audio content, not recoverable files.
-- [x] Add built-in SSB bulletin profile names.
-- [x] Keep SSB voice and digital modem audio as separate profiles.
-- [x] Add safe dry-run bulletin and carousel planning foundations.
-- [x] Keep PTT/CAT/serial hardware control disabled by default.
-- [ ] Add native compressed-audio decode adapters.
-- [ ] Add TTS adapter selection.
-- [ ] Add stream/stdin input adapters.
-- [ ] Add station ID audio synthesis and insertion.
-- [ ] Add pre-roll/post-roll execution around future hardware PTT.
-- [ ] Add ALSA/PipeWire named-device playout polish.
+- [x] Open main as 0.6.0-dev after v0.5.0 release.
+- [x] Preserve v0.5.0 release boundary.
+- [x] Track B40 SSB bulletin/audio playout work as post-release development.
+- [x] Keep hardware TX backend absent.
+- [x] Keep CAT write/control absent.
+
+## B40 SSB Bulletin / Audio Playout Pivot
+
+- [x] B40A: Add SSB bulletin workflow foundation.
+- [ ] B40B: Add bounded dry-run plan/report output and command tests.
+- [ ] B40C: Harden preview WAV workflow and clipping/meter evidence.
+- [ ] B40D: Add text/TTS adapter boundary with mock TTS output.
+- [ ] B40E: Add carousel execution planner without audio hardware.
+- [ ] B40F: Add audio output adapter design for ALSA/PipeWire/PortAudio device selection.
+- [ ] B40G: Add optional VOX-friendly audio-only playout mode.
+- [ ] B40H: Add PTT/CAT/serial safety design update only; no hardware implementation.
 
 ## B40A SSB Bulletin Workflow Foundation
 

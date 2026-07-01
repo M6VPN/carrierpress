@@ -8,6 +8,9 @@ The product-roadmap pivot is packaged for v0.5.0 in
 [`release-notes-v0.5.0.md`](release-notes-v0.5.0.md). Local readiness checks
 are listed in
 [`release-readiness-v0.5.0.md`](release-readiness-v0.5.0.md).
+Main now tracks 0.6.0-dev post-release work. B40 is the first post-v0.5.0
+development line and pivots CarrierPress toward SSB bulletin and audio playout
+workflows.
 
 This roadmap is planning plus foundation work. It does not implement DSP
 algorithm changes, hardware PTT, CAT write/control commands, hamlib or flrig
@@ -118,8 +121,8 @@ Planned work:
 
 ## G. B40 SSB Bulletin and Audio Playout Pivot
 
-CarrierPress is now aimed at automated SSB voice bulletin and audio playout
-processing, not receiver-side file reconstruction.
+B40 is post-v0.5.0 development. It aims CarrierPress at automated SSB voice
+bulletin and audio playout processing, not receiver-side file reconstruction.
 
 Planned work:
 
@@ -137,7 +140,6 @@ Planned work:
   be accepted.
 - Keep all hardware PTT work deferred to a separate safety-gated milestone.
 
-The first implementation slice adds built-in bulletin profile names, shipped
-profile files, a dependency-light bulletin/carousel plan model, safe dry-run
-CLI subcommands, and preview WAV routing through the existing libsndfile
-processor.
+B40A adds built-in bulletin profile names, shipped profile files, a
+dependency-light bulletin/carousel plan model, safe dry-run CLI subcommands,
+and preview WAV routing through the existing libsndfile processor.

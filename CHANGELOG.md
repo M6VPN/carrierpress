@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.6.0-dev - unreleased
+
+### Added
+
+- Post-v0.5.0 SSB bulletin/audio playout development cycle.
+- B40A SSB bulletin workflow foundation.
+
+### Changed
+
+- Main branch now tracks post-v0.5.0 development toward SSB voice bulletin and
+  audio playout workflows.
+
+### Safety
+
+- Hardware TX backend remains absent.
+- CAT/serial PTT remains planning/validation only.
+- Ordinary workflows remain dry-run, preview, or audio-only unless future
+  explicitly gated work is selected.
+
+### Deferred
+
+- Native MP3/Opus decoding.
+- Native TTS.
+- Stream/URL input.
+- ALSA/PipeWire named-device output beyond existing host backends.
+- Hardware PTT/CAT/serial TX control.
+
 ## 0.5.0 - 2026-07-01
 
 ### Added

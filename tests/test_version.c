@@ -11,12 +11,12 @@
 int
 main(void)
 {
-	if (CP_VERSION_MAJOR != 0 || CP_VERSION_MINOR != 5 ||
+	if (CP_VERSION_MAJOR != 0 || CP_VERSION_MINOR != 6 ||
 	    CP_VERSION_PATCH != 0) {
 		printf("test_version: numeric version mismatch\n");
 		return 1;
 	}
-	if (strcmp(CP_VERSION_STRING, "0.5.0") != 0) {
+	if (strcmp(CP_VERSION_STRING, "0.6.0-dev") != 0) {
 		printf("test_version: string version mismatch\n");
 		return 1;
 	}

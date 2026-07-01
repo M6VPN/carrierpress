@@ -8,6 +8,17 @@ The safe default is dry-run, preview, or audio-only output. No command keys a
 transmitter by default. Future CAT or serial PTT must stay behind an explicit
 `--arm-tx` gate and separate hardware backend work.
 
+## Development Status
+
+B40A is the first post-v0.5.0 foundation slice. It provides built-in profile
+planning, carousel schedule parsing, dry-run CLI commands, and preview WAV
+routing through the existing libsndfile path when available.
+
+Native compressed decode, native TTS, stream input, ALSA/PipeWire-specific
+output polish, silence trimming, station ID audio synthesis, and hardware PTT
+are deferred. Next B40 work should harden dry-run/report output and preview
+evidence before any PTT work.
+
 ## Target Profile
 
 The default bulletin profile is `hf-ssb-voice`:

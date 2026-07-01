@@ -17,6 +17,12 @@ CarrierPress is not an RF generator, transmitter compliance tool,
 licence-compliance proof, legal-bandwidth proof, regulatory certification
 path, or operational hardware PTT controller. No hardware TX backend exists.
 
+The v0.5.0 tag is the stable product-readiness release. Main now tracks
+0.6.0-dev post-release development, starting with B40 SSB bulletin and audio
+playout work. B40A is a foundation slice; native MP3/Opus decoding, native
+TTS, stream input, ALSA/PipeWire-specific output polish, and hardware TX remain
+deferred.
+
 Offline WAV processing is optional when built with libsndfile. Live audio and
 playout paths are optional when built with PortAudio and matching host
 dependencies. The ncurses TUI and SDL3 GUI monitor are optional host
@@ -204,7 +210,7 @@ asset guidance are documented in
 [`docs/release-notes-v0.5.0.md`](docs/release-notes-v0.5.0.md),
 [`docs/release-procedure.md`](docs/release-procedure.md), and
 [`docs/release-assets-v0.1.md`](docs/release-assets-v0.1.md).
-The current release notes are in
+The latest stable release notes are in
 [`docs/release-notes-v0.5.0.md`](docs/release-notes-v0.5.0.md). Safe example
 wrappers are documented in [`examples/README.md`](examples/README.md). The
 local safe operator demo is `./examples/operator-safe-demo.sh`. Manual release
