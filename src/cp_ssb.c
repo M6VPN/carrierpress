@@ -83,6 +83,33 @@ cp_ssb_apply_preset_id(struct cp_ssb_config *config,
 		cp_ssb_set_name(config, preset_name);
 		return CP_OK;
 	}
+	if (preset == CP_SSB_PRESET_HF_VOICE) {
+		config->highpass_hz           = 150.0f;
+		config->lowpass_hz            = 2700.0f;
+		config->phase_rotator_enabled = 1;
+		config->phase_rotator_stages  = 2;
+		config->peak_limit            = 0.89125094f;
+		cp_ssb_set_name(config, preset_name);
+		return CP_OK;
+	}
+	if (preset == CP_SSB_PRESET_HF_NARROW) {
+		config->highpass_hz           = 200.0f;
+		config->lowpass_hz            = 2400.0f;
+		config->phase_rotator_enabled = 1;
+		config->phase_rotator_stages  = 3;
+		config->peak_limit            = 0.89125094f;
+		cp_ssb_set_name(config, preset_name);
+		return CP_OK;
+	}
+	if (preset == CP_SSB_PRESET_VHF_FM) {
+		config->highpass_hz           = 120.0f;
+		config->lowpass_hz            = 3000.0f;
+		config->phase_rotator_enabled = 0;
+		config->phase_rotator_stages  = 0;
+		config->peak_limit            = 0.89125094f;
+		cp_ssb_set_name(config, preset_name);
+		return CP_OK;
+	}
 
 	return CP_ERR_RANGE;
 }
@@ -163,6 +190,18 @@ cp_ssb_preset_from_string(const char *text, enum cp_ssb_preset *preset)
 		*preset = CP_SSB_PRESET_GENTLE;
 		return CP_OK;
 	}
+	if (strcmp(text, "hf-ssb-voice") == 0) {
+		*preset = CP_SSB_PRESET_HF_VOICE;
+		return CP_OK;
+	}
+	if (strcmp(text, "hf-ssb-narrow") == 0) {
+		*preset = CP_SSB_PRESET_HF_NARROW;
+		return CP_OK;
+	}
+	if (strcmp(text, "vhf-fm-voice") == 0) {
+		*preset = CP_SSB_PRESET_VHF_FM;
+		return CP_OK;
+	}
 
 	return CP_ERR_RANGE;
 }
@@ -235,6 +274,12 @@ cp_ssb_preset_string(enum cp_ssb_preset preset)
 		return "ssb-wide";
 	case CP_SSB_PRESET_GENTLE:
 		return "ssb-gentle";
+	case CP_SSB_PRESET_HF_VOICE:
+		return "hf-ssb-voice";
+	case CP_SSB_PRESET_HF_NARROW:
+		return "hf-ssb-narrow";
+	case CP_SSB_PRESET_VHF_FM:
+		return "vhf-fm-voice";
 	default:
 		return NULL;
 	}

@@ -693,6 +693,15 @@ cp_profile_apply_ssb_preset(enum cp_profile_ssb_preset_setting preset,
 	case CP_PROFILE_SSB_PRESET_GENTLE:
 		ssb_preset = CP_SSB_PRESET_GENTLE;
 		break;
+	case CP_PROFILE_SSB_PRESET_HF_VOICE:
+		ssb_preset = CP_SSB_PRESET_HF_VOICE;
+		break;
+	case CP_PROFILE_SSB_PRESET_HF_NARROW:
+		ssb_preset = CP_SSB_PRESET_HF_NARROW;
+		break;
+	case CP_PROFILE_SSB_PRESET_VHF_FM:
+		ssb_preset = CP_SSB_PRESET_VHF_FM;
+		break;
 	default:
 		return CP_ERR_RANGE;
 	}
@@ -859,6 +868,18 @@ cp_profile_parse_ssb_preset(const char *text,
 	}
 	if (strcmp(text, "ssb-gentle") == 0) {
 		*preset = CP_PROFILE_SSB_PRESET_GENTLE;
+		return CP_OK;
+	}
+	if (strcmp(text, "hf-ssb-voice") == 0) {
+		*preset = CP_PROFILE_SSB_PRESET_HF_VOICE;
+		return CP_OK;
+	}
+	if (strcmp(text, "hf-ssb-narrow") == 0) {
+		*preset = CP_PROFILE_SSB_PRESET_HF_NARROW;
+		return CP_OK;
+	}
+	if (strcmp(text, "vhf-fm-voice") == 0) {
+		*preset = CP_PROFILE_SSB_PRESET_VHF_FM;
 		return CP_OK;
 	}
 

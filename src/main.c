@@ -72,6 +72,7 @@ static int	parse_size_arg(const char *, size_t *);
 static int	parse_uint_arg(const char *, unsigned int *);
 static int	parse_uint64_arg(const char *, uint64_t *);
 static int	run_cat_status(const struct cp_cat_config *);
+static int	run_bulletin_command(int, char **);
 static int	run_batch_check(const char *, const char *, int);
 static int	run_batch_process(const char *, const char *, int,
 		    const struct cp_block_config *,
@@ -107,6 +108,17 @@ static int	run_wav_process(const char *, const char *, const char *,
 static int	run_self_test(const struct cp_block_config *);
 static int	run_validate_config(const char *);
 static int	run_validate_profile(const char *);
+static int	run_bulletin_carousel(int, char **);
+static int	run_bulletin_live(int, char **);
+static int	run_bulletin_ssb_play(int, char **);
+static int	run_bulletin_text(int, char **);
+static int	run_bulletin_preview_wav(const char *, const char *,
+		    enum cp_bulletin_profile_id);
+static void	print_bulletin_profile_plan(enum cp_bulletin_profile_id,
+		    const char *, const char *, const char *, unsigned int,
+		    const struct cp_bulletin_tx_gate *);
+static int	parse_bulletin_profile_arg(const char *,
+		    enum cp_bulletin_profile_id *);
 static const char *switch_string(int);
 #ifdef CP_WITH_SNDFILE
 static int	path_is_directory(const char *);
@@ -207,6 +219,8 @@ main(int argc, char *argv[])
 		printf("CarrierPress %s\n", CP_VERSION_STRING);
 		return 0;
 	}
+	if (argc > 1 && argv[1][0] != '-')
+		return run_bulletin_command(argc, argv);
 
 	for (arg = 1; arg < argc; arg++) {
 		if (strcmp(argv[arg], "--self-test") == 0) {
@@ -1101,10 +1115,54 @@ apply_profile_arg(const char *path, const char *config_path,
 {
 	struct cp_profile profile;
 	struct cp_profile_error error;
+	enum cp_bulletin_profile_id builtin_id;
+	const char *builtin_name;
 	int status;
 
 	if (path == NULL || block_config == NULL || audio_config == NULL)
 		return 0;
+
+	if (cp_bulletin_profile_from_string(path, &builtin_id) ==
+	    CP_BULLETIN_OK) {
+		if (cp_bulletin_apply_profile(builtin_id, block_config,
+		    audio_config) != CP_BULLETIN_OK) {
+			fprintf(stderr,
+			    "carrierpress: built-in profile %s failed\n",
+			    path);
+			return 0;
+		}
+		builtin_name = cp_bulletin_profile_string(builtin_id);
+		if (inspection_state != NULL) {
+			if (!copy_inspection_string(
+			    inspection_state->profile_path,
+			    sizeof(inspection_state->profile_path), path)) {
+				fprintf(stderr,
+				    "carrierpress: profile path is too long\n");
+				return 0;
+			}
+			if (!copy_inspection_string(
+			    inspection_state->profile_name,
+			    sizeof(inspection_state->profile_name),
+			    builtin_name == NULL ? path : builtin_name)) {
+				fprintf(stderr,
+				    "carrierpress: profile name is too long\n");
+				return 0;
+			}
+			if (builtin_id == CP_BULLETIN_PROFILE_HF_SSB_VOICE ||
+			    builtin_id == CP_BULLETIN_PROFILE_HF_SSB_NARROW ||
+			    builtin_id == CP_BULLETIN_PROFILE_VHF_FM_VOICE)
+				inspection_state->profile_mode =
+				    CP_PROFILE_MODE_SSB;
+			else if (builtin_id ==
+			    CP_BULLETIN_PROFILE_AM_BROADCAST_STYLE)
+				inspection_state->profile_mode =
+				    CP_PROFILE_MODE_AM;
+			else
+				inspection_state->profile_mode =
+				    CP_PROFILE_MODE_NEUTRAL;
+		}
+		return 1;
+	}
 
 	(void)memset(&error, 0, sizeof(error));
 	status = cp_profile_parse_file(path, &profile, &error);
@@ -1337,6 +1395,422 @@ parse_uint64_arg(const char *text, uint64_t *value)
 		return 0;
 	*value = (uint64_t)parsed;
 	return 1;
+}
+
+static int
+run_bulletin_command(int argc, char *argv[])
+{
+	if (argc < 2)
+		return 1;
+	if (strcmp(argv[1], "ssb-play") == 0)
+		return run_bulletin_ssb_play(argc, argv);
+	if (strcmp(argv[1], "bulletin") == 0)
+		return run_bulletin_text(argc, argv);
+	if (strcmp(argv[1], "carousel") == 0)
+		return run_bulletin_carousel(argc, argv);
+	if (strcmp(argv[1], "live") == 0)
+		return run_bulletin_live(argc, argv);
+
+	usage(argv[0]);
+	return 1;
+}
+
+static int
+run_bulletin_carousel(int argc, char *argv[])
+{
+	struct cp_bulletin_schedule schedule;
+	struct cp_bulletin_tx_gate gate;
+	enum cp_bulletin_profile_id profile_id;
+	char error[160];
+	char reason[160];
+	const char *path;
+	int arg;
+	int dry_run;
+	int profile_override;
+
+	if (argc < 3) {
+		usage(argv[0]);
+		return 1;
+	}
+
+	path = argv[2];
+	dry_run = 0;
+	profile_override = 0;
+	(void)memset(&gate, 0, sizeof(gate));
+	gate.ptt_mode = CP_BULLETIN_PTT_NONE;
+	gate.pre_roll_ms = CP_BULLETIN_DEFAULT_PRE_ROLL_MS;
+	gate.post_roll_ms = CP_BULLETIN_DEFAULT_POST_ROLL_MS;
+
+	for (arg = 3; arg < argc; arg++) {
+		if (strcmp(argv[arg], "--profile") == 0 && arg + 1 < argc) {
+			if (!parse_bulletin_profile_arg(argv[++arg],
+			    &profile_id)) {
+				usage(argv[0]);
+				return 1;
+			}
+			profile_override = 1;
+		} else if (strcmp(argv[arg], "--dry-run") == 0) {
+			dry_run = 1;
+		} else if (strcmp(argv[arg], "--arm-tx") == 0) {
+			gate.arm_tx = 1;
+		} else if (strcmp(argv[arg], "--ptt") == 0 &&
+		    arg + 1 < argc) {
+			if (cp_bulletin_ptt_mode_from_string(argv[++arg],
+			    &gate.ptt_mode) != CP_BULLETIN_OK) {
+				usage(argv[0]);
+				return 1;
+			}
+		} else if (strcmp(argv[arg], "--id") == 0 &&
+		    arg + 1 < argc) {
+			gate.station_id = argv[++arg];
+		} else {
+			usage(argv[0]);
+			return 1;
+		}
+	}
+
+	if (!dry_run) {
+		printf("carrierpress: carousel currently requires --dry-run\n");
+		return 1;
+	}
+	if (cp_bulletin_tx_gate_validate(&gate, reason, sizeof(reason)) !=
+	    CP_BULLETIN_OK) {
+		printf("carrierpress: %s\n", reason);
+		return 1;
+	}
+	if (cp_bulletin_schedule_parse_file(path, &schedule, error,
+	    sizeof(error)) != CP_BULLETIN_OK) {
+		printf("carrierpress: carousel %s: %s\n", path, error);
+		return 1;
+	}
+	if (profile_override)
+		schedule.profile_id = profile_id;
+	if (gate.station_id != NULL && gate.station_id[0] != '\0') {
+		if (snprintf(schedule.callsign, sizeof(schedule.callsign),
+		    "%s", gate.station_id) < 0)
+			return 1;
+	}
+	if (cp_bulletin_schedule_print_plan(&schedule, stdout) !=
+	    CP_BULLETIN_OK)
+		return 1;
+	printf("ptt=%s\n", cp_bulletin_ptt_mode_string(gate.ptt_mode));
+	printf("tx_armed=%s\n", gate.arm_tx ? "yes" : "no");
+	printf("hardware_ptt=absent\n");
+
+	return 0;
+}
+
+static int
+run_bulletin_live(int argc, char *argv[])
+{
+	struct cp_audio_config audio_config;
+	struct cp_block_config block_config;
+	struct cp_cat_config cat_config;
+	struct cp_operator_state operator_state;
+	enum cp_bulletin_profile_id profile_id;
+	const char *output_device_name;
+	int arg;
+	int dry_run;
+
+	cp_audio_default_config(&audio_config);
+	cp_block_default_config(&block_config, CP_CHANNELS_MONO);
+	cp_cat_default_config(&cat_config);
+	cp_operator_state_clear(&operator_state);
+	profile_id = CP_BULLETIN_PROFILE_HF_SSB_VOICE;
+	output_device_name = NULL;
+	dry_run = 0;
+
+	for (arg = 2; arg < argc; arg++) {
+		if (strcmp(argv[arg], "--profile") == 0 && arg + 1 < argc) {
+			if (!parse_bulletin_profile_arg(argv[++arg],
+			    &profile_id)) {
+				usage(argv[0]);
+				return 1;
+			}
+		} else if (strcmp(argv[arg], "--input-device") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_int_arg(argv[++arg],
+			    &audio_config.input_device))
+				audio_config.device_name = argv[arg];
+		} else if (strcmp(argv[arg], "--output-device") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_int_arg(argv[++arg],
+			    &audio_config.output_device))
+				output_device_name = argv[arg];
+		} else if (strcmp(argv[arg], "--audio-device") == 0 &&
+		    arg + 1 < argc) {
+			output_device_name = argv[++arg];
+		} else if (strcmp(argv[arg], "--dry-run") == 0) {
+			dry_run = 1;
+		} else {
+			usage(argv[0]);
+			return 1;
+		}
+	}
+
+	if (cp_bulletin_apply_profile(profile_id, &block_config,
+	    &audio_config) != CP_BULLETIN_OK)
+		return 1;
+	if (output_device_name != NULL)
+		audio_config.device_name = output_device_name;
+	if (dry_run) {
+		print_bulletin_profile_plan(profile_id, "live", NULL,
+		    output_device_name, 1, NULL);
+		return 0;
+	}
+
+	return run_live_audio(&audio_config, &cat_config, &operator_state);
+}
+
+static int
+run_bulletin_ssb_play(int argc, char *argv[])
+{
+	struct cp_bulletin_tx_gate gate;
+	enum cp_bulletin_profile_id profile_id;
+	const char *audio_device;
+	const char *input_path;
+	const char *preview_path;
+	char reason[160];
+	unsigned int repeat;
+	int arg;
+	int dry_run;
+
+	if (argc < 3) {
+		usage(argv[0]);
+		return 1;
+	}
+
+	input_path = argv[2];
+	audio_device = NULL;
+	preview_path = NULL;
+	repeat = 1;
+	dry_run = 0;
+	profile_id = CP_BULLETIN_PROFILE_HF_SSB_VOICE;
+	(void)memset(&gate, 0, sizeof(gate));
+	gate.ptt_mode = CP_BULLETIN_PTT_NONE;
+	gate.pre_roll_ms = CP_BULLETIN_DEFAULT_PRE_ROLL_MS;
+	gate.post_roll_ms = CP_BULLETIN_DEFAULT_POST_ROLL_MS;
+
+	for (arg = 3; arg < argc; arg++) {
+		if (strcmp(argv[arg], "--profile") == 0 && arg + 1 < argc) {
+			if (!parse_bulletin_profile_arg(argv[++arg],
+			    &profile_id)) {
+				usage(argv[0]);
+				return 1;
+			}
+		} else if ((strcmp(argv[arg], "--audio-device") == 0 ||
+		    strcmp(argv[arg], "--output-device") == 0) &&
+		    arg + 1 < argc) {
+			audio_device = argv[++arg];
+		} else if (strcmp(argv[arg], "--id") == 0 &&
+		    arg + 1 < argc) {
+			gate.station_id = argv[++arg];
+		} else if (strcmp(argv[arg], "--repeat") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_uint_arg(argv[++arg], &repeat) ||
+			    repeat == 0) {
+				usage(argv[0]);
+				return 1;
+			}
+		} else if (strcmp(argv[arg], "--preview") == 0 &&
+		    arg + 1 < argc) {
+			preview_path = argv[++arg];
+		} else if (strcmp(argv[arg], "--dry-run") == 0) {
+			dry_run = 1;
+		} else if (strcmp(argv[arg], "--ptt") == 0 &&
+		    arg + 1 < argc) {
+			if (cp_bulletin_ptt_mode_from_string(argv[++arg],
+			    &gate.ptt_mode) != CP_BULLETIN_OK) {
+				usage(argv[0]);
+				return 1;
+			}
+		} else if (strcmp(argv[arg], "--rig") == 0 &&
+		    arg + 1 < argc) {
+			gate.rig = argv[++arg];
+		} else if (strcmp(argv[arg], "--serial") == 0 &&
+		    arg + 1 < argc) {
+			gate.serial_path = argv[++arg];
+		} else if (strcmp(argv[arg], "--arm-tx") == 0) {
+			gate.arm_tx = 1;
+		} else {
+			usage(argv[0]);
+			return 1;
+		}
+	}
+
+	if (cp_bulletin_tx_gate_validate(&gate, reason, sizeof(reason)) !=
+	    CP_BULLETIN_OK) {
+		printf("carrierpress: %s\n", reason);
+		return 1;
+	}
+	if (dry_run || preview_path == NULL)
+		print_bulletin_profile_plan(profile_id, "ssb-play",
+		    input_path, audio_device, repeat, &gate);
+	if (preview_path != NULL)
+		return run_bulletin_preview_wav(input_path, preview_path,
+		    profile_id);
+
+	return 0;
+}
+
+static int
+run_bulletin_text(int argc, char *argv[])
+{
+	struct cp_bulletin_tx_gate gate;
+	enum cp_bulletin_profile_id profile_id;
+	const char *preview_path;
+	const char *text_path;
+	unsigned int repeat;
+	int arg;
+	int dry_run;
+	int tts_enabled;
+
+	if (argc < 3) {
+		usage(argv[0]);
+		return 1;
+	}
+
+	text_path = argv[2];
+	preview_path = NULL;
+	repeat = 1;
+	dry_run = 0;
+	tts_enabled = 0;
+	profile_id = CP_BULLETIN_PROFILE_HF_SSB_VOICE;
+	(void)memset(&gate, 0, sizeof(gate));
+	gate.ptt_mode = CP_BULLETIN_PTT_NONE;
+	gate.pre_roll_ms = CP_BULLETIN_DEFAULT_PRE_ROLL_MS;
+	gate.post_roll_ms = CP_BULLETIN_DEFAULT_POST_ROLL_MS;
+
+	for (arg = 3; arg < argc; arg++) {
+		if (strcmp(argv[arg], "--tts") == 0) {
+			tts_enabled = 1;
+		} else if (strcmp(argv[arg], "--profile") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_bulletin_profile_arg(argv[++arg],
+			    &profile_id)) {
+				usage(argv[0]);
+				return 1;
+			}
+		} else if (strcmp(argv[arg], "--id") == 0 &&
+		    arg + 1 < argc) {
+			gate.station_id = argv[++arg];
+		} else if (strcmp(argv[arg], "--repeat") == 0 &&
+		    arg + 1 < argc) {
+			if (!parse_uint_arg(argv[++arg], &repeat) ||
+			    repeat == 0) {
+				usage(argv[0]);
+				return 1;
+			}
+		} else if (strcmp(argv[arg], "--preview") == 0 &&
+		    arg + 1 < argc) {
+			preview_path = argv[++arg];
+		} else if (strcmp(argv[arg], "--dry-run") == 0) {
+			dry_run = 1;
+		} else {
+			usage(argv[0]);
+			return 1;
+		}
+	}
+
+	if (!tts_enabled) {
+		printf("carrierpress: bulletin text requires --tts\n");
+		return 1;
+	}
+	print_bulletin_profile_plan(profile_id, "bulletin-tts", text_path,
+	    NULL, repeat, &gate);
+	if (preview_path != NULL) {
+		printf("carrierpress: TTS preview adapter is not enabled; "
+		    "no output written to %s\n", preview_path);
+		return 1;
+	}
+	if (!dry_run)
+		printf("carrierpress: text bulletin is planning-only without "
+		    "a TTS adapter\n");
+
+	return 0;
+}
+
+static int
+run_bulletin_preview_wav(const char *input_path, const char *output_path,
+	enum cp_bulletin_profile_id profile_id)
+{
+#ifdef CP_WITH_SNDFILE
+	struct cp_audio_config audio_config;
+	struct cp_block_config block_config;
+	int status;
+
+	cp_audio_default_config(&audio_config);
+	cp_block_default_config(&block_config, CP_CHANNELS_MONO);
+	if (cp_bulletin_apply_profile(profile_id, &block_config,
+	    &audio_config) != CP_BULLETIN_OK)
+		return 1;
+	status = cp_wav_process_file_config(input_path, output_path,
+	    CP_WAV_BLOCK_FRAMES, &block_config);
+	if (status != CP_WAV_OK) {
+		printf("carrierpress: preview WAV failed: %s\n",
+		    cp_wav_status_string(status));
+		return 1;
+	}
+	printf("preview=%s\n", output_path);
+	return 0;
+#else
+	(void)input_path;
+	(void)output_path;
+	(void)profile_id;
+
+	printf("carrierpress: WAV preview requires WITH_SNDFILE=1\n");
+	return 1;
+#endif
+}
+
+static void
+print_bulletin_profile_plan(enum cp_bulletin_profile_id profile_id,
+	const char *mode, const char *input_path, const char *audio_device,
+	unsigned int repeat, const struct cp_bulletin_tx_gate *gate)
+{
+	const struct cp_bulletin_profile_summary *summary;
+
+	summary = cp_bulletin_profile_summary(profile_id);
+	if (summary == NULL)
+		return;
+
+	printf("bulletin_plan=1\n");
+	printf("mode=%s\n", mode == NULL ? "" : mode);
+	printf("input=%s\n", input_path == NULL ? "" : input_path);
+	printf("profile=%s\n", summary->name);
+	printf("channels=%zu\n", summary->channels);
+	printf("sample_rate=%0.0f\n", summary->output_sample_rate);
+	printf("bandpass=%0.0f:%0.0f\n", summary->highpass_hz,
+	    summary->lowpass_hz);
+	printf("speech_compressor=%s\n",
+	    summary->speech_compressor_enabled ? "on" : "off");
+	printf("limiter=%s\n", summary->limiter_enabled ? "on" : "off");
+	printf("eq=%s\n",
+	    summary->intelligibility_eq_enabled ? "on" : "off");
+	printf("target_peak_dbfs=%0.1f\n", summary->target_peak_dbfs);
+	printf("audio_device=%s\n", audio_device == NULL ? "" : audio_device);
+	printf("repeat=%u\n", repeat);
+	if (gate != NULL) {
+		printf("station_id=%s\n",
+		    gate->station_id == NULL ? "" : gate->station_id);
+		printf("ptt=%s\n",
+		    cp_bulletin_ptt_mode_string(gate->ptt_mode));
+		printf("tx_armed=%s\n", gate->arm_tx ? "yes" : "no");
+		printf("pre_roll_ms=%u\n", gate->pre_roll_ms);
+		printf("post_roll_ms=%u\n", gate->post_roll_ms);
+		if (gate->ptt_mode != CP_BULLETIN_PTT_NONE &&
+		    gate->ptt_mode != CP_BULLETIN_PTT_VOX)
+			printf("hardware_ptt=absent\n");
+	}
+}
+
+static int
+parse_bulletin_profile_arg(const char *text, enum cp_bulletin_profile_id *id)
+{
+	if (cp_bulletin_profile_from_string(text, id) == CP_BULLETIN_OK)
+		return 1;
+
+	return 0;
 }
 
 static int
@@ -2461,6 +2935,17 @@ usage(const char *program)
 	    "--low-level-boost\n", program);
 	printf("usage: %s --self-test --ssb --ssb-preset ssb-speech\n",
 	    program);
+	printf("usage: %s ssb-play bulletin.wav --profile hf-ssb-voice "
+	    "--audio-device \"USB Audio CODEC\" --id CALL --repeat 3 "
+	    "--dry-run\n", program);
+	printf("usage: %s ssb-play bulletin.wav --profile hf-ssb-voice "
+	    "--preview out.wav\n", program);
+	printf("usage: %s bulletin text.txt --tts --profile hf-ssb-voice "
+	    "--id CALL --repeat 3 --dry-run\n", program);
+	printf("usage: %s live --input-device default --output-device "
+	    "\"USB Audio CODEC\" --profile hf-ssb-voice\n", program);
+	printf("usage: %s carousel schedule.toml --profile hf-ssb-voice "
+	    "--dry-run\n", program);
 	printf("usage: %s --input input.wav --output output.wav "
 	    "[--report report.json]\n", program);
 	printf("usage: %s --report-summary report.json\n", program);
@@ -2524,8 +3009,15 @@ usage(const char *program)
 	    "--am-positive-peak FLOAT --am-negative-peak FLOAT "
 	    "--am-asymmetry FLOAT\n");
 	printf("SSB options: --ssb --ssb-preset "
-	    "ssb-speech|ssb-narrow|ssb-wide|ssb-gentle --ssb-lowpass HZ "
+	    "ssb-speech|ssb-narrow|ssb-wide|ssb-gentle|hf-ssb-voice|"
+	    "hf-ssb-narrow|vhf-fm-voice --ssb-lowpass HZ "
 	    "--ssb-highpass HZ --ssb-phase-rotator --ssb-peak FLOAT\n");
+	printf("Bulletin profiles: hf-ssb-voice|hf-ssb-narrow|"
+	    "vhf-fm-voice|am-broadcast-style|data-clean-pass-through\n");
+	printf("TX safety: dry-run and preview do not key PTT. CAT or serial "
+	    "PTT requires --arm-tx and remains unavailable until a future "
+	    "hardware backend is implemented. Test into a dummy load first "
+	    "and keep ALC low to moderate.\n");
 	printf("CAT options: --cat-backend none|mock|flrig|hamlib "
 	    "--cat-frequency-hz N --cat-mode MODE "
 	    "--cat-ptt off|on|unknown --cat-host HOST --cat-port PORT "

@@ -1,0 +1,21 @@
+callsign = "M6VPN"
+profile = "hf-ssb-voice"
+repeat = 3
+pre_roll_ms = 500
+post_roll_ms = 800
+
+[[items]]
+type = "id"
+text = "M6VPN test transmission"
+
+[[items]]
+type = "file"
+path = "bulletin.wav"
+
+[[items]]
+type = "tts"
+text = "End of bulletin. This is M6VPN."
+
+[[items]]
+type = "pause"
+seconds = 10

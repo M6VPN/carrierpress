@@ -28,6 +28,7 @@ or need optional libraries. The table below summarizes the expected boundary.
 | Packaging surface checks | no | no | no | no |
 | Report evidence demo | writes `build/quality-report.json` | no | no | no |
 | DSP preset review | writes `build/quality-report.json` | no | no | no |
+| SSB bulletin dry-run | no | no | no | no |
 | Batch evidence workflow | writes requested `build/` outputs | libsndfile for processing | no | no |
 | Guarded mock transmit-control validation | writes build outputs | no | yes for mock wrapper | no |
 
@@ -76,6 +77,7 @@ make
 ./examples/profile-self-test.sh
 ./examples/cat-mock-status.sh
 ./examples/dsp-preset-review.sh
+./examples/ssb-bulletin-dry-run.sh
 make validation-help
 make test-matrix-help
 make packaging-help
@@ -113,6 +115,12 @@ hardware, or publish anything.
 cleanup profiles, writes `build/quality-report.json`, and summarizes that
 report. It does not run `make clean`, open audio devices, require optional
 dependencies, access hardware, publish releases, or run transmit actions.
+
+`ssb-bulletin-dry-run.sh` prints a safe SSB bulletin file plan and a carousel
+plan using `examples/ssb-carousel.toml`. It does not open audio devices, write
+files, require optional dependencies, access hardware, publish releases, or run
+transmit actions. The workflow is documented in
+`docs/ssb-bulletin-workflow.md`.
 
 ## Library Example
 

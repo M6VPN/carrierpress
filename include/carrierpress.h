@@ -20,6 +20,7 @@
 #include "cp_bass_eq.h"
 #include "cp_biquad.h"
 #include "cp_block.h"
+#include "cp_bulletin.h"
 #include "cp_compressor.h"
 #include "cp_config_file.h"
 #include "cp_control.h"

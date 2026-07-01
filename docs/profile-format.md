@@ -45,7 +45,7 @@ station-control state. CarrierPress profiles are audio workflow files only.
 | `restoration_analysis` | `off`, `on`                                 |
 | `declipper`            | `off`, `on`                                 |
 | `am_preset`            | `off`, `am-safe`, `am-shortwave`, `am-wide`, `am-voice` |
-| `ssb_preset`           | `off`, `ssb-speech`, `ssb-narrow`, `ssb-wide`, `ssb-gentle` |
+| `ssb_preset`           | `off`, `ssb-speech`, `ssb-narrow`, `ssb-wide`, `ssb-gentle`, `hf-ssb-voice`, `hf-ssb-narrow`, `vhf-fm-voice` |
 
 The `bass_eq = custom` form is not accepted because there is no profile-level
 custom bass EQ parameter set yet.
@@ -65,12 +65,19 @@ The shipped profiles are conservative starting points:
   point.
 - `profiles/am-shortwave.profile`: denser shortwave-style AM starting point.
 - `profiles/ssb-speech.profile`: speech-focused SSB audio starting point.
+- `profiles/hf-ssb-voice.profile`: default SSB bulletin voice starting point.
+- `profiles/hf-ssb-narrow.profile`: narrower SSB bulletin voice profile.
+- `profiles/vhf-fm-voice.profile`: VHF FM voice playout profile.
+- `profiles/am-broadcast-style.profile`: wider AM-style local audio profile.
+- `profiles/data-clean-pass-through.profile`: clean external digital mode
+  audio pass-through profile.
 - `profiles/file-cleanup.profile`: offline WAV cleanup and restoration review
   starting point.
 
 Use `profiles/am-safe.profile` first for AM review,
 `profiles/am-shortwave.profile` when a denser AM comparison is useful,
-`profiles/ssb-speech.profile` for speech-focused SSB audio, and
+`profiles/hf-ssb-voice.profile` for SSB bulletin audio,
+`profiles/data-clean-pass-through.profile` for external digital mode audio, and
 `profiles/file-cleanup.profile` for offline cleanup work. The profile product
 notes and listening workflow are documented in
 [`dsp-product-presets.md`](dsp-product-presets.md).

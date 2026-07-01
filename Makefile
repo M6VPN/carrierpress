@@ -45,6 +45,7 @@ CORE_SRCS = \
 	src/cp_bass_eq.c \
 	src/cp_biquad.c \
 	src/cp_block.c \
+	src/cp_bulletin.c \
 	src/cp_cat.c \
 	src/cp_compressor.c \
 	src/cp_config_file.c \
@@ -85,6 +86,7 @@ TEST_SRCS = \
 	tests/test_batch.c \
 	tests/test_bass_eq.c \
 	tests/test_biquad.c \
+	tests/test_bulletin.c \
 	tests/test_cat.c \
 	tests/test_chain_quality.c \
 	tests/test_compressor.c \
@@ -235,6 +237,7 @@ TEST_BINS = \
 	$(TEST_BIN_DIR)/test_batch \
 	$(TEST_BIN_DIR)/test_bass_eq \
 	$(TEST_BIN_DIR)/test_biquad \
+	$(TEST_BIN_DIR)/test_bulletin \
 	$(TEST_BIN_DIR)/test_cat \
 	$(TEST_BIN_DIR)/test_compressor \
 	$(TEST_BIN_DIR)/test_config_file \
@@ -529,6 +532,10 @@ $(TEST_BIN_DIR)/test_biquad: $(TEST_OBJ_DIR)/tests/test_biquad.o $(TEST_CORE_OBJ
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_biquad.o $(TEST_CORE_OBJS) $(LDLIBS)
 
+$(TEST_BIN_DIR)/test_bulletin: $(TEST_OBJ_DIR)/tests/test_bulletin.o $(TEST_CORE_OBJS)
+	@mkdir -p $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_bulletin.o $(TEST_CORE_OBJS) $(LDLIBS)
+
 $(TEST_BIN_DIR)/test_chain_quality: $(TEST_OBJ_DIR)/tests/test_chain_quality.o $(TEST_CORE_OBJS)
 	@mkdir -p $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TEST_OBJ_DIR)/tests/test_chain_quality.o $(TEST_CORE_OBJS) $(LDLIBS)
@@ -698,6 +705,7 @@ test: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_batch
 	./$(TEST_BIN_DIR)/test_bass_eq
 	./$(TEST_BIN_DIR)/test_biquad
+	./$(TEST_BIN_DIR)/test_bulletin
 	./$(TEST_BIN_DIR)/test_cat
 	./$(TEST_BIN_DIR)/test_compressor
 	./$(TEST_BIN_DIR)/test_config_file
@@ -891,6 +899,7 @@ clean:
 	rm -f tests/test_cat_hamlib
 	rm -f tests/test_bass_eq
 	rm -f tests/test_chain_quality
+	rm -f tests/test_bulletin
 	rm -f tests/test_compressor tests/test_crossover
 	rm -f tests/test_control
 	rm -f tests/test_dc_blocker tests/test_declipper tests/test_dehummer

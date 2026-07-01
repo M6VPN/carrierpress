@@ -270,6 +270,26 @@ test_presets(void)
 		printf("test_ssb: bad preset accepted\n");
 		return 0;
 	}
+	if (cp_ssb_apply_preset(&config, "hf-ssb-voice") != CP_OK ||
+	    strcmp(config.preset_name, "hf-ssb-voice") != 0 ||
+	    config.highpass_hz != 150.0f ||
+	    config.lowpass_hz != 2700.0f ||
+	    config.peak_limit > 0.90f) {
+		printf("test_ssb: hf voice preset mismatch\n");
+		return 0;
+	}
+	if (cp_ssb_apply_preset(&config, "hf-ssb-narrow") != CP_OK ||
+	    config.highpass_hz != 200.0f ||
+	    config.lowpass_hz != 2400.0f) {
+		printf("test_ssb: hf narrow preset mismatch\n");
+		return 0;
+	}
+	if (cp_ssb_apply_preset(&config, "vhf-fm-voice") != CP_OK ||
+	    config.highpass_hz < 100.0f ||
+	    config.lowpass_hz != 3000.0f) {
+		printf("test_ssb: vhf fm preset mismatch\n");
+		return 0;
+	}
 
 	return 1;
 }

@@ -17,6 +17,15 @@ workflow. It does not change DSP algorithms or profile parameter values.
 
 ## Profile Families
 
+For SSB bulletin playout, start with:
+
+- `profiles/hf-ssb-voice.profile` for normal SSB voice bulletins.
+- `profiles/hf-ssb-narrow.profile` for weak or noisy paths.
+- `profiles/data-clean-pass-through.profile` for external digital mode audio.
+
+Do not use the voice profiles for JS8, Olivia, MT63, or other modem/data
+tones.
+
 ### `profiles/am-safe.profile`
 
 Use this as the conservative AM starting point when the source is speech or

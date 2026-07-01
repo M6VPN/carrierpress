@@ -6,6 +6,8 @@ workflow does not include active transmit control.
 
 For a first-run enthusiast path, start with
 `docs/enthusiast-quickstart.md` and `./examples/enthusiast-quickstart.sh`.
+For SSB bulletin and audio playout workflows, use
+`docs/ssb-bulletin-workflow.md`.
 
 CarrierPress remains a baseband audio processor. It does not provide hardware
 PTT, CAT write/control, rig frequency setting, rig mode setting, or an active

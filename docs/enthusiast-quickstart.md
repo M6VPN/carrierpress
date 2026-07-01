@@ -5,6 +5,10 @@ audio enthusiasts. It provides AM, SSB, and cleanup profiles, optional GUI and
 TUI operator surfaces, output-device and cue selectors, report tools, and safe
 demo flows for local review.
 
+For automated SSB voice bulletin and audio playout workflows, start with
+[`ssb-bulletin-workflow.md`](ssb-bulletin-workflow.md). CarrierPress sends
+audio content for people to hear or record; it is not a file-transfer modem.
+
 The v0.5.0 release notes are in
 [`release-notes-v0.5.0.md`](release-notes-v0.5.0.md), and the local
 release-readiness checklist is in

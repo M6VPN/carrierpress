@@ -2,12 +2,16 @@
 
 [![CI](https://github.com/M6VPN/carrierpress/actions/workflows/ci.yml/badge.svg)](https://github.com/M6VPN/carrierpress/actions/workflows/ci.yml)
 
-CarrierPress is a portable C DSP core and operator tool for local AM, SSB,
-and cleanup audio workflows. v0.5.0 adds enthusiast-facing DSP preset notes,
-listening and regression guidance, professional TUI/GUI dashboard grouping,
-output-device selectors, explicit WAV cue/load selectors, playlist selectors,
-safe demo flows, report/evidence tooling, and guarded mock-only
-transmit-control UI work.
+CarrierPress is a portable C SSB voice bulletin and audio playout processor.
+It takes prepared audio, text bulletin plans, live microphone paths, and
+playlist-style schedules, then prepares intelligible local voice audio for
+SSB/HF-style playout. The receiver hears or records audio; CarrierPress is not
+a file-transfer modem and does not try to reconstruct files at the receiver.
+
+The current bulletin workflow adds built-in SSB voice profiles, data-clean
+pass-through separation for external digital modes, dry-run carousel planning,
+preview WAV generation where libsndfile is enabled, and safe CLI foundations
+for future audio-device and PTT work.
 
 CarrierPress is not an RF generator, transmitter compliance tool,
 licence-compliance proof, legal-bandwidth proof, regulatory certification
@@ -26,6 +30,7 @@ default, and compressed audio stays an external-conversion workflow.
 - [Requirements](#requirements)
 - [Setup](#setup)
 - [Examples](#examples)
+- [SSB Bulletin Workflow](#ssb-bulletin-workflow)
 - [Enthusiast Quick Start](#enthusiast-quick-start)
 - [Profiles](#profiles)
 - [Config Files](#config-files)
@@ -218,6 +223,50 @@ validation before deferred requests are accepted. Selector workflow notes are in
 [`docs/selector-workflow.md`](docs/selector-workflow.md). TX operator controls
 remain future, guarded, and mock-only unless a later safety milestone selects
 more work.
+
+## SSB Bulletin Workflow
+
+The SSB bulletin workflow is documented in
+[`docs/ssb-bulletin-workflow.md`](docs/ssb-bulletin-workflow.md). It focuses on
+voice bulletin playout, not recoverable file transfer.
+
+Plan a prepared bulletin file without opening audio hardware:
+
+```sh
+./carrierpress ssb-play bulletin.wav \
+  --profile hf-ssb-voice \
+  --audio-device "USB Audio CODEC" \
+  --id M6VPN \
+  --repeat 3 \
+  --dry-run
+```
+
+Generate a preview WAV when built with libsndfile:
+
+```sh
+make WITH_SNDFILE=1
+./carrierpress ssb-play bulletin.wav --profile hf-ssb-voice --preview out.wav
+```
+
+Plan a carousel:
+
+```sh
+./carrierpress carousel examples/ssb-carousel.toml --profile hf-ssb-voice --dry-run
+```
+
+First safe test:
+
+1. Generate a preview WAV.
+2. Listen in headphones.
+3. Play into a dummy audio sink.
+4. Test the radio into a dummy load.
+5. Set rig power low.
+6. Raise audio slowly.
+7. Keep ALC low to moderate.
+8. Use an antenna only when intentionally configured and legally permitted.
+
+Do not use `hf-ssb-voice` or `hf-ssb-narrow` for JS8, Olivia, MT63, or other
+external digital modem tones. Use `data-clean-pass-through` instead.
 
 ## Enthusiast Quick Start
 
@@ -1712,7 +1761,8 @@ The v0.5.0 release notes are in
 release-readiness checklist is in
 [`docs/release-readiness-v0.5.0.md`](docs/release-readiness-v0.5.0.md).
 Final evidence and manual tag checks are documented in
-[`docs/release-evidence-v0.5.0-template.md`](docs/release-evidence-v0.5.0-template.md)
+[`docs/release-evidence-v0.5.0-template.md`](docs/release-evidence-v0.5.0-template.md),
+[`docs/release-evidence-v0.5.0-summary.md`](docs/release-evidence-v0.5.0-summary.md),
 and
 [`docs/manual-release-checklist-v0.5.0.md`](docs/manual-release-checklist-v0.5.0.md).
 No project script publishes releases.

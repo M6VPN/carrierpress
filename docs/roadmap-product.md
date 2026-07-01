@@ -115,3 +115,29 @@ Planned work:
 - Keep project scripts free of package installation and `sudo`.
 - Explain ordinary, optional, and guarded mock workflows without implying
   hardware transmit support.
+
+## G. B40 SSB Bulletin and Audio Playout Pivot
+
+CarrierPress is now aimed at automated SSB voice bulletin and audio playout
+processing, not receiver-side file reconstruction.
+
+Planned work:
+
+- Treat WAV, future decoded audio, text/TTS, live microphone, and stream inputs
+  as audio bulletin sources.
+- Normalize source audio into a common internal sample format.
+- Keep SSB voice profiles separate from external digital modem audio.
+- Use `hf-ssb-voice` as the default SSB bulletin profile.
+- Keep `data-clean-pass-through` available for JS8, Olivia, MT63, and similar
+  external digital modes.
+- Add carousel scheduling, station ID insertion, and dry-run planning.
+- Add preview WAV output before any hardware-output workflow.
+- Keep CAT, serial, RTS/DTR, GPIO, and VOX control disabled by default.
+- Require explicit `--arm-tx` before any future CAT or serial PTT backend can
+  be accepted.
+- Keep all hardware PTT work deferred to a separate safety-gated milestone.
+
+The first implementation slice adds built-in bulletin profile names, shipped
+profile files, a dependency-light bulletin/carousel plan model, safe dry-run
+CLI subcommands, and preview WAV routing through the existing libsndfile
+processor.

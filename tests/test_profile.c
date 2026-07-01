@@ -139,6 +139,49 @@ test_apply_examples(void)
 		return 0;
 	}
 
+	cp_audio_default_config(&audio_config);
+	cp_block_default_config(&block_config, CP_CHANNELS_STEREO);
+	if (cp_profile_parse_file("profiles/hf-ssb-voice.profile", &profile,
+	    &error) != CP_OK ||
+	    cp_profile_apply_to_configs(&profile, &block_config,
+	    &audio_config) != CP_OK ||
+	    block_config.am_config.enabled ||
+	    !block_config.ssb_config.enabled ||
+	    block_config.ssb_config.highpass_hz != 150.0f ||
+	    block_config.ssb_config.lowpass_hz != 2700.0f ||
+	    block_config.bass_eq_config.enabled != 1) {
+		printf("test_profile: hf-ssb-voice apply failed\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&audio_config);
+	cp_block_default_config(&block_config, CP_CHANNELS_STEREO);
+	if (cp_profile_parse_file("profiles/hf-ssb-narrow.profile", &profile,
+	    &error) != CP_OK ||
+	    cp_profile_apply_to_configs(&profile, &block_config,
+	    &audio_config) != CP_OK ||
+	    block_config.ssb_config.highpass_hz != 200.0f ||
+	    block_config.ssb_config.lowpass_hz != 2400.0f ||
+	    block_config.multiband2_enabled != 1) {
+		printf("test_profile: hf-ssb-narrow apply failed\n");
+		return 0;
+	}
+
+	cp_audio_default_config(&audio_config);
+	cp_block_default_config(&block_config, CP_CHANNELS_STEREO);
+	if (cp_profile_parse_file("profiles/data-clean-pass-through.profile",
+	    &profile, &error) != CP_OK ||
+	    cp_profile_apply_to_configs(&profile, &block_config,
+	    &audio_config) != CP_OK ||
+	    block_config.am_config.enabled ||
+	    block_config.ssb_config.enabled ||
+	    block_config.multiband_enabled ||
+	    block_config.bass_eq_config.enabled ||
+	    block_config.natural_dynamics_config.enabled) {
+		printf("test_profile: data-clean-pass-through apply failed\n");
+		return 0;
+	}
+
 	return 1;
 }
 

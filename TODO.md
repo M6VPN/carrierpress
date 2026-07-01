@@ -731,3 +731,28 @@ implemented until code, docs, and validation are complete.
 - [x] Keep tag creation and release publication manual.
 - [x] Keep hardware TX backend absent.
 - [x] Keep CAT write/control absent.
+
+## B40 SSB Bulletin and Audio Playout Pivot
+
+- [x] Reframe CarrierPress as an SSB voice bulletin and audio playout processor.
+- [x] Document that CarrierPress transmits audio content, not recoverable files.
+- [x] Add built-in SSB bulletin profile names.
+- [x] Keep SSB voice and digital modem audio as separate profiles.
+- [x] Add safe dry-run bulletin and carousel planning foundations.
+- [x] Keep PTT/CAT/serial hardware control disabled by default.
+- [ ] Add native compressed-audio decode adapters.
+- [ ] Add TTS adapter selection.
+- [ ] Add stream/stdin input adapters.
+- [ ] Add station ID audio synthesis and insertion.
+- [ ] Add pre-roll/post-roll execution around future hardware PTT.
+- [ ] Add ALSA/PipeWire named-device playout polish.
+
+## B40A SSB Bulletin Workflow Foundation
+
+- [x] Add `hf-ssb-voice`, `hf-ssb-narrow`, `vhf-fm-voice`, `am-broadcast-style`, and `data-clean-pass-through` profile files.
+- [x] Add bulletin profile/config mapping.
+- [x] Add carousel schedule parsing and dry-run plan output.
+- [x] Add safe `ssb-play`, `bulletin`, `live`, and `carousel` command foundations.
+- [x] Add explicit PTT arming gate metadata without hardware PTT implementation.
+- [x] Add SSB bulletin workflow and migration docs.
+- [x] Add tests for profile loading, data-clean separation, PTT arming, and carousel parsing.
