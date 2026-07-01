@@ -721,3 +721,13 @@ implemented until code, docs, and validation are complete.
 - [x] Keep release publication and tagging manual.
 - [x] Keep hardware TX backend absent.
 - [x] Keep CAT write/control absent.
+
+## R12C v0.5.0 Final Release Lock
+
+- [x] Lock changelog date for v0.5.0.
+- [x] Record final validation completion note.
+- [x] Clarify tarball inspection ordering after clean/dist-check.
+- [x] Add sanitized release evidence summary.
+- [x] Keep tag creation and release publication manual.
+- [x] Keep hardware TX backend absent.
+- [x] Keep CAT write/control absent.

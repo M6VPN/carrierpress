@@ -58,6 +58,18 @@ Guarded transmit-control remains mock-only. No hardware backend exists.
 
 ## Tarball Inspection
 
+`make clean` removes `build/dist`, and guarded mock validation may clean the
+build tree. Run tarball inspection immediately after `make dist` or
+`make dist-check`.
+
+If `build/dist/carrierpress-0.5.0.tar.gz` is missing, regenerate the archive:
+
+```sh
+make clean
+make dist
+make dist-check
+```
+
 ```sh
 sha256sum -c build/dist/carrierpress-0.5.0.tar.gz.sha256
 tar -tzf build/dist/carrierpress-0.5.0.tar.gz | head

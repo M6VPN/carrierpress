@@ -45,7 +45,13 @@ release checklist are:
 
 - [`release-readiness-v0.5.0.md`](release-readiness-v0.5.0.md)
 - [`release-evidence-v0.5.0-template.md`](release-evidence-v0.5.0-template.md)
+- [`release-evidence-v0.5.0-summary.md`](release-evidence-v0.5.0-summary.md)
 - [`manual-release-checklist-v0.5.0.md`](manual-release-checklist-v0.5.0.md)
+
+Final local validation was completed before the manual tag decision. Base
+validation passed, guarded mock validation passed, and tarball/checksum
+inspection passed after regenerating the dist archive. Tagging and publication
+remain manual.
 
 Run the ordinary release-readiness profile:
 

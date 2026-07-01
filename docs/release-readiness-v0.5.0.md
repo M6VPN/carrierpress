@@ -7,9 +7,15 @@ or run hardware transmit actions.
 R12B adds manual release evidence and final tag checklist documents only:
 
 - [`release-evidence-v0.5.0-template.md`](release-evidence-v0.5.0-template.md)
+- [`release-evidence-v0.5.0-summary.md`](release-evidence-v0.5.0-summary.md)
 - [`manual-release-checklist-v0.5.0.md`](manual-release-checklist-v0.5.0.md)
 
 Publication remains manual.
+
+R12C locks the v0.5.0 release date and records that final local validation was
+completed before the manual tag decision. Base validation passed, guarded mock
+validation passed, and tarball/checksum inspection passed after regenerating
+the dist archive.
 
 ## Required Validation
 
@@ -79,6 +85,7 @@ After committing the intended release-prep tree:
 
 ```sh
 make clean
+make dist
 make dist-check
 sha256sum -c build/dist/carrierpress-0.5.0.tar.gz.sha256
 tar -xOf build/dist/carrierpress-0.5.0.tar.gz carrierpress-0.5.0/include/cp_version.h | grep '0.5.0'
@@ -86,6 +93,17 @@ tar -xOf build/dist/carrierpress-0.5.0.tar.gz carrierpress-0.5.0/include/cp_vers
 
 `make dist-check` archives committed `HEAD`, not uncommitted working-tree
 content.
+
+`make clean` removes `build/dist`, and guarded mock validation may clean the
+build tree. Inspect the tarball immediately after `make dist` or
+`make dist-check`. If `build/dist/carrierpress-0.5.0.tar.gz` is missing,
+regenerate it with:
+
+```sh
+make clean
+make dist
+make dist-check
+```
 
 ## Manual Final Actions
 
