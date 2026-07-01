@@ -40,6 +40,13 @@ path, or broadcast-quality proof.
 
 ## Validation Commands
 
+The release-readiness checklist, manual evidence template, and final manual
+release checklist are:
+
+- [`release-readiness-v0.5.0.md`](release-readiness-v0.5.0.md)
+- [`release-evidence-v0.5.0-template.md`](release-evidence-v0.5.0-template.md)
+- [`manual-release-checklist-v0.5.0.md`](manual-release-checklist-v0.5.0.md)
+
 Run the ordinary release-readiness profile:
 
 ```sh

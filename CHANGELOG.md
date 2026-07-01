@@ -12,6 +12,8 @@
   RX/drop operator controls under `WITH_TRANSMIT_CONTROL=1`.
 - Hardware TX backend safety design and future validation evidence template.
 - v0.5.0 release-readiness checklist.
+- Final v0.5.0 release evidence template.
+- Manual v0.5.0 tag and release checklist.
 
 ### Changed
 

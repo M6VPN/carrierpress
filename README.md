@@ -1711,6 +1711,11 @@ The v0.5.0 release notes are in
 [`docs/release-notes-v0.5.0.md`](docs/release-notes-v0.5.0.md), and the local
 release-readiness checklist is in
 [`docs/release-readiness-v0.5.0.md`](docs/release-readiness-v0.5.0.md).
+Final evidence and manual tag checks are documented in
+[`docs/release-evidence-v0.5.0-template.md`](docs/release-evidence-v0.5.0-template.md)
+and
+[`docs/manual-release-checklist-v0.5.0.md`](docs/manual-release-checklist-v0.5.0.md).
+No project script publishes releases.
 
 ## License
 

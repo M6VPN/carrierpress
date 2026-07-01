@@ -29,6 +29,8 @@ printf '\nvalidation target guide:\n'
 make validation-help
 printf 'release readiness: docs/release-readiness-v%s.md\n' "$version"
 printf 'release notes: docs/release-notes-v%s.md\n' "$version"
+printf 'release evidence template: docs/release-evidence-v%s-template.md\n' "$version"
+printf 'manual release checklist: docs/manual-release-checklist-v%s.md\n' "$version"
 
 printf '\ntest matrix guide:\n'
 make test-matrix-help

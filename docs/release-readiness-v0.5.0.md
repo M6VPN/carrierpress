@@ -4,6 +4,13 @@ This checklist prepares a local v0.5.0 release candidate. It does not create
 tags, push tags, publish a GitHub release, upload artifacts, install packages,
 or run hardware transmit actions.
 
+R12B adds manual release evidence and final tag checklist documents only:
+
+- [`release-evidence-v0.5.0-template.md`](release-evidence-v0.5.0-template.md)
+- [`manual-release-checklist-v0.5.0.md`](manual-release-checklist-v0.5.0.md)
+
+Publication remains manual.
+
 ## Required Validation
 
 ```sh

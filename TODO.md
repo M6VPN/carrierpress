@@ -711,3 +711,13 @@ implemented until code, docs, and validation are complete.
 - [x] Keep release publication and tagging manual.
 - [x] Keep hardware TX backend absent.
 - [x] Keep CAT write/control absent.
+
+## R12B v0.5.0 Final Release Evidence
+
+- [x] Add v0.5.0 release evidence template.
+- [x] Add manual v0.5.0 tag/release checklist.
+- [x] Link release evidence docs from readiness and release notes.
+- [x] Keep changelog at unreleased until manual final tag decision.
+- [x] Keep release publication and tagging manual.
+- [x] Keep hardware TX backend absent.
+- [x] Keep CAT write/control absent.
